@@ -1,0 +1,15 @@
+name = "ppeokkugi"
+main = "src/index.js"
+compatibility_date = "2025-09-01"
+
+[[durable_objects.bindings]]
+name = "ROOM"
+class_name = "Room"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["Room"]
+
+# 휴대폰 화면의 마스코트 그림(앱 drawable-nodpi/cuckoo_* 사본). 맞는 파일이 없으면 Worker 로 넘어간다
+[assets]
+directory = "./public"

@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="160" height="160">
+  <defs>
+    <clipPath id="belly-k">
+      <ellipse cx="80" cy="108" rx="20" ry="26"/>
+    </clipPath>
+  </defs>
+  <!-- tail -->
+  <ellipse cx="71" cy="148" rx="7" ry="4" fill="#4E6E84" transform="rotate(-25 71 148)"/>
+  <ellipse cx="80" cy="150" rx="8" ry="4.5" fill="#6B8FA8"/>
+  <ellipse cx="89" cy="148" rx="7" ry="4" fill="#4E6E84" transform="rotate(25 89 148)"/>
+  <!-- wings -->
+  <ellipse cx="46" cy="100" rx="9" ry="18" fill="#4E6E84" transform="rotate(-8 46 100)"/>
+  <ellipse cx="115" cy="98" rx="8" ry="16" fill="#8AAFC4" transform="rotate(10 115 98)"/>
+  <!-- body -->
+  <ellipse cx="80" cy="108" rx="36" ry="38" fill="#6B8FA8"/>
+  <!-- belly -->
+  <ellipse cx="80" cy="110" rx="20" ry="26" fill="#F2E8D0"/>
+  <g clip-path="url(#belly-k)">
+    <rect x="60" y="92" width="40" height="3" rx="1.5" fill="#C8AA82" opacity="0.6"/>
+    <rect x="60" y="102" width="40" height="3" rx="1.5" fill="#C8AA82" opacity="0.6"/>
+    <rect x="60" y="112" width="40" height="3" rx="1.5" fill="#C8AA82" opacity="0.6"/>
+  </g>
+  <!-- neck -->
+  <ellipse cx="80" cy="74" rx="18" ry="11" fill="#6B8FA8"/>
+  <!-- big baby head -->
+  <circle cx="80" cy="54" r="40" fill="#6B8FA8"/>
+  <ellipse cx="80" cy="36" rx="30" ry="23" fill="#4E6E84"/>
+  <!-- small antenna nub -->
+  <path d="M 87 16 Q 90 8 88 3" stroke="#90AABB" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <circle cx="88" cy="2" r="4.5" fill="#E03040"/>
+  <!-- big front eyes (baby proportions) -->
+  <circle cx="67" cy="52" r="13" fill="#F0C040"/>
+  <circle cx="67" cy="52" r="9" fill="#1E1810"/>
+  <circle cx="64" cy="49" r="2.5" fill="#FFFFFF"/>
+  <circle cx="94" cy="50" r="15" fill="#F0C040"/>
+  <circle cx="94" cy="50" r="11" fill="#1E1810"/>
+  <circle cx="90" cy="47" r="3" fill="#FFFFFF"/>
+  <!-- small beak -->
+  <path d="M 97 63 L 111 67 L 97 71 Z" fill="#E89820"/>
+  <!-- tiny feet -->
+  <g fill="#E89820">
+    <rect x="67" y="144" width="3.5" height="10" rx="1.5"/>
+    <rect x="61" y="152" width="5" height="2.5" rx="1"/>
+    <rect x="67" y="152" width="5" height="2.5" rx="1"/>
+    <rect x="73" y="152" width="4.5" height="2.5" rx="1"/>
+    <rect x="88" y="144" width="3.5" height="10" rx="1.5"/>
+    <rect x="82" y="152" width="5" height="2.5" rx="1"/>
+    <rect x="88" y="152" width="5" height="2.5" rx="1"/>
+    <rect x="94" y="152" width="4.5" height="2.5" rx="1"/>
+  </g>
+</svg>

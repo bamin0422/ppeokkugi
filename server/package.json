@@ -1,0 +1,12 @@
+{
+  "name": "ppeokkugi-server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --port 8792",
+    "test": "node --test test/logic.test.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "4.40.0"
+  }
+}

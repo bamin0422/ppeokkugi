@@ -1,0 +1,22 @@
+# 빌드 산출물
+.gradle/
+.kotlin/
+build/
+app/build/
+local.properties
+*.apk
+*.aab
+
+# 서버
+server/node_modules/
+server/.wrangler/
+
+.DS_Store
+
+# 영상 편집(Remotion): 의존성·캐시·생성물·녹화 원본
+docs/video/remotion/node_modules/
+docs/video/remotion/public/
+docs/video/remotion/out/
+docs/video/remotion/.remotion/
+docs/video/src/raw/
+docs/video/remotion/scripts/__pycache__/

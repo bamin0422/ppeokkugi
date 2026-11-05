@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="">
+<title>뻐꾸기 휴대폰 참여</title>
+<!-- 앱 res/font 와 같은 픽셀 글꼴 Galmuri(OFL). Galmuri11 은 12px, Galmuri9 은 10px 격자라 그 배수로만 쓴다 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/galmuri@2.40.3/dist/galmuri.css">
+<!-- 일행 지도. 못 불러와도 나머지 화면은 그대로 쓴다 -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+  /* 색은 이 :root 에만 둔다(앱은 ui/Theme.kt). 픽셀 무전기: 검은 몸체, 초록 LCD, 신호 주황, 송신 빨강·수신 초록 LED */
+  :root { --paper:#121417; --surface:#1E2226; --sunk:#2A2F34; --grille:#2C3237; --ink:#ECEFF1; --muted:#A3ABB3; --line:#353B41;
+          --accent:#FF6A1A; --on-accent:#121417; --tx:#FF3B30; --rx:#34C759; --warn:#FFC94A; --danger:#FF6B5E; --rain:#5AC8FA;
+          --lcd:#C9D86A; --lcd-flash:#EAF7A0; --lcd-ink:#1A1F12; --lcd-muted:#45502C; --lcd-alert:#FFB3A1; --alert-ink:#2A0A06;
+          --bezel:#0A0B0D; --sos:#2A0806; --face:#F2F2F2; --flag:var(--accent);
+          --px:"Galmuri11", monospace; --px-small:"Galmuri9", "Galmuri11", monospace; }
+  * { box-sizing: border-box; border-radius: 0 !important; }
+  html, body { margin: 0; background: var(--paper); color: var(--ink); font: 700 24px/1.5 var(--px); -webkit-font-smoothing: none; }
+  body { padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); max-width: 560px; margin: 0 auto; }
+  img { image-rendering: pixelated; }
+  /* 픽셀 테: 네 변에만 그림자를 얹어 모서리 한 칸이 비는 계단 테. --b 는 테 색, 끝의 것은 흐림 없는 그림자 */
+  .px { --b: var(--bezel); box-shadow: 0 -2px 0 var(--b), 0 2px 0 var(--b), -2px 0 0 var(--b), 2px 0 0 var(--b), 4px 6px 0 var(--bezel); }
+  .px-flat { --b: var(--bezel); box-shadow: 0 -2px 0 var(--b), 0 2px 0 var(--b), -2px 0 0 var(--b), 2px 0 0 var(--b); }
+  /* 몸체 디더(2px 체커를 성기게)와 스피커 홈, LCD 스캔라인 */
+  .grille { background-color: var(--surface);
+    background-image: conic-gradient(var(--grille) 25%, transparent 0 50%, transparent 0 75%, transparent 0); background-size: 8px 8px; }
+  .slots { background: var(--sunk) repeating-linear-gradient(var(--bezel) 0 2px, transparent 2px 4px); }
+  .lcd { background-color: var(--lcd); color: var(--lcd-ink); font-family: var(--px); font-weight: 400;
+    background-image: repeating-linear-gradient(transparent 0 2px, color-mix(in srgb, var(--lcd-ink) 7%, transparent) 2px 3px); }
+  .led { width: 12px; height: 12px; background: var(--sunk); outline: 2px solid var(--bezel); flex: none; }
+  .led.rx { background: var(--rx); box-shadow: 0 0 0 3px color-mix(in srgb, var(--rx) 35%, transparent); }
+  .led.tx { background: var(--tx); box-shadow: 0 0 0 3px color-mix(in srgb, var(--tx) 35%, transparent); animation: blink .84s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: .2; } }
+  header { display: flex; align-items: center; gap: 12px; margin: -16px -16px 20px; padding: 12px 16px; border-bottom: 2px solid var(--bezel); }
+  header h1 { font: 700 24px/1 var(--px); margin: 0; padding: 6px 10px; background: var(--surface); --b: var(--line); white-space: nowrap; flex: none; }
+  #flag { width: 8px; height: 24px; background: var(--flag); display: none; }
+  #status { color: var(--muted); font: 400 20px/1.2 var(--px-small); margin-left: auto; text-align: right; display: flex; align-items: center; gap: 8px; min-width: 0; }
+  #status .lcd { padding: 4px 8px; font: 400 20px/1 var(--px-small); display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+  #status svg { width: 22px; height: 16px; shape-rendering: crispEdges; }
+  #status > span:last-child { white-space: nowrap; }
+  header:has(.lcd) .cuckoo { display: none; }
+  /* 입장: 무전기 앞면. 안테나와 채널 손잡이를 네모 칸으로 위에 단다 */
+  .radio { position: relative; margin-top: 56px; padding: 20px; }
+  .radio::before { content: ""; position: absolute; left: 40px; top: -54px; width: 24px; height: 54px;
+    background: var(--sunk) repeating-linear-gradient(transparent 0 6px, var(--bezel) 6px 8px);
+    clip-path: polygon(4px 0, 20px 0, 20px 4px, 24px 4px, 24px 100%, 0 100%, 0 4px, 4px 4px); }
+  .radio::after { content: ""; position: absolute; right: 40px; top: -22px; width: 60px; height: 22px;
+    background: var(--sunk) repeating-linear-gradient(90deg, transparent 0 4px, var(--bezel) 4px 6px); }
+  .radio .slots { height: 144px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; }
+  .radio .slots .cuckoo { width: 128px; height: 128px; }
+  label { display: block; font: 700 24px/1.5 var(--px); margin: 0 0 8px; }
+  .chan { display: flex; align-items: center; gap: 8px; padding: 10px 14px; }
+  .chan b { font-weight: 400; font-size: 24px; color: var(--lcd-muted); }
+  .chan input { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--lcd-ink); font: 400 36px/1 var(--px);
+    letter-spacing: 6px; text-transform: uppercase; padding: 4px 0; }
+  .chan input::placeholder { color: var(--lcd-muted); }
+  .chan:focus-within { outline: 2px solid var(--accent); outline-offset: 4px; }
+  .chan input:focus { outline: 0; }
+  .check { display: flex; gap: 10px; align-items: flex-start; margin: 20px 0; color: var(--muted); font: 400 20px/1.5 var(--px-small); }
+  .check input { width: 24px; height: 24px; flex: none; margin-top: 2px; accent-color: var(--accent); }
+  /* 8비트 버튼: 누르면 그림자만큼 내려앉고 그림자가 사라진다 */
+  button { font: 700 24px/1 var(--px); border: 0; cursor: pointer; color: var(--ink); background: var(--sunk); --b: var(--bezel);
+    box-shadow: 0 -2px 0 var(--b), 0 2px 0 var(--b), -2px 0 0 var(--b), 2px 0 0 var(--b), 4px 6px 0 var(--bezel); }
+  button:active:not(:disabled) { transform: translate(4px, 4px);
+    box-shadow: 0 -2px 0 var(--b), 0 2px 0 var(--b), -2px 0 0 var(--b), 2px 0 0 var(--b); }
+  button:disabled { background: var(--sunk); color: var(--muted); cursor: default; }
+  .big { width: 100%; padding: 20px; font-size: 24px; background: var(--accent); color: var(--on-accent); }
+  /* PTT: 누르는 동안 송신 빨강 테·LED, TX, 마이크 크기 미터 */
+  #ptt { width: 100%; height: 112px; margin-top: 20px; display: flex; align-items: center; gap: 14px; padding: 0 22px;
+    user-select: none; -webkit-user-select: none; touch-action: none; }
+  #ptt .tag { font: 400 20px var(--px-small); color: var(--muted); }
+  #ptt .word { flex: 1; font-size: 36px; text-align: center; white-space: nowrap; }
+  #ptt .tx, #ptt .meter { display: none; }
+  #ptt.on { --b: var(--tx); }
+  #ptt.on .tag, #ptt.on .word { display: none; }
+  #ptt.on .tx { display: block; font: 400 36px var(--px); background: var(--tx); color: var(--lcd-ink); padding: 4px 10px; }
+  #ptt.on .meter { display: flex; flex: 1; gap: 4px; height: 24px; }
+  .meter i { flex: 1; background: var(--rx); opacity: .18; }
+  .meter i:nth-child(n+10) { background: var(--warn); } .meter i:nth-child(n+13) { background: var(--tx); }
+  .meter i.on { opacity: 1; }
+  #ptt:disabled { font-size: 24px; }
+  .row { display: flex; gap: 12px; margin-top: 16px; }
+  .row input { flex: 1; min-width: 0; font: 700 24px var(--px); padding: 14px; border: 0; background: var(--sunk); color: var(--ink); }
+  .row input:focus { outline: 2px solid var(--accent); }
+  .row button { padding: 0 18px; flex: none; white-space: nowrap; }
+  h2 { font: 700 24px var(--px); margin: 24px 0 12px; }
+  /* 무전 카드: 스피커 그릴 칸 위 픽셀 마스코트, 옆에 LCD 띠. 막 온 카드는 백라이트가 밝아지고 파형이 흔들린다 */
+  .card { display: flex; gap: 10px; align-items: stretch; background: var(--surface); padding: 8px; margin: 0 6px 16px 2px; }
+  .card .slots { width: 80px; flex: none; display: flex; align-items: center; justify-content: center; }
+  .cuckoo { object-fit: contain; flex: none; }
+  /* 512px 그림을 정수 분의 1로만: 32·64·128px (기기 픽셀 2배 기준 64·128·256) */
+  header .cuckoo { width: 32px; height: 32px; }
+  .card .cuckoo { width: 64px; height: 64px; }
+  .card .lcd { flex: 1; min-width: 0; padding: 6px 10px; }
+  .card.fresh .lcd { animation: backlight .9s steps(3); }
+  @keyframes backlight { 0%, 40% { background-color: var(--lcd-flash); } }
+  .card .rx { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; font: 400 20px/1.2 var(--px-small); }
+  .card .rx > * { white-space: nowrap; flex: none; }
+  .card .wave { display: flex; align-items: center; gap: 2px; height: 16px; width: 48px; }
+  .card .wave i { flex: 1; background: currentColor; opacity: .55; }
+  .card.fresh .wave i { opacity: 1; animation: crackle .14s steps(2) 10; }
+  @keyframes crackle { 50% { transform: scaleY(.25); } }
+  .card .time { margin-left: auto; color: var(--lcd-muted); }
+  .card .text { font: 700 24px/1.5 var(--px); margin-top: 4px; word-break: keep-all; }
+  .card.alert { --b: var(--tx); }
+  .card.alert .lcd { background-color: var(--lcd-alert); color: var(--alert-ink); }
+  .card.alert .time { color: var(--alert-ink); }
+  .chip { display: inline-block; font: 400 20px var(--px-small); padding: 0 6px; background: var(--accent); color: var(--lcd-ink); }
+  .chip.kids { background: var(--rain); }
+  #vote { display: none; padding: 16px; margin-bottom: 20px; }
+  #vote label .lcd { display: inline-block; padding: 2px 8px; font: 400 24px var(--px); }
+  #vote .opts { display: grid; gap: 14px; }
+  #vote button { padding: 16px; font-size: 24px; text-align: left; }
+  #vote button b { font: 400 36px var(--px); color: var(--accent); margin-right: 12px; vertical-align: -4px; }
+  #vote button.mine { background: var(--accent); color: var(--on-accent); }
+  #vote button.mine b { color: var(--on-accent); }
+  .note { color: var(--muted); font: 400 20px/1.5 var(--px-small); }
+  #map { height: 300px; margin: 4px 2px 0; background: var(--sunk); z-index: 0; outline: 2px solid var(--bezel); }
+  /* 앱 지도와 같은 중립 밤 지도: 반전·흑백 뒤 어두운 곳은 --paper, 밝은 곳은 --muted 쪽으로(#tint 는 스크립트가 만든다) */
+  #map .leaflet-tile-pane { filter: invert(1) grayscale(1) url(#tint); }
+  #map .leaflet-control-attribution { background: color-mix(in srgb, var(--paper) 85%, transparent); color: var(--muted); font: 400 10px var(--px-small); }
+  #map .leaflet-control-attribution a { color: var(--muted); }
+  .car { display: flex; flex-direction: column; align-items: center; }
+  .car b { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font: 700 24px/1 var(--px);
+    --b: var(--ink); box-shadow: 0 -2px 0 var(--b), 0 2px 0 var(--b), -2px 0 0 var(--b), 2px 0 0 var(--b), 3px 4px 0 var(--bezel); }
+  .car.me b { width: 42px; height: 42px; box-shadow: 0 -4px 0 var(--b), 0 4px 0 var(--b), -4px 0 0 var(--b), 4px 0 0 var(--b), 4px 6px 0 var(--bezel); }
+  .car span { margin-top: 6px; padding: 2px 6px; font: 400 20px/1 var(--px-small); white-space: nowrap; background: var(--paper); color: var(--ink); }
+  .car.me span { background: var(--ink); color: var(--paper); }
+  .pin { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; position: relative;
+    --b: var(--ink); box-shadow: 0 -2px 0 var(--b), 0 2px 0 var(--b), -2px 0 0 var(--b), 2px 0 0 var(--b); }
+  .pin::after { content: ""; position: absolute; left: 11px; top: 32px; width: 8px; height: 8px; background: var(--ink); }
+  .pin i { font: 700 24px/1 var(--px); font-style: normal; color: var(--paper); }
+  /* 긴급: 빨간 LCD, 송신 LED 깜빡임 */
+  #sos { position: fixed; inset: 0; background: var(--sos); display: none; flex-direction: column; justify-content: center;
+    padding: 24px; z-index: 9; gap: 20px; }
+  #sos .head { display: flex; align-items: center; gap: 14px; font: 700 36px var(--px); }
+  #sos .led { width: 20px; height: 20px; }
+  #sos .lcd { background-color: var(--lcd-alert); color: var(--alert-ink); padding: 14px 16px; }
+  #sos .lcd b { display: block; font: 400 24px var(--px); margin-bottom: 8px; }
+  #sos p { font: 700 24px/1.5 var(--px); margin: 0; }
+  #sos button { padding: 20px; font-size: 36px; background: var(--ink); color: var(--sos); }
+  #sos .cuckoo { width: 128px; height: 128px; align-self: center; }
+  @media (prefers-reduced-motion: reduce) { .led.tx, .card.fresh .lcd, .card.fresh .wave i { animation: none; } }
+</style>
+</head>
+<body>
+<header class="grille">
+  <span id="flag"></span>
+  <img class="cuckoo" src="/cuckoo/talk.webp" alt="">
+  <h1 class="px-flat">뻐꾸기</h1>
+  <span id="status">휴대폰으로 함께 가기</span>
+</header>
+
+<section id="join" class="radio grille px">
+  <div class="slots px-flat"><img class="cuckoo" data-mood="wait" alt=""></div>
+  <label for="code">받은 방 코드</label>
+  <div class="lcd chan px-flat"><b>CH</b><input id="code" type="text" inputmode="text" autocomplete="off" maxlength="8" placeholder="ABC234"></div>
+  <label class="check"><input id="agree" type="checkbox">
+    <span>방에 있는 동안 휴대폰 위치를 일행과 나누는 데 동의합니다. 방을 나가면 위치를 보내지 않습니다.</span></label>
+  <button id="go" class="big" disabled>들어가기</button>
+  <button id="fleet" class="big" style="display:none;margin-top:12px;background:var(--sunk);color:var(--ink)">운수사 방 새로 만들기</button>
+</section>
+
+<section id="room" style="display:none">
+  <section id="vote" class="grille px">
+    <label>쉬어 가 투표 · <span class="lcd" id="left"></span></label>
+    <div class="opts" id="opts"></div>
+  </section>
+  <div id="map"></div>
+  <button id="ptt" class="grille"><span class="led" id="pttLed"></span><span class="tag">PTT</span><span class="word">누르고 말하기</span><span class="tx">TX</span><span class="meter" id="meter"></span></button>
+  <div class="note" id="heard"></div>
+  <div class="row">
+    <input id="text" type="text" placeholder="글로 보내기" maxlength="200">
+    <button id="send">보내기</button>
+  </div>
+  <a id="report" target="_blank" rel="noopener" style="display:none;margin:12px 0;padding:12px;text-align:center;background:var(--sunk);color:var(--ink);text-decoration:none">차량별 운행 보고서 열기</a>
+  <h2>무전</h2>
+  <div id="cards"><div class="note">일행의 자동 콜과 무전이 여기에 뜹니다.</div></div>
+  <button id="leave" style="margin-top:16px;padding:12px;width:100%;background:var(--sunk);color:var(--muted)">나가기</button>
+</section>
+
+<section id="sos"><img class="cuckoo" data-mood="emergency" alt="">
+  <div class="head"><span class="led tx"></span>긴급 콜</div>
+  <div class="lcd px-flat"><b id="sosHead">EMERGENCY</b><p id="sosText"></p></div>
+  <button id="sosOk">확인</button></section>
+
+<script>
+const $ = id => document.getElementById(id);
+
+// 테마 색으로 상단 막대 색과 지도 물들이기 필터를 만든다(앱 GroupMap NIGHT_TILES 와 같은 식)
+{
+  const css = getComputedStyle(document.documentElement);
+  const rgb = v => css.getPropertyValue(v).trim().match(/[0-9a-f]{2}/gi).map(h => parseInt(h, 16) / 255);
+  const lo = rgb('--paper'), hi = rgb('--muted'), k = 0.75;
+  document.querySelector('meta[name=theme-color]').content = css.getPropertyValue('--paper').trim();
+  const row = i => [0, 1, 2].map(j => j === i ? ((hi[i] - lo[i]) * k).toFixed(3) : 0).join(' ') + ` 0 ${lo[i].toFixed(3)}`;
+  document.body.insertAdjacentHTML('beforeend', `<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="tint" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="${row(0)} ${row(1)} ${row(2)} 0 0 0 1 0"/></filter></svg>`);
+}
+const CODE_RE = /^[A-HJ-NP-Z2-9]{6,8}$/;
+let ws = null, me = null, last = null, watch = null, posTimer = null, vote = null, voteTimer = null, retry = 0, code = null;
+
+// 주소에 ?code=ABC234 가 있으면 미리 넣는다
+$('code').value = new URLSearchParams(location.search).get('code') || '';
+// /control 은 운수사 관제석: 차로 세지 않고 위치를 보내지 않는다. 관제 키는 주소 # 뒤에 둔다(서버로 가지 않게)
+const CONTROL = location.pathname === '/control';
+let controlKey = new URLSearchParams(location.hash.slice(1)).get('key') || '';
+if (CONTROL) {
+  $('status').textContent = '운수사 관제석';
+  $('agree').closest('label').style.display = 'none';
+  $('fleet').style.display = 'block';
+  $('go').textContent = '관제석으로 들어가기';
+}
+const ready = () => { $('go').disabled = !(CODE_RE.test($('code').value.trim().toUpperCase()) && (CONTROL ? controlKey : $('agree').checked)); };
+$('code').oninput = ready; $('agree').onchange = ready; ready();
+
+$('fleet').onclick = async () => {
+  const r = await fetch('/api/rooms', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fleet: true }) });
+  const j = await r.json();
+  controlKey = j.controlKey;
+  $('code').value = j.code;
+  history.replaceState(null, '', `/control?code=${j.code}#key=${controlKey}`);
+  ready();
+};
+
+$('go').onclick = () => { code = $('code').value.trim().toUpperCase(); if (!CONTROL) startGps(); connect(); };
+$('leave').onclick = () => { code = null; ws?.close(); stopGps(); location.reload(); };
+
+function connect() {
+  if (!code) return;
+  $('status').textContent = '연결 중…';
+  ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/api/rooms/${code}/ws`);
+  ws.onopen = () => { retry = 0; ws.send(JSON.stringify(CONTROL ? { type: 'hello', role: 'control', key: controlKey } : { type: 'hello', nickname: '휴대폰', seats: [{ id: 'driver', occupied: true }] })); };
+  ws.onmessage = e => onMsg(JSON.parse(e.data));
+  ws.onclose = () => {
+    if (!code) return;
+    const d = Math.min(30, 2 ** retry++);
+    $('status').textContent = `끊김, ${d}초 뒤 다시 연결`;
+    setTimeout(connect, d * 1000);
+  };
+}
+
+function send(o) { if (ws?.readyState === 1) { ws.send(JSON.stringify(o)); return true; } return false; }
+
+// --- 위치: 2초마다 마지막 값 ---
+function startGps() {
+  if (!navigator.geolocation) return card('뻐꾸기', '이 브라우저는 위치를 쓸 수 없습니다', true);
+  watch = navigator.geolocation.watchPosition(p => {
+    last = { lat: p.coords.latitude, lng: p.coords.longitude, heading: p.coords.heading || 0, speed: (p.coords.speed || 0) * 3.6 };
+    if (me) drawMap();
+  }, err => card('뻐꾸기', `위치를 받지 못했습니다: ${err.message}`, true), { enableHighAccuracy: true });
+  posTimer = setInterval(() => last && send({ type: 'pos', ...last }), 2000);
+}
+function stopGps() { if (watch != null) navigator.geolocation.clearWatch(watch); clearInterval(posTimer); }
+
+// --- 받은 메시지 ---
+// 서버 logic.js distText·앱 Phrase.distance 와 같다
+const dist = m => m < 1000 ? `${Math.floor(m / 100) * 100}m` : m < 10000 ? `${(Math.round(m / 100) / 10).toFixed(1).replace(/\.0$/, '')}km` : `${Math.round(m / 1000)}km`;
+// 앱 Phrase.signal 과 같은 문장. where 는 "1.2km 앞"
+function signalText(m, where) {
+  const d = m.distanceM != null ? `${dist(m.distanceM)} 앞 ` : '';
+  switch (m.kind) {
+    case 'brake_hard': return [m.from, where].filter(Boolean).join(', ') + ' 급제동, 감속하세요';
+    case 'rain': return [m.from, where && `${where}부터`].filter(Boolean).join(', ') + ' 비';
+    case 'turn_left': case 'turn_right': return `선두, ${d}${m.kind === 'turn_left' ? '좌회전' : '우회전'}`;
+    case 'speed_limit': return `선두, 제한속도 ${m.value ?? '?'}으로 바뀜`;
+    case 'caution': return `선두, ${d}주의 구간`;
+    case 'airbag': return `긴급, ${m.from} 에어백 전개` + (where ? `, ${where}` : '');
+  }
+  return `${m.from} ${m.kind}`;
+}
+function haversine(a, b, c, d) {
+  const r = Math.PI / 180, x = Math.sin((c - a) * r / 2) ** 2 + Math.cos(a * r) * Math.cos(c * r) * Math.sin((d - b) * r / 2) ** 2;
+  return 12_742_000 * Math.asin(Math.sqrt(x));
+}
+
+function onMsg(m) {
+  switch (m.type) {
+    case 'welcome':
+      me = m.carLabel;
+      myColor = m.flagColor || myColor;
+      (m.cars || []).forEach(c => { cars[c.from] = { color: c.flagColor, lat: c.lat, lng: c.lng }; });
+      setTimeout(() => { map?.invalidateSize(); drawMap(); }, 0);
+      $('join').style.display = 'none'; $('room').style.display = 'block';
+      if (m.role === 'control') {
+        $('report').href = `/api/rooms/${code}/report?key=${encodeURIComponent(controlKey)}`;
+        $('report').style.display = 'block';
+        card('관제', `기사들에게 방 코드 ${code}를 알려 주세요. 관제석은 차로 세지 않습니다`, false, 'all', 'base');
+      }
+      showChannel();
+      if (m.flagColor) { document.documentElement.style.setProperty('--flag', m.flagColor); $('flag').style.display = 'block'; }
+      break;
+    case 'hello': cars[m.from] = { ...cars[m.from], color: m.flagColor }; drawMap(); showChannel(); break;
+    case 'pos': cars[m.from] = { ...cars[m.from], lat: m.lat, lng: m.lng }; drawMap(); break;
+    case 'leave': delete cars[m.from]; drawMap(); showChannel(); break;
+    case 'signal': {
+      // 서버가 받는 쪽 기준 거리·앞뒤(gapM, ahead)를 붙여 준다. 없으면 직접 잰 거리만
+      const where = m.gapM != null ? `${dist(m.gapM)} ${m.ahead ? '앞' : '뒤'}`
+        : last && m.lat != null ? `${dist(haversine(last.lat, last.lng, m.lat, m.lng))} 거리` : '';
+      const text = signalText(m, where);
+      card(m.from, text, m.kind === 'brake_hard' || m.kind === 'airbag', 'all',
+        { brake_hard: 'brake', airbag: 'emergency', rain: 'rain', speed_limit: 'camera', caution: 'camera' }[m.kind] || 'rx');
+      if (m.lat != null) addPin(m.kind, m.from, m.lat, m.lng);
+      if (m.kind === 'airbag') {
+        $('sosHead').textContent = `EMERGENCY · ${m.from} 에어백`;
+        $('sosText').textContent = text + (m.lat != null ? ` (${m.lat.toFixed(4)}, ${m.lng.toFixed(4)})` : '');
+        $('sos').style.display = 'flex';
+      }
+      speak(text);
+      break;
+    }
+    case 'notice':
+      card('위치', m.text, m.kind === 'fall_behind' || m.kind === 'long_stop', 'all',
+        { fall_behind: 'lost', long_stop: 'alert', place: 'arrive' }[m.kind] || 'base');
+      speak(m.text);
+      if (m.kind === 'fall_behind' && m.lat != null) addPin(m.kind, m.target, m.lat, m.lng);
+      break;
+    case 'say':
+      card(m.system ? '꼬리 콜' : m.from === 'server' ? '뻐꾸기' : m.from + (m.speaker ? ` ${m.speaker}` : ''), m.text, false, m.channel, m.system ? 'alert' : m.channel === 'kids' ? 'kids' : m.from === me ? 'tx' : 'rx');
+      if (m.from !== me) speak(`${m.from === 'server' ? '뻐꾸기' : m.from}, ${m.text}`);
+      break;
+    case 'roll': {
+      const on = (m.seats || []).filter(s => s.occupied).length;
+      card(m.from, `점호: ${on}명`, false, 'all', 'rollcall');
+      break;
+    }
+    case 'route': card(m.from, `대장 콜: ${m.dest?.name || '목적지'}로 경로를 바꿨습니다`, false, 'all', 'rx'); speak(`선두가 ${m.dest?.name || '목적지'}로 경로를 바꿨습니다`); break;
+    case 'vote_open': if (CONTROL) card('쉬어 가', '기사들이 휴게소 투표 중', false, 'all', 'vote'); else openVote(m); break;
+    case 'vote_result':
+      closeVote();
+      card('쉬어 가', `${m.winner.name}, 총 ${m.totalPeople}명`, false, 'all', 'rest');
+      speak(`${m.winner.name}, 총 ${m.totalPeople}명`);
+      break;
+    case 'arrive': card('뻐꾸기', '일행이 모두 도착했습니다', false, 'all', 'arrive'); speak('일행이 모두 도착했습니다'); break;
+    case 'error': card('서버', m.error, true); break;
+  }
+}
+
+// 마스코트 그림: base 는 정지 PNG, 나머지는 8초 반복 애니메이션 WebP
+const MOOD_SRC = m => m === 'base' ? '/cuckoo/base.png' : `/cuckoo/${m}.webp`;
+// 새 표정 그림이 아직 없으면 기존 그림으로(앱 Mood.fallback 과 같다)
+const MOOD_FALLBACK = { tx: 'talk', rx: 'talk', brake: 'alert', camera: 'alert', lost: 'alert', emergency: 'alert', rain: 'base', wait: 'rest', vote: 'rollcall', arrive: 'rollcall' };
+function moodImg(img, m) { img.onerror = () => { const f = MOOD_FALLBACK[m]; img.onerror = null; if (f) moodImg(img, f); }; img.src = MOOD_SRC(m); }
+document.querySelectorAll('img[data-mood]').forEach(i => moodImg(i, i.dataset.mood));
+function card(from, text, alert = false, channel = 'all', mood = null) {
+  const c = document.createElement('div');
+  c.className = 'card px fresh' + (alert ? ' alert' : '');
+  setTimeout(() => c.classList.remove('fresh'), 1500);
+  mood ??= alert ? 'alert' : channel === 'kids' ? 'kids' : 'base';
+  const t = new Date().toTimeString().slice(0, 8);
+  const chip = channel && channel !== 'all' ? `<span class="chip${channel === 'kids' ? ' kids' : ''}">${channel === 'kids' ? '키즈' : '어른'} 채널</span>` : '';
+  const wave = Array.from({ length: 12 }, () => `<i style="height:${25 + Math.random() * 75}%"></i>`).join('');
+  c.innerHTML = `<div class="slots"><img class="cuckoo" alt=""></div><div class="lcd px-flat"><div class="rx"><span>${mood === 'tx' ? 'TX' : 'RX'} ▶ <span class="from"></span></span>${chip}<span class="wave">${wave}</span><span class="time">${t}</span></div><div class="text"></div></div>`;
+  moodImg(c.querySelector('img'), mood);
+  c.querySelector('.from').textContent = from;   // 받은 글은 textContent 로만 넣는다
+  c.querySelector('.text').textContent = text;
+  const box = $('cards');
+  if (box.firstElementChild?.classList.contains('note')) box.innerHTML = '';
+  box.prepend(c);
+  while (box.children.length > 50) box.lastElementChild.remove();
+}
+
+function speak(text) {
+  if (!('speechSynthesis' in window)) return;
+  const u = new SpeechSynthesisUtterance(text); u.lang = 'ko-KR';
+  speechSynthesis.speak(u);
+}
+
+// --- 일행 지도: 손대지 않아도 일행이 다 들어오게 맞춘다 ---
+const PIN_TTL_MS = 5 * 60_000;
+const PIN = { brake_hard: ['급', 'var(--danger)'], rain: ['비', 'var(--rain)'], turn_left: ['좌', 'var(--accent)'], turn_right: ['우', 'var(--accent)'],
+  speed_limit: ['속', 'var(--warn)'], caution: ['주', 'var(--warn)'], airbag: ['!', 'var(--tx)'], fall_behind: ['이', 'var(--muted)'] };
+let cars = {}, pins = [], myColor = null, map = null, carLayer = null, pinLayer = null;
+if (window.L) {
+  map = L.map('map', { zoomControl: false, attributionControl: true }).setView([37.454, 127.043], 11);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 17, attribution: '&copy; OpenStreetMap' }).addTo(map);
+  carLayer = L.layerGroup().addTo(map); pinLayer = L.layerGroup().addTo(map);
+  setInterval(drawMap, 10_000); // 오래된 핀을 지운다
+} else $('map').style.display = 'none';
+
+function addPin(kind, from, lat, lng) { pins.push({ kind, from, lat, lng, at: Date.now() }); drawMap(); }
+
+function drawMap() {
+  if (!map) return;
+  pins = pins.filter(p => Date.now() - p.at < PIN_TTL_MS);
+  pinLayer.clearLayers(); carLayer.clearLayers();
+  const pts = []; // 차와 이슈 핀이 모두 들어오게 맞춘다
+  for (const p of pins) {
+    pts.push([p.lat, p.lng]);
+    const [t, c] = PIN[p.kind] || ['?', 'var(--muted)'];
+    L.marker([p.lat, p.lng], { icon: L.divIcon({ className: '', html: `<div class="pin" style="background:${c}"><i>${t}</i></div>`, iconSize: [28, 28], iconAnchor: [4, 30] }) }).addTo(pinLayer);
+  }
+  const put = (label, num, color, lat, lng, mine) => {
+    pts.push([lat, lng]);
+    const html = `<div class="car${mine ? ' me' : ''}"><b style="background:${color || 'var(--accent)'};color:${onFlag(color)}">${num}</b><span>${mine ? '나 · ' + label : label}</span></div>`;
+    L.marker([lat, lng], { zIndexOffset: mine ? 1000 : 500, icon: L.divIcon({ className: '', html, iconSize: [80, 60], iconAnchor: [40, mine ? 22 : 19] }) }).addTo(carLayer);
+  };
+  for (const [label, c] of Object.entries(cars)) if (label !== me && c.lat != null) put(label, parseInt(label), c.color, c.lat, c.lng, false);
+  if (last && me) put(me, parseInt(me), myColor, last.lat, last.lng, true);
+  if (pts.length > 1) map.fitBounds(pts, { padding: [40, 40], maxZoom: 15 });
+  else if (pts.length === 1) map.setView(pts[0], 14);
+}
+
+// --- 쉬어 가 ---
+function openVote(m) {
+  vote = { deadline: Date.now() + (m.timeoutMs || 30000), mine: null };
+  const box = $('opts'); box.innerHTML = '';
+  m.candidates.forEach((c, i) => {
+    const b = document.createElement('button');
+    b.innerHTML = `<b>${i + 1}</b>`; b.append(c.name);
+    b.onclick = () => { if (vote.mine == null && send({ type: 'vote', choice: i })) { vote.mine = i; b.classList.add('mine'); } };
+    box.append(b);
+  });
+  $('vote').style.display = 'block';
+  clearInterval(voteTimer);
+  voteTimer = setInterval(() => { $('left').textContent = `${Math.max(0, Math.round((vote.deadline - Date.now()) / 1000))}초`; }, 500);
+  card('쉬어 가', '투표를 엽니다. ' + m.candidates.map((c, i) => `${i + 1}번 ${c.name}`).join(', '), false, 'all', 'vote');
+}
+function closeVote() { clearInterval(voteTimer); $('vote').style.display = 'none'; vote = null; }
+
+// --- 받아 적기: 누르는 동안 듣고 떼면 보낸다 ---
+function say(text) {
+  text = text.trim(); if (!text) return;
+  const n = text.match(/([1-3]|일|이|삼)\s*번/);
+  if (vote && vote.mine == null && n) {
+    const i = { '일': 0, '이': 1, '삼': 2 }[n[1]] ?? Number(n[1]) - 1;
+    const b = $('opts').children[i];
+    if (b) return b.click();
+  }
+  send({ type: 'say', text: text.length > 40 ? (text.match(/^[^.?!\n]+[.?!]/)?.[0] || text) : text, channel: 'all', seat: 'driver', speaker: '휴대폰' });
+}
+$('send').onclick = () => { say($('text').value); $('text').value = ''; };
+$('text').onkeydown = e => { if (e.key === 'Enter') $('send').click(); };
+
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null, heard = '';
+if (!SR) { $('ptt').disabled = true; $('ptt').querySelector('.word').textContent = '음성 인식 없음 · 글로 보내기'; }
+function pttDown(e) {
+  e.preventDefault();
+  if (!SR || rec) return;
+  rec = new SR(); rec.lang = 'ko-KR'; rec.interimResults = true; heard = '';
+  rec.onresult = ev => { heard = Array.from(ev.results).map(r => r[0].transcript).join(''); $('heard').textContent = heard; };
+  rec.onerror = ev => { $('heard').textContent = `음성 인식 오류: ${ev.error}`; };
+  rec.onend = () => { say(heard); rec = null; $('ptt').classList.remove('on'); $('pttLed').className = 'led'; stopMeter(); };
+  rec.start();
+  $('ptt').classList.add('on'); $('pttLed').className = 'led tx'; startMeter();
+}
+function pttUp() { rec?.stop(); }
+$('ptt').addEventListener('pointerdown', pttDown);
+$('ptt').addEventListener('pointerup', pttUp);
+$('ptt').addEventListener('pointercancel', pttUp);
+$('ptt').addEventListener('pointerleave', pttUp);
+
+// 마이크 크기 미터: 누르는 동안만 마이크를 따로 열어 잰다. 못 열면 미터만 빈 채로 둔다
+$('meter').innerHTML = '<i></i>'.repeat(16);
+let meterStop = null;
+async function startMeter() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const ac = new AudioContext(), an = ac.createAnalyser(); an.fftSize = 512;
+    ac.createMediaStreamSource(stream).connect(an);
+    const buf = new Uint8Array(an.fftSize), bars = [...$('meter').children];
+    let raf;
+    const tick = () => {
+      an.getByteTimeDomainData(buf);
+      const rms = Math.sqrt(buf.reduce((s, v) => s + ((v - 128) / 128) ** 2, 0) / buf.length);
+      const n = Math.min(16, Math.round(rms * 64));
+      bars.forEach((b, i) => b.classList.toggle('on', i < n));
+      raf = requestAnimationFrame(tick);
+    };
+    tick();
+    meterStop = () => { cancelAnimationFrame(raf); stream.getTracks().forEach(t => t.stop()); ac.close(); bars.forEach(b => b.classList.remove('on')); };
+  } catch { meterStop = null; }
+}
+function stopMeter() { meterStop?.(); meterStop = null; }
+
+// 깃발 색 위 글자: 밝으면 검정, 어두우면 흰색(앱 onFlag 와 같다)
+function onFlag(hex) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex || '');
+  if (!m) return 'var(--on-accent)';
+  const l = [0, 2, 4].map(i => parseInt(m[1].slice(i, i + 2), 16) / 255).map(c => c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+  return 0.2126 * l[0] + 0.7152 * l[1] + 0.0722 * l[2] > 0.179 ? 'var(--on-accent)' : 'var(--ink)';
+}
+
+// 머리의 채널 LCD: 방 코드, 신호 막대, 일행 수 칸
+function showChannel() {
+  const n = Object.keys(cars).filter(k => k !== me).length + 1;
+  const on = ws?.readyState === 1;
+  const bars = [0, 1, 2, 3].map(i => `<rect x="${i * 5.5}" y="${12 - i * 4}" width="4" height="${4 + i * 4}" fill="currentColor" opacity="${on ? 1 : (i < 1 ? 1 : .25)}"/>`).join('');
+  // 좁은 화면이라 일행 수 대신 우리 호차를 채널 LCD 안에 둔다(일행 수는 지도에서 보인다)
+  $('status').innerHTML = `<span class="led${on ? ' rx' : ''}"></span><span class="lcd">CH ${code}<svg viewBox="0 0 22 16" aria-hidden="true">${bars}</svg><span class="me"></span></span>`;
+  $('status').querySelector('.me').textContent = me || `${n}대`;
+}
+
+$('sosOk').onclick = () => { $('sos').style.display = 'none'; };
+</script>
+</body>
+</html>

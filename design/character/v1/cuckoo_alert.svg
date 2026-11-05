@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <clipPath id="belly">
+      <ellipse cx="103" cy="130" rx="29" ry="36"/>
+    </clipPath>
+  </defs>
+  <!-- tail feathers -->
+  <ellipse cx="83" cy="177" rx="9" ry="5" fill="#4E6E84" transform="rotate(-30 83 177)"/>
+  <ellipse cx="95" cy="180" rx="10" ry="5.5" fill="#6B8FA8" transform="rotate(-5 95 180)"/>
+  <ellipse cx="107" cy="177" rx="9" ry="5" fill="#4E6E84" transform="rotate(22 107 177)"/>
+  <!-- left wing -->
+  <ellipse cx="53" cy="118" rx="14" ry="29" fill="#4E6E84" transform="rotate(-10 53 118)"/>
+  <!-- right wing -->
+  <ellipse cx="149" cy="115" rx="11" ry="25" fill="#8AAFC4" transform="rotate(12 149 115)"/>
+  <!-- body -->
+  <ellipse cx="100" cy="126" rx="50" ry="51" fill="#6B8FA8"/>
+  <!-- belly -->
+  <ellipse cx="103" cy="130" rx="29" ry="36" fill="#F2E8D0"/>
+  <!-- belly bars -->
+  <g clip-path="url(#belly)">
+    <rect x="74" y="107" width="58" height="4" rx="2" fill="#C8AA82" opacity="0.6"/>
+    <rect x="74" y="119" width="58" height="4" rx="2" fill="#C8AA82" opacity="0.6"/>
+    <rect x="74" y="131" width="58" height="4" rx="2" fill="#C8AA82" opacity="0.6"/>
+    <rect x="74" y="143" width="58" height="4" rx="2" fill="#C8AA82" opacity="0.6"/>
+  </g>
+  <!-- neck -->
+  <ellipse cx="104" cy="96" rx="20" ry="13" fill="#6B8FA8"/>
+  <!-- head with raised crest -->
+  <circle cx="106" cy="68" r="32" fill="#6B8FA8"/>
+  <ellipse cx="106" cy="50" rx="24" ry="18" fill="#4E6E84"/>
+  <ellipse cx="92" cy="36" rx="5" ry="14" fill="#4E6E84" transform="rotate(-20 92 36)"/>
+  <ellipse cx="106" cy="33" rx="5" ry="15" fill="#4E6E84"/>
+  <ellipse cx="120" cy="36" rx="5" ry="14" fill="#4E6E84" transform="rotate(20 120 36)"/>
+  <!-- antenna -->
+  <path d="M 113 38 Q 117 22 114 9" stroke="#90AABB" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <circle cx="114" cy="8" r="5.5" fill="#E03040"/>
+  <circle cx="112" cy="6" r="2" fill="#F06878" opacity="0.7"/>
+  <!-- eyes wide -->
+  <circle cx="94" cy="65" r="12" fill="#F0C040"/>
+  <circle cx="94" cy="65" r="8.5" fill="#1E1810"/>
+  <circle cx="91" cy="62" r="2.5" fill="#FFFFFF"/>
+  <circle cx="117" cy="63" r="14" fill="#F0C040"/>
+  <circle cx="117" cy="63" r="10" fill="#1E1810"/>
+  <circle cx="113" cy="60" r="3" fill="#FFFFFF"/>
+  <!-- beak closed -->
+  <path d="M 128 73 L 145 78 L 128 83 Z" fill="#E89820"/>
+  <path d="M 128 73 L 145 78 L 136 75 Z" fill="#F0AA30" opacity="0.8"/>
+  <!-- exclamation badge -->
+  <circle cx="172" cy="45" r="15" fill="#E03040"/>
+  <rect x="170.5" y="36" width="3" height="9.5" rx="1.5" fill="#FFFFFF"/>
+  <circle cx="172" cy="50" r="2.5" fill="#FFFFFF"/>
+  <!-- feet -->
+  <g fill="#E89820">
+    <rect x="85" y="175" width="4.5" height="13" rx="2"/>
+    <rect x="79" y="186" width="5.5" height="3" rx="1.5"/>
+    <rect x="85" y="186" width="5.5" height="3" rx="1.5"/>
+    <rect x="91" y="186" width="5" height="3" rx="1.5"/>
+    <rect x="109" y="175" width="4.5" height="13" rx="2"/>
+    <rect x="103" y="186" width="5.5" height="3" rx="1.5"/>
+    <rect x="109" y="186" width="5.5" height="3" rx="1.5"/>
+    <rect x="115" y="186" width="5" height="3" rx="1.5"/>
+  </g></svg>

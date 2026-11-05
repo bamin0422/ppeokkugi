@@ -1,0 +1,831 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>뻐꾸기 서비스 소개서</title>
+<style>
+@font-face { font-family: Galmuri; src: url(assets/galmuri11_bold.ttf); font-weight: 700; }
+@font-face { font-family: GalmuriR; src: url(assets/galmuri11.ttf); }
+@page { size: 338.7mm 190.5mm; margin: 0; }
+:root {
+  --body: #121417; --panel: #1E2226; --sunk: #2A2F34; --line-d: #353B41;
+  --lcd: #C9D86A; --lcd-ink: #1A1F12; --sig: #FF6A1A; --tx: #FF3B30; --rx: #34C759;
+  --paper: #EDEBE4; --paper-2: #E2DFD5; --ink: #121417; --muted: #5C6168; --rule: #C9C5B9;
+  --d-ink: #ECEFF1; --d-muted: #A3ABB3;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: #777; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { font-family: Pretendard, sans-serif; color: var(--ink); word-break: keep-all; }
+section.page { width: 1280px; height: 720px; overflow: hidden; position: relative; break-after: page; page-break-after: always; }
+section.page:last-child { break-after: auto; page-break-after: auto; }
+.slide { width: 1920px; height: 1080px; transform: scale(0.666667); transform-origin: 0 0; position: relative; padding: 0 96px; overflow: hidden; }
+.light .slide { background: var(--paper); color: var(--ink); }
+.dark .slide { background: var(--body); color: var(--d-ink); }
+.pix { image-rendering: pixelated; }
+
+/* 머리: 태그 · 헤드라인 */
+.tag { position: absolute; top: 56px; right: 96px; font-family: GalmuriR; font-size: 18px; letter-spacing: .02em;
+  padding: 7px 14px 6px; border: 2px solid currentColor; }
+.light .tag { color: var(--ink); }
+.dark .tag { color: var(--lcd); }
+.tag b { font-family: Galmuri; color: var(--sig); }
+.kicker { position: absolute; top: 60px; left: 96px; font-family: GalmuriR; font-size: 18px; color: var(--muted); }
+.dark .kicker { color: var(--d-muted); }
+.kicker::before { content: ""; display: inline-block; width: 12px; height: 12px; background: var(--sig); margin-right: 10px; vertical-align: 0; }
+h1 { position: absolute; top: 112px; left: 96px; width: 1500px; font-family: Galmuri; font-weight: 700; font-size: 52px;
+  line-height: 1.32; letter-spacing: -.01em; }
+h1 em { font-style: normal; color: var(--sig); }
+.foot { position: absolute; left: 96px; right: 96px; bottom: 40px; display: flex; justify-content: space-between;
+  font-family: GalmuriR; font-size: 16px; color: var(--muted); }
+.dark .foot { color: #6B737B; }
+.content { position: absolute; left: 96px; right: 96px; top: 300px; bottom: 96px; }
+.lead { font-size: 27px; line-height: 1.6; }
+.cap { font-size: 17px; line-height: 1.5; color: var(--muted); }
+.dark .cap { color: var(--d-muted); }
+.note { font-size: 16px; line-height: 1.5; color: var(--muted); }
+sup { font-size: .55em; color: var(--sig); font-family: Pretendard; font-weight: 700; margin-left: 2px; }
+
+/* 차 화면 프레임: 대시보드에 박힌 디스플레이 */
+.dash { position: relative; background: #0A0B0D; padding: 16px; border-radius: 14px 14px 26px 26px;
+  box-shadow: 0 0 0 2px #2C3237, 0 18px 0 -6px #2A2F34, 0 24px 40px -18px rgba(0,0,0,.45); }
+.dash::after { content: ""; position: absolute; left: 50%; bottom: -30px; width: 22%; height: 12px; transform: translateX(-50%);
+  background: #2A2F34; border-radius: 0 0 10px 10px; }
+.dash img { display: block; width: 100%; }
+.shot { position: relative; }
+.co { position: absolute; width: 46px; height: 46px; transform: translate(-50%, -50%); background: var(--sig); color: var(--body);
+  font-family: Galmuri; font-size: 24px; line-height: 46px; text-align: center; border-radius: 50%; box-shadow: 0 0 0 4px var(--body); }
+.legend { list-style: none; display: grid; gap: 14px; }
+.legend li { display: grid; grid-template-columns: 40px 1fr; align-items: baseline; font-size: 24px; line-height: 1.4; }
+.legend li i { font-style: normal; font-family: Galmuri; width: 32px; height: 32px; line-height: 32px; text-align: center; font-size: 17px;
+  background: var(--sig); color: var(--body); border-radius: 50%; }
+.chip { display: inline-block; font-family: GalmuriR; font-size: 16px; padding: 4px 10px 3px; margin: 0 6px 6px 0;
+  background: var(--body); color: var(--lcd); }
+.assume { display: inline-block; font-family: Galmuri; font-size: 14px; padding: 2px 8px 1px; border: 2px solid var(--sig);
+  color: var(--sig); vertical-align: 3px; margin-left: 8px; }
+.lcd { background: var(--lcd); color: var(--lcd-ink); font-family: Galmuri; }
+
+/* 1 표지 */
+.cover .brand { position: absolute; top: 88px; left: 96px; display: flex; align-items: center; gap: 22px; }
+.cover .brand img { width: 96px; height: 96px; }
+.cover .brand b { font-family: Galmuri; font-size: 44px; }
+.cover .brand span { font-family: GalmuriR; font-size: 22px; color: var(--d-muted); margin-left: 6px; }
+.cover .one { position: absolute; left: 96px; top: 290px; width: 1728px; font-family: Galmuri; font-size: 100px; line-height: 1.22; letter-spacing: -.02em; }
+.cover .one em { font-style: normal; color: var(--sig); }
+.cover .sub { position: absolute; left: 96px; top: 600px; width: 1000px; font-size: 30px; line-height: 1.5; color: var(--d-ink); }
+.cover .radio { position: absolute; right: 96px; top: 640px; width: 470px; }
+.cover .lcdbar { padding: 22px 26px 20px; border: 10px solid #0A0B0D; box-shadow: 0 0 0 2px #2C3237; }
+.cover .lcdbar small { display: block; font-family: GalmuriR; font-size: 20px; color: #45502C; margin-bottom: 8px; }
+.cover .lcdbar div { font-size: 34px; line-height: 1.3; }
+.cover .bird { position: absolute; right: 590px; top: 620px; width: 192px; height: 192px; }
+.cover .meta { position: absolute; left: 96px; bottom: 88px; font-family: GalmuriR; font-size: 20px; color: var(--d-muted); }
+.cover .meta b { color: var(--lcd); font-family: Galmuri; font-weight: 700; }
+
+/* 2 요약 카드 */
+.cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.card { background: #F7F6F2; border-top: 6px solid var(--ink); padding: 36px 36px 30px; min-height: 420px; display: flex; flex-direction: column; }
+.card img { width: 128px; height: 128px; margin: -8px 0 10px -14px; }
+.card h3 { font-family: Galmuri; font-size: 36px; margin-bottom: 14px; }
+.card p { font-size: 25px; line-height: 1.55; flex: 1; }
+.card .sdk-row { margin-top: 22px; }
+
+/* 3 장면 */
+.convoy { width: 1728px; height: 330px; display: block; }
+.pains { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 46px; }
+.pain { display: grid; grid-template-columns: 72px 1fr; gap: 18px; align-items: start; border-top: 2px solid var(--line-d); padding-top: 22px; }
+.pain img { width: 64px; height: 64px; }
+.pain p { font-size: 24px; line-height: 1.5; }
+
+/* 4 숫자 */
+.nums { display: grid; grid-template-columns: repeat(12, 1fr); column-gap: 24px; }
+.num { grid-column: span 6; }
+.num.s { grid-column: span 4; }
+.num .v { font-family: Galmuri; font-size: 150px; line-height: 1; letter-spacing: -.03em; }
+.num.s .v { font-size: 120px; }
+.num .v small { font-size: .32em; margin-left: 10px; letter-spacing: 0; }
+.num .k { font-size: 25px; line-height: 1.45; margin-top: 14px; }
+.num .k b { font-weight: 700; }
+.band { grid-column: 1 / -1; height: 2px; background: var(--rule); margin: 40px 0 34px; position: relative; }
+.band span { position: absolute; left: 0; top: -14px; background: var(--paper); padding-right: 16px; font-family: GalmuriR; font-size: 18px; color: var(--muted); }
+.srcs { position: absolute; left: 0; right: 0; bottom: 0; font-size: 16px; line-height: 1.6; color: var(--muted); }
+
+/* 5 비교표 */
+table.cmp { width: 100%; border-collapse: collapse; }
+.cmp th, .cmp td { text-align: left; padding: 22px 26px; font-size: 24px; vertical-align: middle; }
+.cmp thead th { font-family: Galmuri; font-size: 26px; border-bottom: 3px solid var(--ink); padding-bottom: 18px; }
+.cmp tbody td { border-bottom: 1px solid var(--rule); }
+.cmp td:first-child { font-weight: 700; width: 30%; }
+.cmp .us { background: var(--sig); color: var(--body); }
+.cmp thead .us { background: var(--sig); }
+.cmp .mk { font-family: Galmuri; font-size: 30px; margin-right: 12px; display: inline-block; width: 30px; }
+.cmp td span.d { font-size: 19px; color: var(--muted); }
+.cmp .us span.d { color: var(--body); }
+
+/* 6 자동 콜 */
+.flow { display: grid; gap: 0; }
+.step { display: grid; grid-template-columns: 64px 1fr; gap: 20px; padding: 20px 0 26px; border-top: 2px solid var(--ink); position: relative; }
+.step .n { font-family: Galmuri; font-size: 40px; color: var(--sig); line-height: 1; }
+.step h3 { font-family: Galmuri; font-size: 28px; margin-bottom: 8px; }
+.step p { font-size: 23px; line-height: 1.5; }
+
+/* 7 투표 → 내비 */
+.pair { display: flex; align-items: center; gap: 40px; }
+.arrow { flex: none; width: 120px; height: 60px; }
+.seatrow { display: grid; grid-template-columns: 560px 1fr; gap: 48px; align-items: center; border-top: 2px solid var(--ink); padding-top: 30px; }
+.seatrow h3 { font-family: Galmuri; font-size: 30px; margin-bottom: 10px; }
+.seatrow p { font-size: 23px; line-height: 1.5; }
+
+/* 8 스토리보드 */
+.board { display: grid; grid-template-columns: repeat(6, 1fr); gap: 20px; }
+.cut .t { font-family: GalmuriR; font-size: 17px; color: var(--d-muted); height: 28px; }
+.cut .rail { height: 4px; background: var(--line-d); margin: 0 -20px 22px 0; position: relative; }
+.cut .rail::before { content: ""; position: absolute; left: 0; top: -8px; width: 20px; height: 20px; background: var(--sig); }
+.cut:last-child .rail { margin-right: 0; }
+.cut .frame { height: 190px; background: var(--panel); border: 2px solid var(--line-d); display: flex; align-items: center; justify-content: center; padding: 10px; }
+.cut .frame img { max-width: 100%; max-height: 100%; display: block; }
+.cut .num { font-family: Galmuri; color: var(--sig); font-size: 22px; margin-top: 22px; }
+.cut h3 { font-family: Galmuri; font-size: 27px; margin: 6px 0 10px; }
+.cut p { font-size: 20px; line-height: 1.5; color: var(--d-ink); }
+
+/* 9 SDK */
+.sdk .ln { fill: none; stroke: #A9A596; stroke-width: 2.5; }
+.sdk .ln.hot { stroke: var(--sig); stroke-width: 3; }
+.sdk .sbox { fill: var(--body); }
+.sdk .sbox.hot { fill: var(--body); stroke: var(--sig); stroke-width: 4; }
+.sdk .sn { font-family: Galmuri; font-size: 25px; fill: var(--d-ink); }
+.sdk .sv { font-family: GalmuriR; font-size: 17px; fill: var(--lcd); }
+.sdk .sd { font-family: Pretendard; font-size: 16px; fill: var(--d-muted); }
+.sdk .fbox { fill: #F7F6F2; stroke: var(--ink); stroke-width: 2; }
+.sdk .fn { font-family: Galmuri; font-size: 21px; fill: var(--ink); }
+.sdk .fd { font-family: Pretendard; font-size: 16px; fill: var(--muted); }
+.arch { background: var(--body); color: var(--d-ink); padding: 30px 30px 26px; }
+.arch h3 { font-family: Galmuri; font-size: 24px; margin-bottom: 20px; color: var(--lcd); }
+.node { border: 2px solid var(--line-d); padding: 12px 16px; font-size: 20px; line-height: 1.35; }
+.node b { font-family: Galmuri; font-weight: 700; display: block; font-size: 20px; }
+.node.hub { border-color: var(--sig); }
+.wire { text-align: center; font-family: GalmuriR; font-size: 15px; color: var(--d-muted); padding: 8px 0; }
+.arch ul { margin-top: 18px; padding-left: 20px; font-size: 18px; line-height: 1.55; color: var(--d-muted); }
+
+/* 10 검증 */
+.big2 .v { font-family: Galmuri; font-size: 150px; line-height: 1; }
+.big2 .v small { font-size: 40px; margin-left: 8px; }
+.big2 .k { font-size: 25px; margin: 8px 0 40px; }
+table.chk { width: 100%; border-collapse: collapse; }
+.chk th { font-family: Galmuri; font-size: 21px; text-align: left; padding: 0 18px 14px; border-bottom: 3px solid var(--ink); }
+.chk td { font-size: 21px; padding: 15px 18px; border-bottom: 1px solid var(--rule); line-height: 1.4; vertical-align: top; }
+.ok, .todo, .na { display: inline-block; font-family: Galmuri; font-size: 16px; padding: 3px 9px 2px; margin-right: 8px; vertical-align: 2px; }
+.ok { background: var(--lcd); color: var(--lcd-ink); }
+.todo { border: 2px solid var(--sig); color: var(--sig); padding: 1px 7px 0; }
+.na { background: var(--paper-2); color: var(--muted); }
+
+/* 11 페르소나 · 재방문 */
+.persona { background: #F7F6F2; padding: 28px 30px 26px; border-top: 6px solid var(--ink); }
+.persona .hd { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.persona img { width: 64px; height: 64px; }
+.persona h3 { font-family: Galmuri; font-size: 28px; }
+.persona dl { display: grid; grid-template-columns: 76px 1fr; row-gap: 8px; font-size: 21px; line-height: 1.45; }
+.persona dt { font-family: GalmuriR; font-size: 16px; color: var(--muted); padding-top: 4px; }
+.year { position: relative; height: 128px; margin-top: 10px; }
+.year .axis { position: absolute; left: 0; right: 0; top: 64px; height: 2px; background: var(--ink); }
+.year .m { position: absolute; top: 76px; font-family: GalmuriR; font-size: 15px; color: var(--muted); transform: translateX(-50%); }
+.year .ev { position: absolute; top: 14px; height: 40px; background: var(--sig); color: var(--body); font-family: Galmuri; font-size: 18px; line-height: 40px; padding: 0 10px; white-space: nowrap; }
+.year .camp { position: absolute; top: 56px; width: 18px; height: 18px; background: var(--lcd); border: 2px solid var(--ink); transform: translateX(-50%); }
+
+/* 12 MAU */
+.funnel { display: grid; gap: 12px; }
+.fbar { display: grid; grid-template-columns: 1fr 160px; align-items: center; gap: 18px; }
+.fbar .b { height: 66px; background: var(--body); color: var(--d-ink); display: flex; align-items: center; padding: 0 20px; font-size: 21px; white-space: nowrap; overflow: hidden; }
+.fbar .b b { font-family: Galmuri; color: var(--lcd); margin-right: 12px; font-size: 22px; }
+.fbar .r { font-family: Galmuri; font-size: 26px; text-align: right; }
+.fbar.res .b { background: var(--sig); color: var(--body); }
+.fbar.res .b b { color: var(--body); }
+.formula { font-family: Galmuri; font-size: 25px; background: var(--body); color: var(--lcd); padding: 18px 24px; margin-bottom: 26px; }
+table.sc { width: 100%; border-collapse: collapse; }
+.sc th, .sc td { padding: 12px 14px; font-size: 21px; text-align: right; border-bottom: 1px solid var(--rule); }
+.sc th { font-family: Galmuri; font-size: 21px; border-bottom: 3px solid var(--ink); }
+.sc td:first-child, .sc th:first-child { text-align: left; }
+.sc .base { background: #F7F6F2; }
+.sc tr.res td { font-family: Galmuri; font-size: 30px; border-bottom: none; padding-top: 18px; }
+.sc tr.res td.base { color: var(--sig); }
+
+/* 13 로드맵 · 원칙 */
+.road { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; }
+.stage { border-top: 6px solid var(--rule); padding: 22px 26px 0 0; position: relative; }
+.stage.now { border-top-color: var(--sig); }
+.stage .when { font-family: GalmuriR; font-size: 17px; color: var(--muted); }
+.stage h3 { font-family: Galmuri; font-size: 28px; margin: 8px 0 14px; }
+.stage ul { list-style: none; font-size: 21px; line-height: 1.5; }
+.stage li { padding-left: 18px; position: relative; margin-bottom: 8px; }
+.stage li::before { content: ""; position: absolute; left: 0; top: 13px; width: 8px; height: 8px; background: var(--ink); }
+.rules { background: var(--body); color: var(--d-ink); padding: 34px 34px 30px; }
+.rules h3 { font-family: Galmuri; font-size: 26px; color: var(--lcd); margin-bottom: 18px; }
+.rules ol { list-style: none; counter-reset: r; }
+.rules li { counter-increment: r; display: grid; grid-template-columns: 40px 1fr; font-size: 21px; line-height: 1.45; padding: 11px 0; border-top: 1px solid var(--line-d); }
+.rules li::before { content: counter(r, decimal-leading-zero); font-family: Galmuri; font-size: 17px; color: var(--sig); padding-top: 3px; }
+
+/* 14 마스코트 */
+.sprites { display: grid; grid-template-columns: repeat(8, 1fr); gap: 14px 10px; }
+.sp { text-align: center; }
+.sp img { width: 128px; height: 128px; background: var(--panel); display: block; margin: 0 auto 8px; }
+.sp span { font-family: GalmuriR; font-size: 16px; color: var(--d-muted); }
+.dnotes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.dnotes div { border-top: 2px solid var(--line-d); padding-top: 18px; font-size: 22px; line-height: 1.5; }
+.dnotes b { display: block; font-family: Galmuri; font-size: 24px; color: var(--lcd); margin-bottom: 6px; font-weight: 700; }
+
+/* 15 부록 */
+table.prior { width: 100%; border-collapse: collapse; }
+.prior th { font-family: Galmuri; font-size: 21px; text-align: left; padding: 0 18px 14px; border-bottom: 3px solid var(--ink); }
+.prior td { font-size: 20px; line-height: 1.45; padding: 16px 18px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+.prior td:first-child { font-weight: 700; white-space: nowrap; }
+.prior tr.new td:last-child { background: #F7F6F2; box-shadow: inset 6px 0 0 var(--sig); }
+
+/* v2: 일행 덱 추가 부품 */
+.phone { background: #0A0B0D; padding: 14px; border-radius: 34px; box-shadow: 0 0 0 2px #2C3237, 0 24px 40px -18px rgba(0,0,0,.45); }
+.phone img { display: block; width: 100%; border-radius: 22px; }
+.knows { width: 100%; border-collapse: collapse; }
+.knows th { font-family: Galmuri; font-size: 22px; text-align: left; padding: 0 22px 14px; border-bottom: 3px solid var(--ink); }
+.knows td { font-size: 24px; padding: 18px 22px; border-bottom: 1px solid var(--rule); vertical-align: middle; }
+.knows td.k { font-weight: 700; width: 30%; }
+.knows td.ar { width: 60px; font-family: Galmuri; color: var(--sig); font-size: 28px; padding: 0; text-align: center; }
+.knows td.sdk { width: 220px; text-align: right; }
+.knows td.sdk .chip { margin: 0; }
+.vs { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 30px; }
+.vs div { border-left: 4px solid var(--rule); padding: 4px 0 4px 18px; font-size: 21px; line-height: 1.5; color: var(--muted); }
+.vs b { color: var(--ink); font-weight: 700; }
+.lbl { font-family: Galmuri; font-size: 24px; margin-bottom: 16px; display: flex; align-items: center; gap: 12px; }
+.lbl::before { content: ""; width: 14px; height: 14px; background: var(--sig); }
+.vstack { display: grid; gap: 18px; }
+.down { width: 60px; height: 50px; margin: 0 auto; display: block; }
+.board7 { display: grid; grid-template-columns: repeat(7, 1fr); gap: 16px; }
+.board7 .cut .rail { margin-right: -16px; }
+.board7 .cut:last-child .rail { margin-right: 0; }
+.board7 .cut h3 { font-size: 25px; }
+.board7 .cut p { font-size: 19px; }
+.board7 .cut .t { font-size: 16px; }
+.grow { display: grid; grid-template-columns: 300px 90px 1fr; align-items: center; }
+.host { background: var(--body); color: var(--d-ink); padding: 22px 24px; }
+.host b { display: block; font-family: Galmuri; font-size: 26px; color: var(--lcd); margin-bottom: 6px; }
+.host span { font-size: 19px; color: var(--d-muted); }
+.invite { text-align: center; font-family: Galmuri; font-size: 18px; color: var(--sig); }
+.members { display: grid; gap: 12px; }
+.mem { display: flex; align-items: center; gap: 14px; background: #F7F6F2; border-left: 6px solid var(--ink); padding: 12px 18px; font-size: 21px; }
+.mem i { font-style: normal; font-family: Galmuri; font-size: 18px; width: 34px; height: 34px; line-height: 34px; text-align: center; color: var(--body); }
+.mem.ph { border-left-color: var(--sig); }
+.prow { display: grid; grid-template-columns: 64px 1fr; gap: 16px; align-items: center; padding: 14px 0; border-top: 2px solid var(--ink); }
+.prow img { width: 64px; height: 64px; }
+.prow h3 { font-family: Galmuri; font-size: 23px; margin-bottom: 4px; }
+.prow p { font-size: 19px; line-height: 1.45; color: var(--muted); }
+.who { font-family: Galmuri; font-size: 14px; padding: 2px 8px 1px; margin-left: 8px; vertical-align: 4px; background: var(--lcd); color: var(--lcd-ink); }
+.who.car { background: var(--sig); color: var(--body); }
+.stat { display: inline-block; font-family: Galmuri; font-size: 15px; padding: 3px 10px 2px; margin: -4px 0 14px; }
+.ok-s { background: var(--lcd); color: var(--lcd-ink); }
+.todo-s { border: 2px solid var(--sig); color: var(--sig); padding: 1px 8px 0; }
+.persona dl { grid-template-columns: 96px 1fr; }
+.year .ev.alt { background: var(--body); color: var(--lcd); }
+
+/* v4: 명사형 개조식 부품 */
+.srr { display: grid; gap: 0; }
+.srr div { display: grid; grid-template-columns: 120px 1fr; gap: 18px; padding: 18px 0 20px; border-top: 2px solid var(--ink); font-size: 23px; line-height: 1.45; }
+.srr div:last-child { border-bottom: 2px solid var(--ink); }
+.srr b { font-family: Galmuri; font-weight: 700; font-size: 20px; padding-top: 3px; }
+.srr div.me b { color: var(--sig); }
+.srr div.res { background: #F7F6F2; }
+.bul { list-style: none; }
+.bul li { position: relative; padding-left: 26px; font-size: 23px; line-height: 1.45; margin-bottom: 12px; }
+.bul li::before { content: ""; position: absolute; left: 2px; top: 13px; width: 10px; height: 10px; background: var(--sig); }
+.dark .bul li::before { background: var(--lcd); }
+.tri { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.tri > div { background: #F7F6F2; border-top: 6px solid var(--ink); padding: 26px 28px 20px; }
+.tri h3 { font-family: Galmuri; font-size: 28px; margin-bottom: 18px; }
+.tri h3 small { font-family: GalmuriR; font-size: 16px; color: var(--muted); margin-left: 8px; }
+.tri .bul li { font-size: 21px; }
+.fact { display: grid; grid-template-columns: auto 1fr; gap: 22px; align-items: end; padding: 16px 0 18px; border-top: 2px solid var(--ink); }
+.fact .v { font-family: Galmuri; font-size: 96px; line-height: .9; }
+.fact .v small { font-size: 32px; margin-left: 6px; }
+.fact .k { font-size: 21px; line-height: 1.45; padding-bottom: 6px; }
+.fact .k b { display: block; font-family: Galmuri; font-size: 22px; margin-bottom: 4px; }
+.risk li::before { background: var(--tx) !important; }
+/* v5: 전 → 후 앵커 */
+.ba { display: grid; grid-template-columns: 1fr 90px 1fr; align-items: stretch; margin-bottom: 36px; }
+.ba .bf, .ba .af { padding: 18px 26px 16px; font-family: Galmuri; font-size: 34px; line-height: 1.2; display: flex; flex-direction: column; justify-content: center; }
+.ba .bf { background: var(--paper-2); color: var(--muted); }
+.ba .af { background: var(--sig); color: var(--body); }
+.ba small { font-family: GalmuriR; font-size: 15px; margin-bottom: 6px; letter-spacing: .04em; }
+.ba .bf small { color: var(--muted); } .ba .af small { color: var(--body); }
+.ba .ar2 { display: flex; align-items: center; justify-content: center; font-family: Galmuri; font-size: 44px; color: var(--sig); }
+.purpose { font-family: Galmuri; font-size: 84px; line-height: 1.25; letter-spacing: -.02em; }
+.purpose em { font-style: normal; color: var(--sig); }
+.pairs { display: grid; gap: 10px; }
+.pairs div { display: grid; grid-template-columns: 1fr 50px 1fr; align-items: center; font-size: 22px; }
+.pairs .b1 { color: var(--muted); text-decoration: line-through; text-decoration-color: rgba(92,97,104,.5); }
+.pairs .a1 { font-family: Galmuri; font-size: 22px; color: var(--ink); }
+.pairs i { font-style: normal; color: var(--sig); font-family: Galmuri; text-align: center; }
+table.eff { width: 100%; border-collapse: collapse; }
+.eff th { font-family: Galmuri; font-size: 20px; text-align: left; padding: 0 16px 12px; border-bottom: 3px solid var(--ink); }
+.eff td { font-size: 21px; padding: 12px 16px; border-bottom: 1px solid var(--rule); line-height: 1.35; }
+.eff td:first-child { font-family: Galmuri; font-size: 19px; width: 150px; white-space: nowrap; }
+.eff td.now { color: var(--muted); }
+.eff td.aft { font-weight: 700; }
+.dark .eff th { border-bottom-color: var(--d-ink); }
+.dark .eff td { border-bottom-color: var(--line-d); font-size: 20px; }
+.dark .eff td.now { color: var(--d-muted); }
+.dark .eff td.aft { color: var(--lcd); }
+</style>
+</head>
+<body>
+
+<!-- 1 -->
+<section class="page dark cover"><div class="slide">
+  <div class="tag">양식 1 · <b>앱 한 줄 소개</b></div>
+  <div class="brand"><img class="pix" src="assets/icon.png" alt=""><b>뻐꾸기</b><span>Cuckoo</span></div>
+  <h1 class="one">버튼 한 번,<br>일행 차·버스 <em>동시 무전</em></h1>
+  <p class="sub">운전 중에도 일행 전체와 끊기지 않는 연락<br>Pleos 차량용 단체 무전 앱</p>
+  <div class="radio">
+    <div class="lcdbar lcd"><small>RX ▶ 2호차 운전석</small><div>다음 휴게소에서<br>쉬어요</div></div>
+  </div>
+  <img class="bird pix" src="assets/cuckoo_tx.png" alt="">
+  <div class="meta"><b>현대자동차그룹 차량용 앱 개발 공모전</b> 출품 · 서비스 소개서 · 2026. 11.</div>
+</div></section>
+
+<!-- 2 -->
+<section class="page light"><div class="slide">
+  <div class="kicker">목적</div>
+  <div class="tag">양식 1 · <b>한 줄 소개</b></div>
+  <h1>끊기지 않는 <em>일행 연락</em></h1>
+  <div class="content" style="top:260px;display:grid;grid-template-columns:1fr 720px;gap:72px;align-items:start">
+    <div>
+      <p class="purpose">운전 중에도<br>일행 전체와<br><em>끊기지 않는 연락</em></p>
+      <div class="srr" style="margin-top:44px">
+        <div><b>누구</b><span>여러 대로 움직이는 운전자·인솔자·운수사 관제</span></div>
+        <div><b>왜</b><span>운전 중 통화·단톡은 위험, 전화는 한 번에 한 대</span></div>
+        <div class="me"><b>어떻게</b><span>차량 마이크·스피커·신호로 버튼 1번 단체 무전</span></div>
+      </div>
+    </div>
+    <div>
+      <div class="lbl">바뀌는 다섯 가지</div>
+      <div class="pairs" style="gap:22px">
+        <div><span class="b1">전화 3통</span><i>→</i><span class="a1">버튼 1번</span></div>
+        <div><span class="b1">단톡 확인 불가</span><i>→</i><span class="a1">스피커 음성 전달</span></div>
+        <div><span class="b1">앞차 급제동 늦은 인지</span><i>→</i><span class="a1">자동 무전</span></div>
+        <div><span class="b1">"어디야?" 반복 확인</span><i>→</i><span class="a1">위치·도착 자동 보고</span></div>
+        <div><span class="b1">휴게소 제각각 결정</span><i>→</i><span class="a1">투표 후 전 차량 경유지</span></div>
+      </div>
+      <img class="pix" src="assets/cuckoo_rx.png" alt="" style="width:128px;height:128px;margin-top:40px">
+    </div>
+  </div>
+  <div class="foot"><span>뻐꾸기 · 서비스 소개서</span><span>2</span></div>
+</div></section>
+
+<!-- 3 -->
+<section class="page dark"><div class="slide">
+  <div class="kicker">기획 배경 · 문제</div>
+  <div class="tag">양식 2 · <b>창의성</b></div>
+  <h1>연락 <em>단절의 비용</em></h1>
+  <div class="content" style="top:240px">
+    <svg class="convoy" viewBox="0 0 1728 360" style="height:340px">
+      <rect x="0" y="130" width="1728" height="110" fill="#1E2226"/>
+      <path d="M560 240 L700 360 H800 L660 240Z" fill="#1E2226"/>
+      <g fill="#353B41"><rect x="20" y="182" width="60" height="6"/><rect x="140" y="182" width="60" height="6"/><rect x="260" y="182" width="60" height="6"/><rect x="380" y="182" width="60" height="6"/><rect x="500" y="182" width="60" height="6"/><rect x="620" y="182" width="60" height="6"/><rect x="740" y="182" width="60" height="6"/><rect x="860" y="182" width="60" height="6"/><rect x="980" y="182" width="60" height="6"/><rect x="1100" y="182" width="60" height="6"/><rect x="1220" y="182" width="60" height="6"/><rect x="1340" y="182" width="60" height="6"/><rect x="1460" y="182" width="60" height="6"/><rect x="1580" y="182" width="60" height="6"/></g>
+      <g font-family="Galmuri" font-size="24">
+        <g transform="translate(60,155)"><rect width="150" height="60" fill="#A3ABB3"/><rect x="104" y="8" width="30" height="44" fill="#1E2226"/><rect x="-14" y="14" width="40" height="32" fill="#34C759"/><text x="-1" y="39" fill="#121417">4</text></g>
+        <g transform="translate(650,246) rotate(22)"><rect width="150" height="60" fill="#A3ABB3"/><rect x="104" y="8" width="30" height="44" fill="#1E2226"/><rect x="-14" y="14" width="40" height="32" fill="#5AA0E6"/><text x="-1" y="39" fill="#121417">3</text></g>
+        <g transform="translate(1000,155)"><rect width="150" height="60" fill="#A3ABB3"/><rect x="104" y="8" width="30" height="44" fill="#1E2226"/><rect x="-14" y="14" width="40" height="32" fill="#FF6B5E"/><text x="-1" y="39" fill="#121417">2</text></g>
+        <g transform="translate(1460,155)"><rect width="150" height="60" fill="#ECEFF1"/><rect x="104" y="8" width="30" height="44" fill="#1E2226"/><rect x="-10" y="4" width="10" height="14" fill="#FF3B30"/><rect x="-10" y="42" width="10" height="14" fill="#FF3B30"/><rect x="-14" y="14" width="40" height="32" fill="#E88E7D"/><text x="-1" y="39" fill="#121417">1</text></g>
+      </g>
+      <g font-family="Galmuri" font-size="22">
+        <rect x="20" y="20" width="300" height="52" fill="#ECEFF1"/><polygon points="120,72 140,72 130,92" fill="#ECEFF1"/><text x="40" y="54" fill="#121417">4호차: "어디야?" 전화</text>
+        <rect x="830" y="270" width="330" height="52" fill="#ECEFF1"/><text x="850" y="304" fill="#121417">3호차: 엇갈린 휴게소</text>
+        <rect x="920" y="20" width="330" height="52" fill="#ECEFF1"/><polygon points="1060,72 1080,72 1070,92" fill="#ECEFF1"/><text x="940" y="54" fill="#121417">2호차: 단톡 확인 불가</text>
+        <rect x="1390" y="20" width="318" height="52" fill="#FF3B30"/><polygon points="1520,72 1540,72 1530,92" fill="#FF3B30"/><text x="1410" y="54" fill="#121417">1호차: 급제동, 전달 불가</text>
+      </g>
+    </svg>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:56px;margin-top:26px">
+      <div><div class="lbl">원인</div><ul class="bul">
+        <li>운전 중 통화·단톡 확인의 위험</li>
+        <li>전화 한 통에 한 대씩만 연결</li>
+        <li>버스는 대열운행 단속 대상, 시야 밖 간격 필수<sup>1</sup></li></ul></div>
+      <div><div class="lbl">비용</div><ul class="bul">
+        <li>엇갈린 길·휴게소, 기다림</li>
+        <li>"어디야?" 반복 전화</li>
+        <li>앞차 급제동의 늦은 인지</li></ul></div>
+    </div>
+    <p class="note" style="margin-top:6px">가족 귀성길 차량, 수학여행·단체 버스, 운수사 차량 공통. 1 대학저널(연합뉴스 인용) 2016. 5. 22. 경찰청: 학생 버스 대열운행 미방지 운송사업자 1차 30일·2차 60일·3차 이상 90일 영업정지 추진. 현재 기준 확인 필요.</p>
+  </div>
+  <div class="foot"><span>뻐꾸기 · 서비스 소개서</span><span>3</span></div>
+</div></section>
+
+<!-- 4 -->
+<section class="page light"><div class="slide">
+  <div class="kicker">왜 차량 앱인가</div>
+  <div class="tag">양식 3 · <b>차량특화성</b></div>
+  <h1>차량 앱이어야 하는 <em>이유</em></h1>
+  <div class="content" style="top:260px">
+    <table class="knows">
+      <thead><tr><th>차량 자원</th><th></th><th>연락이 이어지는 방식</th><th style="text-align:right">SDK</th></tr></thead>
+      <tbody>
+        <tr><td class="k">차량 마이크 · 음성 인식</td><td class="ar">→</td><td>휴대폰 없이 말하기, 받아쓴 글 전송</td><td class="sdk"><span class="chip">SpeechToText</span></td></tr>
+        <tr><td class="k">차량 스피커 · 좌석 오디오 존</td><td class="ar">→</td><td>화면 확인 없이 듣기, 어른·키즈 채널 분리</td><td class="sdk"><span class="chip">TextToSpeech</span></td></tr>
+        <tr><td class="k">브레이크 · 좌석·벨트 · 기어</td><td class="ar">→</td><td>사람이 말 못 하는 순간의 차량 자동 무전</td><td class="sdk"><span class="chip">Vehicle</span></td></tr>
+        <tr><td class="k">위치 · 순정 내비</td><td class="ar">→</td><td>서로의 거리 공유, 정한 휴게소의 경유지 등록</td><td class="sdk"><span class="chip">FusedLocation</span> <span class="chip">NaviHelper</span></td></tr>
+      </tbody>
+    </table>
+    <div class="vs">
+      <div><b>휴대폰 그룹 주행 앱</b> · 운전 중 휴대폰 조작 필요, 차량 신호 없음</div>
+      <div><b>V2X·C-ITS</b> · 반경 내 전체 차량 대상, 일행 간 대화 채널 없음</div>
+    </div>
+    <p class="note" style="margin-top:16px">말하기는 화면 버튼 1번, 듣기는 손 사용 없음. 핸들 버튼·호출어 미지원. 버스의 Pleos 탑재 여부 미확인. 선행 사례 미확인: 차량 간 좌석 채널, 다차량 점호(국내 특허 미조사).</p>
+  </div>
+  <div class="foot"><span>뻐꾸기 · 서비스 소개서</span><span>4</span></div>
+</div></section>
+
+<!-- 5 -->
+<section class="page light"><div class="slide">
+  <div class="kicker">기능 1 · 단체 무전</div>
+  <div class="tag">양식 3 · <b>차량특화성</b></div>
+  <h1>전화 3통 대신 <em>버튼 1번</em></h1>
+  <div class="content" style="top:250px">
+    <div class="ba"><div class="bf"><small>지금</small>전화 3통, 한 번에 한 대</div><div class="ar2">→</div><div class="af"><small>뻐꾸기</small>버튼 1번, 전 차량 동시</div></div>
+    <div style="display:grid;grid-template-columns:1fr 860px;gap:56px;align-items:start">
+      <ul class="bul" style="margin-top:6px">
+        <li>무전 버튼 누르고 말하기</li>
+        <li>받아쓴 글의 전 차량 전송</li>
+        <li>받는 차의 "2호차 운전석" 표시·음성</li>
+        <li>음성 원본 차외 미전송</li>
+      </ul>
+      <div class="vstack" style="gap:12px">
+        <div class="dash"><div class="shot"><img src="assets/ptt.png" alt="송신 화면"><span class="co" style="left:1%;top:50%">1</span></div></div>
+        <div class="dash"><div class="shot"><img src="assets/rx-cards.png" alt="수신 카드"><span class="co" style="left:1%;top:25%">2</span><span class="co" style="left:1%;top:77%">2</span></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>뻐꾸기 · 서비스 소개서</span><span>5</span></div>
+</div></section>
+
+<!-- 6 -->
+<section class="page light"><div class="slide">
+  <div class="kicker">기능 2 · 음성 수신 · 좌석 채널 · 휴대폰 참여</div>
+  <div class="tag">양식 3 · <b>차량특화성</b></div>
+  <h1>단톡 대신 <em>스피커 음성</em></h1>
+  <div class="content" style="top:250px">
+    <div class="ba"><div class="bf"><small>지금</small>운전 중 단톡 확인 불가</div><div class="ar2">→</div><div class="af"><small>뻐꾸기</small>스피커 음성 전달</div></div>
+    <div style="display:grid;grid-template-columns:560px 1fr 340px;gap:48px;align-items:start">
+      <div class="dash"><div class="shot"><img src="assets/seat.png" alt="채널·좌석 스피커 설정">
+        <span class="co" style="left:58%;top:13.5%">1</span><span class="co" style="left:72%;top:90%">2</span></div></div>
+      <div>
+        <ul class="legend"><li><i>1</i>전체·어른·키즈 채널 선택</li><li><i>2</i>키즈 채널의 뒷좌석 스피커 출력</li></ul>
+        <ul class="bul" style="margin:22px 0 0">
+          <li>운전석: 안내 음성만</li>
+          <li>뒷좌석: 다른 차 사촌과 대화</li>
+          <li>Pleos 미탑재 차·버스 인솔자: 휴대폰 웹 참여</li>
+        </ul>
+      </div>
+      <div class="phone"><img src="assets/phone.png" alt="휴대폰 참여 화면"></div>
+    </div>
+  </div>
+  <div class="foot"><span>뻐꾸기 · 서비스 소개서</span><span>6</span></div>
+</div></section>
+
+<!-- 7 -->
+<section class="page light"><div class="slide">
+  <div class="kicker">기능 3 · 자동 콜</div>
+  <div class="tag">양식 3 · <b>차량특화성</b></div>
+  <h1>앞차 급제동 <em>자동 무전</em></h1>
+  <div class="content" style="top:250px">
+    <div class="ba"><div class="bf"><small>지금</small>앞차 급제동 늦은 인지</div><div class="ar2">→</div><div class="af"><small>뻐꾸기</small>차량의 자동 무전</div></div>
+    <div style="display:grid;grid-template-columns:1fr 1040px;gap:48px;align-items:start">
+      <ul class="bul" style="margin-top:6px">
+        <li>2초 내 15km/h 이상 감속: 급제동</li>
+        <li>와이퍼 켜짐: 비</li>
+        <li>2km 이상 벌어짐: 처짐(꼬리 콜)</li>
+        <li>에어백: 긴급 콜</li>
+        <li style="color:var(--muted);font-size:19px">서버 경유 1초 안팎 지연, 안전장치 아닌 사전 안내</li>
+      </ul>
+      <div>
+        <div class="dash"><div class="shot"><img src="assets/brake.png" alt="급제동 무전 화면">
+          <span class="co" style="left:17.6%;top:9.5%">1</span><span class="co" style="left:39.6%;top:84.3%">2</span><span class="co" style="left:39.6%;top:50%">3</span></div></div>
+        <ul class="legend" style="margin-top:50px;grid-template-columns:repeat(3,1fr);gap:16px">
+          <li><i>1</i>급제동 지점 핀</li><li><i>2</i>거리 포함 음성</li><li><i>3</i>처짐 거리 선두 전달</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>뻐꾸기 · 서비스 소개서</span><span>7</span></div>
+</div></section>
+
+<!-- 8 -->
+<section class="page light"><div class="slide">
+  <div class="kicker">기능 4 · 위치 · 점호 · 도착</div>
+  <div class="tag">양식 3 · <b>차량특화성</b></div>
+  <h1>위치·도착 <em>자동 보고</em></h1>
+  <div class="content" style="top:250px">
+    <div class="ba"><div class="bf"><small>지금</small>"어디야?" 반복 확인</div><div class="ar2">→</div><div class="af"><small>뻐꾸기</small>위치·도착 자동 보고</div></div>
+    <div style="display:grid;grid-template-columns:380px 1fr;gap:56px;align-items:start">
+      <div class="dash"><div class="shot"><img src="assets/drv-map.png" alt="일행 지도와 차량 목록"></div></div>
+      <div>
+        <div class="dash" style="width:860px"><div class="shot"><img src="assets/arrive2.png" alt="도착 무전 카드"></div></div>
+        <ul class="bul" style="margin-top:44px">
+          <li>지도·목록의 차량별 거리, 5분 주기 위치 음성 요약</li>
+          <li>기어 D 진입 시 차량별 인원·벨트 점호 보고</li>
+          <li>휴게소 400m 내 정차 시 도착 보고, 전원 도착 시 깃발 색 깜빡임</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>뻐꾸기 · 서비스 소개서</span><span>8</span></div>
+</div></section>
+
+<!-- 9 -->
+<section class="page light"><div class="slide">
+  <div class="kicker">기능 5 · 쉬어 가 · 대장 콜</div>
+  <div class="tag">양식 3 · <b>차량특화성</b></div>
+  <h1>투표 한 번, <em>전 차량 경유지</em></h1>
+  <div class="content" style="top:250px">
+    <div class="ba"><div class="bf"><small>지금</small>휴게소 제각각 결정</div><div class="ar2">→</div><div class="af"><small>뻐꾸기</small>투표 후 전 차량 경유지</div></div>
+    <div class="pair">
+      <div style="width:880px"><div class="dash"><div class="shot"><img src="assets/vote.png" alt="휴게소 투표 화면">
+        <span class="co" style="left:84%;top:18%">1</span><span class="co" style="left:29%;top:50%">2</span></div></div></div>
+      <svg class="arrow" viewBox="0 0 120 60"><path d="M0 24 H80 V6 L118 30 L80 54 V36 H0Z" fill="#FF6A1A"/></svg>
+      <div style="width:520px"><div class="dash"><div class="shot"><img src="assets/navi-eta.png" alt="순정 내비 경로 화면">
+        <span class="co" style="left:36%;top:40%">3</span></div></div></div>
+    </div>
+    <ul class="legend" style="margin-top:46px;grid-template-columns:repeat(3,1fr);gap:24px">
+      <li><i>1</i>후보 3곳·남은 시간</li><li><i>2</i>번호·"1번" 음성 투표</li><li><i>3</i>순정 내비 경로 반영, 선두 경로 공유(대장 콜)</li>
+    </ul>
+  </div>
+  <div class="foot"><span>뻐꾸기 · 서비스 소개서</span><span>9</span></div>
+</div></section>
+
+<!-- 10 -->
+<section class="page dark"><div class="slide">
+  <div class="kicker">사용 시나리오 · 시연</div>
+  <div class="tag">양식 4 · <b>시연 시나리오</b></div>
+  <h1>귀성길 친척 차 4대 <em>무전 기록</em></h1>
+  <div class="content" style="top:270px">
+    <div class="board board7">
+      <div class="cut"><div class="t">출발 전</div><div class="rail"></div><div class="frame"><img src="assets/rollcall.png" alt=""></div>
+        <div class="num">01 <span class="who car">차</span></div><h3>점호 보고</h3><p>4호차 4명 벨트 완료</p></div>
+      <div class="cut"><div class="t">출발</div><div class="rail"></div><div class="frame"><img src="assets/talk-1.png" alt=""></div>
+        <div class="num">02 <span class="who">사람</span></div><h3>운전석 무전</h3><p>2호차 "천천히 갑시다"</p></div>
+      <div class="cut"><div class="t">빗길</div><div class="rail"></div><div class="frame"><img src="assets/brake-card.png" alt=""></div>
+        <div class="num">03 <span class="who car">차</span></div><h3>급제동 콜</h3><p>2호차 급제동, 거리 포함 안내</p></div>
+      <div class="cut"><div class="t">주행</div><div class="rail"></div><div class="frame"><img src="assets/tail-1.png" alt=""></div>
+        <div class="num">04 <span class="who car">차</span></div><h3>꼬리 콜</h3><p>후미 3.2km 처짐, 선두 전달</p></div>
+      <div class="cut"><div class="t">"화장실!"</div><div class="rail"></div><div class="frame"><img src="assets/vote-cards.png" alt=""></div>
+        <div class="num">05 <span class="who">사람</span></div><h3>휴게소 투표</h3><p>"3번" 응답, 경유지 등록</p></div>
+      <div class="cut"><div class="t">휴게소 가는 길</div><div class="rail"></div><div class="frame"><img src="assets/kids-row.png" alt=""></div>
+        <div class="num">06 <span class="who">사람</span></div><h3>키즈 채널</h3><p>뒷좌석끼리 차량 간 대화</p></div>
+      <div class="cut"><div class="t">휴게소</div><div class="rail"></div><div class="frame"><img src="assets/arrive-1.png" alt=""></div>
+        <div class="num">07 <span class="who car">차</span></div><h3>도착 보고</h3><p>차량별 도착, 전원 도착 시 깃발 깜빡임</p></div>
+    </div>
+    <p class="cap" style="margin-top:36px">실제 앱 캡처. 에뮬레이터 1대와 가상 차량 3대, 경부고속도로 서울 요금소 → 안성 휴게소 구간.</p>
+  </div>
+  <div class="foot"><span>뻐꾸기 · 서비스 소개서</span><span>10</span></div>
+</div></section>
+
+<!-- 11 -->
+<section class="page dark"><div class="slide">
+  <div class="kicker">운수사 전용 · 통합 관제</div>
+  <div class="tag">양식 4 · <b>적용 시나리오</b></div>
+  <h1>운수사 전용 <em>통합 무전 관제</em></h1>
+  <div class="content" style="top:250px">
+    <table class="eff dk">
+      <thead><tr><th>장면</th><th>지금</th><th>뻐꾸기</th><th>상태</th></tr></thead>
+      <tbody>
+        <tr><td>관제 공지</td><td class="now">기사별 전화 N통</td><td class="aft">버튼 1번, 전 기사 음성 공지</td><td>관제석 웹 구현(관제 키 입장, 차량 집계 제외) · 운수사 계정 <span class="assume">확대 계획</span></td></tr>
+        <tr><td>노선 돌발</td><td class="now">앞차 상황 개별 전달</td><td class="aft">같은 노선 급제동 자동 무전, 정체·사고 음성 무전</td><td>급제동 자동 콜 구현 · 노선 단위 채널 <span class="assume">확대 계획</span></td></tr>
+        <tr><td>위치 확인</td><td class="now">"지금 어디쯤?" 전화</td><td class="aft">차량별 출발·도착 자동 보고</td><td>위치·도착 판정 구현</td></tr>
+        <tr><td>운행 보고서</td><td class="now">운행 후 기사별 구두·수기 보고</td><td class="aft">운행 종료 시 차량별 보고서 자동 생성: 거리·최고 속도·급제동·에어백·이탈·도착 시각</td><td>보고서 구현, 관제 키로만 열람</td></tr>
+        <tr><td>전세 단체</td><td class="now">인솔자·기사·관제 따로 연락</td><td class="aft">인솔자·기사·관제 한 채널</td><td>방 1개 = 채널 1개 구현, 인솔자 휴대폰 참여</td></tr>
+        <tr><td>버스별 점호</td><td class="now">버스마다 인원 다시 세기</td><td class="aft">좌석·벨트 신호 기반 인원 보고</td><td>승용차 좌석 구현 · 버스 다좌석 <span class="assume">가정</span></td></tr>
+      </tbody>
+    </table>
+    <p class="note" style="margin-top:22px;color:var(--d-muted)">통합 관제는 운수사 구독에만 제공. 버스의 일행 = 같은 노선·같은 전세 운행의 차량 전체. 버스 Pleos 탑재 여부 미확인, Pleos 탑재 버스 전제의 적용안. 보고서에 무전 내용·음성 미저장.</p>
+  </div>
+  <div class="foot"><span>뻐꾸기 · 서비스 소개서</span><span>11</span></div>
+</div></section>
+
+<!-- 12 -->
+<section class="page dark"><div class="slide">
+  <div class="kicker">운수사 전용 · 통합 관제 · 실제 화면</div>
+  <div class="tag">양식 5 · <b>개발 산출물</b></div>
+  <h1>운행 종료 후 <em>차량별 운행 보고서</em></h1>
+  <div class="content" style="top:250px;display:grid;grid-template-columns:330px 1fr;gap:56px;align-items:start">
+    <div>
+      <div class="frame" style="border:3px solid var(--line-d)"><img src="assets/control-seat.png" alt="" style="width:100%;height:600px;object-fit:cover;object-position:top;display:block"></div>
+      <p class="cap" style="margin-top:12px;color:var(--d-muted)">관제석 웹. 관제 키로 입장, 차량 집계 제외, 전 기사 공지</p>
+    </div>
+    <div>
+      <div class="frame" style="border:3px solid var(--line-d)"><img src="assets/control-report.png" alt="" style="width:100%;height:600px;object-fit:cover;object-position:top;display:block"></div>
+      <p class="cap" style="margin-top:12px;color:var(--d-muted)">차량별 운행 보고서. 입장·도착 시각, 운행 시간, 거리, 최고 속도, 급제동·에어백·이탈, 무전 횟수, 점호 인원, 운행 타임라인. 가상 차량 3대 실시간 주행 기록, 무전 내용·음성 미저장</p>
+    </div>
+  </div>
+  <div class="foot"><span>뻐꾸기 · 서비스 소개서</span><span>12</span></div>
+</div></section>
+
+<!-- 13 -->
+<section class="page light"><div class="slide">
+  <div class="kicker">기대효과</div>
+  <div class="tag">양식 6 · <b>기대효과</b></div>
+  <h1>출발부터 도착까지 <em>변화</em></h1>
+  <div class="content" style="top:250px;display:grid;grid-template-columns:1fr 520px;gap:56px;align-items:start">
+    <table class="eff">
+      <thead><tr><th>구간</th><th>지금</th><th>뻐꾸기</th></tr></thead>
+      <tbody>
+        <tr><td>출발</td><td class="now">차마다 전화로 인원 확인</td><td class="aft">점호 자동 보고</td></tr>
+        <tr><td>주행 연락</td><td class="now">전화 한 번에 한 대, 단톡 확인 불가</td><td class="aft">버튼 1번, 전 차량 스피커</td></tr>
+        <tr><td>앞차 위험</td><td class="now">전화 올 때까지 모름</td><td class="aft">급제동·비 자동 무전</td></tr>
+        <tr><td>위치</td><td class="now">"어디야?" 반복 전화</td><td class="aft">거리 표시, 처짐 알림, 5분 요약</td></tr>
+        <tr><td>휴게소</td><td class="now">차마다 다른 결정</td><td class="aft">투표 후 전 차량 경유지</td></tr>
+        <tr><td>도착</td><td class="now">다 왔는지 전화 확인</td><td class="aft">도착 자동 보고</td></tr>
+      </tbody>
+    </table>
+    <div>
+      <div class="tri" style="grid-template-columns:1fr;gap:18px">
+        <div style="padding:20px 24px 8px"><h3>운전자</h3><ul class="bul"><li>통화·단톡 확인 없는 주행</li><li>앞차 상황의 음성 수신</li></ul></div>
+        <div style="padding:20px 24px 8px"><h3>인솔자 · 관제</h3><ul class="bul"><li>전 차량 동시 지시</li><li>차량별 위치·도착 확인</li></ul></div>
+      </div>
+      <p class="note" style="margin-top:14px">정성 기대효과. 통화 횟수·도착 지연 등은 실측 전, 파일럿에서 측정 계획.</p>
+    </div>
+  </div>
+  <div class="foot"><span>뻐꾸기 · 서비스 소개서</span><span>13</span></div>
+</div></section>
+
+<!-- 14 -->
+<section class="page light"><div class="slide">
+  <div class="kicker">개발 계획 · SDK 활용</div>
+  <div class="tag">양식 5 · <b>기술 활용성</b></div>
+  <h1>Pleos <em>SDK 5종</em> 기반 구조</h1>
+  <div class="content" style="top:260px;display:grid;grid-template-columns:1000px 1fr;gap:72px">
+    <div>
+      <svg viewBox="0 0 1000 660" width="1000" height="660" class="sdk"><path d="M360,52.0 C510,52.0 470,22.0 620,22.0" class="ln hot"/><path d="M360,52.0 C510,52.0 470,77.6 620,77.6" class="ln hot"/><path d="M360,52.0 C510,52.0 470,133.2 620,133.2" class="ln hot"/><path d="M360,52.0 C510,52.0 470,188.8 620,188.8" class="ln hot"/><path d="M360,181.0 C510,181.0 470,188.8 620,188.8" class="ln"/><path d="M360,181.0 C510,181.0 470,244.4 620,244.4" class="ln"/><path d="M360,181.0 C510,181.0 470,300.0 620,300.0" class="ln"/><path d="M360,181.0 C510,181.0 470,355.6 620,355.6" class="ln"/><path d="M360,310.0 C510,310.0 470,355.6 620,355.6" class="ln"/><path d="M360,310.0 C510,310.0 470,411.2 620,411.2" class="ln"/><path d="M360,52.0 C510,52.0 470,411.2 620,411.2" class="ln hot"/><path d="M360,310.0 C510,310.0 470,466.8 620,466.8" class="ln"/><path d="M360,310.0 C510,310.0 470,522.4000000000001 620,522.4000000000001" class="ln"/><path d="M360,439.0 C510,439.0 470,578.0 620,578.0" class="ln"/><path d="M360,52.0 C510,52.0 470,578.0 620,578.0" class="ln hot"/><path d="M360,568.0 C510,568.0 470,633.6 620,633.6" class="ln"/><path d="M360,439.0 C510,439.0 470,633.6 620,633.6" class="ln"/><rect x="0" y="0" width="360" height="104" class="sbox hot"/><text x="22" y="44" class="sn">Vehicle</text><text x="340" y="44" class="sv" text-anchor="end">2.3.2</text><text x="22" y="80" class="sd">브레이크·와이퍼·방향지시등·기어·좌석·안전·조명</text><rect x="0" y="129" width="360" height="104" class="sbox"/><text x="22" y="173" class="sn">NaviHelper</text><text x="340" y="173" class="sv" text-anchor="end">3.0.5</text><text x="22" y="209" class="sd">경유지 추가·경로 재탐색·안내 정보</text><rect x="0" y="258" width="360" height="104" class="sbox"/><text x="22" y="302" class="sn">FusedLocation</text><text x="340" y="302" class="sv" text-anchor="end">1.1.3</text><text x="22" y="338" class="sd">위치·속도</text><rect x="0" y="387" width="360" height="104" class="sbox"/><text x="22" y="431" class="sn">TextToSpeech</text><text x="340" y="431" class="sv" text-anchor="end">3.3.1</text><text x="22" y="467" class="sd">좌석별 오디오 존 출력</text><rect x="0" y="516" width="360" height="104" class="sbox"/><text x="22" y="560" class="sn">SpeechToText</text><text x="340" y="560" class="sv" text-anchor="end">3.3.1</text><text x="22" y="596" class="sd">말을 글로 받아 적기</text><rect x="620" y="0.0" width="380" height="44" class="fbox"/><text x="638" y="30.0" class="fn">긴급 콜</text><text x="984" y="29.0" class="fd" text-anchor="end">에어백 전개</text><rect x="620" y="55.6" width="380" height="44" class="fbox"/><text x="638" y="85.6" class="fn">점호</text><text x="984" y="84.6" class="fd" text-anchor="end">착석·벨트·기어</text><rect x="620" y="111.2" width="380" height="44" class="fbox"/><text x="638" y="141.2" class="fn">깃발 색</text><text x="984" y="140.2" class="fd" text-anchor="end">앰비언트 조명</text><rect x="620" y="166.8" width="380" height="44" class="fbox"/><text x="638" y="196.8" class="fn">자동 콜</text><text x="984" y="195.8" class="fd" text-anchor="end">급제동·비·회전</text><rect x="620" y="222.4" width="380" height="44" class="fbox"/><text x="638" y="252.4" class="fn">쉬어 가</text><text x="984" y="251.4" class="fd" text-anchor="end">휴게소 경유지</text><rect x="620" y="278.0" width="380" height="44" class="fbox"/><text x="638" y="308.0" class="fn">대장 콜</text><text x="984" y="307.0" class="fd" text-anchor="end">경로 함께 탐색</text><rect x="620" y="333.6" width="380" height="44" class="fbox"/><text x="638" y="363.6" class="fn">다시 붙기</text><text x="984" y="362.6" class="fd" text-anchor="end">선두 따라가기</text><rect x="620" y="389.2" width="380" height="44" class="fbox"/><text x="638" y="419.2" class="fn">위치 알림</text><text x="984" y="418.2" class="fd" text-anchor="end">처짐·도착·정차</text><rect x="620" y="444.8" width="380" height="44" class="fbox"/><text x="638" y="474.8" class="fn">일행 지도</text><text x="984" y="473.8" class="fd" text-anchor="end">깃발 색 위치</text><rect x="620" y="500.40000000000003" width="380" height="44" class="fbox"/><text x="638" y="530.4000000000001" class="fn">꼬리 콜</text><text x="984" y="529.4000000000001" class="fd" text-anchor="end">후미 거리</text><rect x="620" y="556.0" width="380" height="44" class="fbox"/><text x="638" y="586.0" class="fn">좌석 채널</text><text x="984" y="585.0" class="fd" text-anchor="end">키즈·어른 채널</text><rect x="620" y="611.6" width="380" height="44" class="fbox"/><text x="638" y="641.6" class="fn">받아 적기</text><text x="984" y="640.6" class="fd" text-anchor="end">말 → 글 → 음성</text></svg>
+    </div>
+    <div>
+      <div class="arch">
+        <h3>구조 · 방 1개 = 채널 1개</h3>
+        <div class="node"><b>Pleos 차량 앱 × N</b>Kotlin · Jetpack Compose</div>
+        <div class="wire">▲▼ WebSocket</div>
+        <div class="node hub"><b>Worker + Durable Object</b>무전 중계, 거리·처짐·도착 판정</div>
+        <div class="wire">▲▼ WebSocket</div>
+        <div class="node"><b>휴대폰 웹</b>Pleos 미탑재 차량 일행</div>
+        <ul><li>기능 13개 중 12개 SDK 사용</li><li>동일 알림 2분 1회 제한</li><li>메시지 8KB 제한</li></ul>
+      </div>
+      <p class="note" style="margin-top:18px">주황 선: Vehicle SDK 연결. 13번째 휴대폰 참여는 휴대폰 GPS·웹 음성 인식.</p>
+    </div>
+  </div>
+  <div class="foot"><span>뻐꾸기 · 서비스 소개서</span><span>14</span></div>
+</div></section>
+
+<!-- 15 -->
+<section class="page light"><div class="slide">
+  <div class="kicker">구현 · 검증 현황</div>
+  <div class="tag">양식 5 · <b>개발 산출물</b></div>
+  <h1>에뮬레이터 <em>검증 결과</em></h1>
+  <div class="content" style="top:270px;display:grid;grid-template-columns:400px 1fr;gap:72px">
+    <div class="big2">
+      <div class="v">12<small>건</small></div><div class="k">차량 앱 단위 테스트 통과</div>
+      <div class="v">36<small>건</small></div><div class="k">서버 테스트 통과</div>
+      <p class="note">릴리스 APK, Pleos Connect Emulator 2.1.0, Virtual Console 신호 주입.</p>
+    </div>
+    <table class="chk">
+      <thead><tr><th>항목</th><th>에뮬레이터</th><th>실차 확인 항목</th></tr></thead>
+      <tbody>
+        <tr><td>브레이크·와이퍼·방향지시등·기어·착석</td><td><span class="ok">확인</span>신호 수신</td><td><span class="na">해당 없음</span></td></tr>
+        <tr><td>경유지 추가 · 경로 재탐색</td><td><span class="ok">확인</span>"경유지 1개 포함" 경로</td><td><span class="na">해당 없음</span></td></tr>
+        <tr><td>좌석별 TTS</td><td><span class="ok">확인</span>오디오 존 0~3 호출</td><td><span class="todo">실차</span>좌석별 소리 분리</td></tr>
+        <tr><td>무전 버튼 마이크</td><td><span class="na">미지원</span>실제 마이크 입력 없음</td><td><span class="todo">실차</span>음량 막대·받아쓰기</td></tr>
+        <tr><td>안전벨트 · 에어백</td><td><span class="na">미지원</span>디버그 주입 시연</td><td><span class="todo">실차</span>실제 신호 수신</td></tr>
+        <tr><td>휴대폰 참여</td><td><span class="ok">확인</span>데스크톱 브라우저</td><td><span class="todo">배포</span>휴대폰 위치·마이크</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="foot"><span>뻐꾸기 · 서비스 소개서</span><span>15</span></div>
+</div></section>
+
+<!-- 16 -->
+<section class="page light"><div class="slide">
+  <div class="kicker">사업성 · 고객 타깃</div>
+  <div class="tag">양식 6 · <b>타깃 고객</b></div>
+  <h1>자주 함께 움직이는 <em>팀 단위 고객</em></h1>
+  <div class="content" style="top:250px;display:grid;grid-template-columns:1fr 520px;gap:56px;align-items:start">
+    <div>
+      <div class="formula" style="font-size:21px;padding:14px 20px;margin-bottom:22px">고객 우선순위 = 이동 빈도 × 차량 수 × 연락이 끊겼을 때의 손실</div>
+      <table class="eff">
+        <thead><tr><th>고객</th><th>함께 움직이는 장면</th><th>빈도</th><th>요금제</th></tr></thead>
+        <tbody>
+          <tr><td>운수사</td><td>전세·관광버스, 수학여행·워크숍 버스 3~10대</td><td>매일</td><td class="aft">운수사 구독</td></tr>
+          <tr><td>단체 인솔</td><td>여행사·학교·기업 행사, 인솔자 1명 ↔ 버스 여러 대</td><td>행사마다</td><td class="aft">팀 구독</td></tr>
+          <tr><td>이동 팀</td><td>현장 설치·촬영·공연 투어·원정 경기 팀의 차량 여러 대</td><td>주 단위</td><td class="aft">팀 구독</td></tr>
+          <tr><td>동호회</td><td>캠핑·드라이브 동호회 정기 투어</td><td>월 단위</td><td class="aft">팀 구독</td></tr>
+          <tr><td>가족 일행</td><td>명절·휴가 장거리 차량 여러 대</td><td>연 2~5회</td><td class="now">무료</td></tr>
+        </tbody>
+      </table>
+      <p class="note" style="margin-top:18px">유료 고객은 같은 사람들이 반복해서 함께 이동하는 팀. 가족 일행은 무료로 두어 방장 한 명이 일행 전체를 데려오는 확산 경로.</p>
+    </div>
+    <div>
+      <div class="fact"><div class="v">3.9<small>만 대<sup>1</sup></small></div><div class="k"><b>전세버스</b>유가보조금 대상 경유 차량</div></div>
+      <div class="fact" style="border-bottom:2px solid var(--ink)"><div class="v">5.5<small>회<sup>2</sup></small></div><div class="k"><b>캠핑 이용자</b>연평균 캠핑 횟수</div></div>
+      <p class="note" style="margin-top:14px">1 파이낸셜뉴스(2026. 7. 15.), 보조금 대상 수, 전체 등록 대수 아님.<br>2 한국관광공사 2021 캠핑이용자 실태조사(뉴시스, 2022. 9. 6.).<br>이동 팀·동호회 규모는 미조사, 파일럿에서 확인.</p>
+    </div>
+  </div>
+  <div class="foot"><span>뻐꾸기 · 서비스 소개서</span><span>16</span></div>
+</div></section>
+
+<!-- 17 -->
+<section class="page light"><div class="slide">
+  <div class="kicker">사업성 · 요금제</div>
+  <div class="tag">양식 6 · <b>수익 모델</b></div>
+  <h1>한 번은 무료, <em>반복 이동은 구독</em></h1>
+  <div class="content" style="top:260px">
+    <div class="tri">
+      <div><h3>무료 <small>가족·지인 일행</small></h3>
+        <div class="formula" style="font-size:22px;padding:10px 16px;margin-bottom:18px">0원</div>
+        <ul class="bul"><li>무전·자동 콜·투표·점호 전부</li><li>방 1개, 차량 5대까지</li><li>마지막 활동 24시간 후 방 삭제</li></ul></div>
+      <div style="border-top-color:var(--sig)"><h3>팀 구독 <small>단체 인솔·이동 팀·동호회</small></h3>
+        <div class="formula" style="font-size:22px;padding:10px 16px;margin-bottom:18px">팀당 월 1.9만 원 <span class="assume">가정</span></div>
+        <ul class="bul"><li>고정 무전방, 매번 코드 공유 없이 같은 방</li><li>멤버·차량 명단 유지, 방장 여러 명</li><li>차량 15대, 휴대폰 참여 무제한</li></ul></div>
+      <div><h3>운수사 구독 <small>전세·관광버스</small></h3>
+        <div class="formula" style="font-size:22px;padding:10px 16px;margin-bottom:18px">차량당 월 1만 원 <span class="assume">가정</span></div>
+        <ul class="bul"><li>통합 관제: 관제석 웹, 전 기사 공지</li><li>노선·행사 단위 채널</li><li>운행 종료 시 차량별 운행 보고서</li></ul></div>
+    </div>
+    <p class="note" style="margin-top:26px">안전 기능(자동 콜·처짐·도착)은 전 요금제 동일. 팀 구독은 반복 사용의 편의, 통합 관제·운행 보고서는 운수사 구독 전용. 관제석·운행 보고서는 구현, 나머지 구독 기능은 <span class="assume">확대 계획</span>.</p>
+  </div>
+  <div class="foot"><span>뻐꾸기 · 서비스 소개서</span><span>17</span></div>
+</div></section>
+
+<!-- 18 -->
+<section class="page light"><div class="slide">
+  <div class="kicker">사업성 · 매출 · 예상 MAU</div>
+  <div class="tag">양식 6 · <b>사업성</b></div>
+  <h1>구독 매출과 <em>무료 확산 추정</em></h1>
+  <div class="content" style="top:250px;display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:start">
+    <div>
+      <div class="lbl">구독 월 매출 <span class="assume">전부 가정</span></div>
+      <div class="formula" style="font-size:18px;padding:14px 18px;margin-bottom:16px">운수사 = 39,000대 × F 도입률 × G 차량당 요금<br>팀 = H 구독 팀 수 × 1.9만 원</div>
+      <table class="sc">
+        <thead><tr><th>입력</th><th>보수</th><th class="base">기본</th><th>낙관</th></tr></thead>
+        <tbody>
+          <tr><td>F 도입률 · G 요금</td><td>1% · 5천</td><td class="base">3% · 1만</td><td>5% · 1.5만</td></tr>
+          <tr><td>운수사 매출</td><td>195만</td><td class="base">1,170만</td><td>2,925만</td></tr>
+          <tr><td>H 구독 팀</td><td>100</td><td class="base">500</td><td>1,500</td></tr>
+          <tr><td>팀 매출</td><td>190만</td><td class="base">950만</td><td>2,850만</td></tr>
+          <tr class="res"><td style="font-size:19px">월 합계</td><td>385만</td><td class="base">2,120만</td><td>5,775만</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="lbl">가족 일행 · 무료 확산 <span class="assume">전부 가정</span></div>
+      <div class="formula" style="font-size:18px;padding:14px 18px;margin-bottom:16px">명절 달 MAU = A 탑재 차량 × B 동행률 × C 설치율 × D 사용률<br>일행 = MAU ÷ E</div>
+      <table class="sc">
+        <thead><tr><th>입력</th><th>보수</th><th class="base">기본</th><th>낙관</th></tr></thead>
+        <tbody>
+          <tr><td>A 탑재 차량</td><td>10만</td><td class="base">30만</td><td>60만</td></tr>
+          <tr><td>B · C · D</td><td>15·5·40%</td><td class="base">25·10·60%</td><td>35·20·80%</td></tr>
+          <tr><td>E 일행당 차량</td><td>2대</td><td class="base">2.5대</td><td>3대</td></tr>
+          <tr class="res"><td style="font-size:19px">MAU 차량</td><td>300</td><td class="base">4,500</td><td>33,600</td></tr>
+          <tr class="res"><td style="font-size:19px">활성 일행</td><td>150</td><td class="base">1,800</td><td>11,200</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <p class="note" style="position:absolute;left:96px;right:96px;bottom:84px">확인된 수치는 Pleos Connect 2030년 글로벌 약 2,000만 대 탑재 목표(머니투데이, 2026. 4. 30.)뿐. 국내 탑재 대수·버스 탑재 미확인, 휴대폰 참여자 미포함. 고속버스 미포함.</p>
+  <div class="foot"><span>뻐꾸기 · 서비스 소개서</span><span>18</span></div>
+</div></section>
+
+<!-- 19 -->
+<section class="page light"><div class="slide">
+  <div class="kicker">발전 가능성 · 안전 원칙 · 리스크</div>
+  <div class="tag">양식 6 · <b>확대 계획</b></div>
+  <h1>단계별 확대와 <em>안전 원칙</em></h1>
+  <div class="content" style="top:260px;display:grid;grid-template-columns:1fr 520px 440px;gap:40px;align-items:start">
+    <div class="road" style="grid-template-columns:1fr">
+      <div class="stage now" style="padding-bottom:18px"><div class="when">지금 · 무료</div><h3>가족 일행</h3><ul><li>기능 13개 구현, 4대 시연</li></ul></div>
+      <div class="stage" style="padding-bottom:18px"><div class="when">다음 · 팀 구독 · 가정</div><h3>단체 인솔·이동 팀 파일럿</h3><ul><li>고정 방·명단, 실차 마이크·좌석 존 검증</li></ul></div>
+      <div class="stage"><div class="when">확대 · 운수사 구독 · 가정</div><h3>운수사 통합 관제</h3><ul><li>운수사 계정, 노선 채널, 운행 보고서 보관 기간, 버스 탑재 확인</li></ul></div>
+    </div>
+    <div class="rules">
+      <h3>안전 · 개인정보 원칙</h3>
+      <ol>
+        <li>음성 원본 차외 미전송, 받아쓴 글만 전송</li>
+        <li>단속 카메라 위치 미공유</li>
+        <li>방 체류 중에만 위치 공유, 24시간 후 기록 삭제</li>
+        <li>휴대폰 참여자 위치 공유 사전 동의</li>
+        <li>자동 콜은 사전 안내, 안전장치 아님</li>
+        <li>대열운행 비권장, 처짐 알림은 연락용</li>
+      </ol>
+    </div>
+    <div>
+      <div class="lbl">미해결 리스크</div>
+      <ul class="bul risk">
+        <li>버스의 Pleos 탑재 여부 미확인</li>
+        <li>핸들 PTT 버튼·호출어 미지원</li>
+        <li>실차 마이크·좌석별 스피커 미검증</li>
+        <li>관제 키가 주소에 실림, 운수사 계정 필요</li>
+        <li>버스 다좌석 점호 신호 미확인</li>
+        <li>국내 특허(KIPRIS) 미조사</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"><span>뻐꾸기 · 서비스 소개서</span><span>19</span></div>
+</div></section>
+
+</body>
+</html>

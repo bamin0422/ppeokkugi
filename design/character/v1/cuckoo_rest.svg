@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <clipPath id="belly">
+      <ellipse cx="103" cy="130" rx="29" ry="36"/>
+    </clipPath>
+  </defs>
+  <!-- tail feathers -->
+  <ellipse cx="83" cy="177" rx="9" ry="5" fill="#4E6E84" transform="rotate(-30 83 177)"/>
+  <ellipse cx="95" cy="180" rx="10" ry="5.5" fill="#6B8FA8" transform="rotate(-5 95 180)"/>
+  <ellipse cx="107" cy="177" rx="9" ry="5" fill="#4E6E84" transform="rotate(22 107 177)"/>
+  <!-- left wing holding cup (replaces LEFT_WING) -->
+  <path d="M 52 126 Q 38 110 44 89 Q 49 75 60 77 Q 68 79 66 99 Q 70 111 64 126 Z" fill="#4E6E84"/>
+  <!-- cup body -->
+  <rect x="33" y="79" width="22" height="18" rx="3" fill="#F2E8D0"/>
+  <rect x="31" y="77" width="26" height="5" rx="2.5" fill="#C8AA82"/>
+  <!-- cup handle -->
+  <path d="M 55 84 Q 64 84 64 89 Q 64 94 55 94" stroke="#F2E8D0" stroke-width="2.5" fill="none"/>
+  <!-- steam wisps -->
+  <path d="M 40 75 Q 42 68 40 62" stroke="#C8AA82" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.8"/>
+  <path d="M 46 75 Q 48 67 46 61" stroke="#C8AA82" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.8"/>
+  <path d="M 52 75 Q 54 68 52 62" stroke="#C8AA82" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.8"/>
+  <!-- right wing -->
+  <ellipse cx="149" cy="115" rx="11" ry="25" fill="#8AAFC4" transform="rotate(12 149 115)"/>
+  <!-- body -->
+  <ellipse cx="100" cy="126" rx="50" ry="51" fill="#6B8FA8"/>
+  <!-- belly -->
+  <ellipse cx="103" cy="130" rx="29" ry="36" fill="#F2E8D0"/>
+  <!-- belly bars -->
+  <g clip-path="url(#belly)">
+    <rect x="74" y="107" width="58" height="4" rx="2" fill="#C8AA82" opacity="0.6"/>
+    <rect x="74" y="119" width="58" height="4" rx="2" fill="#C8AA82" opacity="0.6"/>
+    <rect x="74" y="131" width="58" height="4" rx="2" fill="#C8AA82" opacity="0.6"/>
+    <rect x="74" y="143" width="58" height="4" rx="2" fill="#C8AA82" opacity="0.6"/>
+  </g>
+  <!-- neck -->
+  <ellipse cx="104" cy="96" rx="20" ry="13" fill="#6B8FA8"/>
+  <!-- head -->
+  <circle cx="106" cy="68" r="32" fill="#6B8FA8"/>
+  <ellipse cx="106" cy="50" rx="24" ry="18" fill="#4E6E84"/>
+  <!-- antenna -->
+  <path d="M 113 38 Q 117 22 114 9" stroke="#90AABB" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <circle cx="114" cy="8" r="5.5" fill="#E03040"/>
+  <circle cx="112" cy="6" r="2" fill="#F06878" opacity="0.7"/>
+  <!-- eyes closed -->
+  <path d="M 86 67 Q 94 61 102 67" stroke="#F0C040" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M 108 65 Q 117 58 126 65" stroke="#F0C040" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+  <!-- beak closed -->
+  <path d="M 128 73 L 145 78 L 128 83 Z" fill="#E89820"/>
+  <path d="M 128 73 L 145 78 L 136 75 Z" fill="#F0AA30" opacity="0.8"/>
+
+  <!-- feet -->
+  <g fill="#E89820">
+    <rect x="85" y="175" width="4.5" height="13" rx="2"/>
+    <rect x="79" y="186" width="5.5" height="3" rx="1.5"/>
+    <rect x="85" y="186" width="5.5" height="3" rx="1.5"/>
+    <rect x="91" y="186" width="5" height="3" rx="1.5"/>
+    <rect x="109" y="175" width="4.5" height="13" rx="2"/>
+    <rect x="103" y="186" width="5.5" height="3" rx="1.5"/>
+    <rect x="109" y="186" width="5.5" height="3" rx="1.5"/>
+    <rect x="115" y="186" width="5" height="3" rx="1.5"/>
+  </g></svg>
