@@ -21,7 +21,6 @@ app/      Pleos 차량 앱 (Kotlin, Jetpack Compose, Android Automotive)
 server/   무전 채널 서버 (Cloudflare Worker + Durable Object, 방 1개 = 채널 1개)
           src/phone.html  Pleos가 없는 일행용 휴대폰 웹
           scripts/bots.mjs  시연용 가상 차량 3대
-apk/      제출용 APK
 docs/     서비스 소개서, 시연 영상, 개발 문서(docs/개발_README.md)
 ```
 
@@ -29,10 +28,10 @@ docs/     서비스 소개서, 시연 영상, 개발 문서(docs/개발_README.m
 
 ## 바로 설치하기 (APK)
 
-제출용 APK는 `apk/팀명_뻐꾸기_release.apk`입니다. 별도 키스토어가 없어 release 빌드도 Android debug 키로 서명했습니다.
+제출용 APK는 [Releases](https://github.com/bamin0422/ppeokkugi/releases/tag/v1.0)의 `ppeokkugi_release.apk`입니다. 별도 키스토어가 없어 release 빌드도 Android debug 키로 서명했습니다.
 
 ```bash
-adb install -r apk/팀명_뻐꾸기_release.apk
+adb install -r ppeokkugi_release.apk
 adb shell am start -n com.ppeokkugi/.MainActivity
 ```
 
@@ -54,7 +53,7 @@ JDK 17과 Android SDK 35가 필요합니다. Pleos SDK는 `settings.gradle.kts`�
 cd server && npm install && npx wrangler dev --port 8792
 
 # 2) 앱 설치와 권한 (에뮬레이터 사용자 10)
-adb install -r --user 10 apk/팀명_뻐꾸기_release.apk
+adb install -r --user 10 ppeokkugi_release.apk
 for p in android.permission.ACCESS_FINE_LOCATION android.permission.RECORD_AUDIO pleos.car.permission.FUSED_LOCATION; do
   adb shell pm grant --user 10 com.ppeokkugi $p
 done
