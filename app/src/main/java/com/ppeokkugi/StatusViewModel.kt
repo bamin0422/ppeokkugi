@@ -142,6 +142,10 @@ class StatusViewModel(app: Application) : AndroidViewModel(app) {
     private var parked: Boolean? = null
     private var naviRoute: CarEvent.NaviRoute? = null
     private var sharedRoute: CarEvent.NaviRoute? = null
+    /** 일행이 함께 가는 목적지. 선두는 보낸 대장 콜, 뒤차는 받은 대장 콜 */
+    private var groupDest: Pair<Double, Double>? = null
+    /** 마지막으로 따른 대장 콜. 서버는 입장·재접속 때 마지막 대장 콜을 다시 보내므로 같은 것은 건너뛴다 */
+    private var lastRoute: RoomMsg.Route? = null
     /** 시연 모드 데모 주행은 방마다 한 번만 */
     private var demoStarted = false
     private var radioId = 0L
@@ -170,7 +174,11 @@ class StatusViewModel(app: Application) : AndroidViewModel(app) {
                 val lat = myLat ?: continue
                 val lng = myLng ?: continue
                 if (_room.value.link != Link.ON) continue
-                client.send(JSONObject().put("type", "pos").put("lat", lat).put("lng", lng).put("heading", 0).put("speed", mySpeed).apply { parked?.let { put("park", it) } })
+                client.send(JSONObject().put("type", "pos").put("lat", lat).put("lng", lng).put("heading", 0).put("speed", mySpeed).apply {
+                    parked?.let { put("park", it) }
+                    // 일행 목적지로 안내 중이면 경로상 남은 거리를 함께 보낸다. 서버가 앞·뒤를 이 값으로 가린다
+                    groupDest?.let { (dLat, dLng) -> navi.remainTo(dLat, dLng) }?.let { put("remainM", it) }
+                })
                 _room.value.me?.let { n -> upsertCar(label(n)) { it.copy(lat = lat, lng = lng, speed = mySpeed) } }
             }
         }
@@ -269,6 +277,7 @@ class StatusViewModel(app: Application) : AndroidViewModel(app) {
             .put("waypoints", JSONArray().apply { r.waypoints.take(2).forEach { put(place(it.lat, it.lng, it.name)) } })
         if (client.send(msg)) {
             sharedRoute = r
+            groupDest = r.lat to r.lng
             addRadio("대장 콜", "${r.name}(으)로 가는 경로를 일행에게 보냈습니다", "all", Mood.TX)
             log("대장 콜 보냄: $msg")
         } else log("대장 콜 못 보냄(방 연결 없음)")
@@ -321,16 +330,20 @@ class StatusViewModel(app: Application) : AndroidViewModel(app) {
         if (c.length !in 6..8) return
         rollSent = false
         sharedRoute = null
+        groupDest = null
+        lastRoute = null
         demoStarted = false
         _room.value = RoomState(code = c, driving = _room.value.driving, demo = _room.value.demo)
         val seats = JSONArray()
         SEAT_IDS.forEach { (v, id) -> seats.put(JSONObject().put("id", id).put("occupied", occupied[v] ?: (v == SeatValue.ROW_1_LEFT))) }
         client.join(c, JSONObject().put("nickname", "뻐꾸기 차").put("flagColor", JSONObject.NULL).put("seats", seats))
         log("방 $c 입장 시도 (${BuildConfig.SYNC_URL})")
+        RoomService.start(getApplication(), c)
     }
 
     fun leaveRoom() {
         client.leave()
+        RoomService.stop(getApplication())
         _room.value = RoomState(driving = _room.value.driving)
     }
 
@@ -350,12 +363,12 @@ class StatusViewModel(app: Application) : AndroidViewModel(app) {
         when (m) {
             is RoomMsg.Welcome -> {
                 val color = m.flagColor?.let(::parseColor)
-                // 다시 붙으면 번호가 바뀌므로 예전 우리 차 줄을 지운다
+                // 재입장 토큰으로 같은 번호를 받지만, 서버가 방을 잊었으면 번호가 바뀌므로 예전 우리 차 줄을 지운다
                 _room.update { st -> st.copy(me = m.carNum, myColor = color, cars = st.cars.filter { !it.me }) }
                 auto.leader = m.carNum == 1
                 upsertCar(m.carLabel) { it.copy(nickname = "우리 차", me = true, color = color ?: it.color) }
                 m.cars.forEach(::onHello)
-                log("입장: ${m.carLabel}${if (auto.leader) " (선두)" else ""}, 깃발 색 ${m.flagColor}")
+                log("${if (m.rejoined) "재접속" else "입장"}: ${m.carLabel}${if (auto.leader) " (선두)" else ""}, 깃발 색 ${m.flagColor}")
                 bridge.setAmbientColor(flagRgb())
                 maybeSendRoll()
             }
@@ -386,6 +399,9 @@ class StatusViewModel(app: Application) : AndroidViewModel(app) {
                 // 선두의 대장 콜만 따른다
                 if (m.from != label(1) || me == 1) return
                 if (m.dest.lat == 0.0 && m.dest.lng == 0.0) return log("빈 대장 콜 무시")
+                if (m == lastRoute) return log("같은 대장 콜, 다시 찾지 않음")
+                lastRoute = m
+                groupDest = m.dest.lat to m.dest.lng
                 if (!navi.ready) log("내비 미연결, 대장 콜 경로 못 넣음: ${m.dest.name}")
                 else runCatching { navi.routeWithWaypoints(m.dest.lat, m.dest.lng, m.dest.name, m.waypoints.map { Triple(it.lat, it.lng, it.name) }) }
                     .onSuccess { log("대장 콜 재탐색 요청: ${m.dest.name} (${m.dest.lat}, ${m.dest.lng}) 경유 ${m.waypoints.size}곳") }
@@ -562,6 +578,7 @@ class StatusViewModel(app: Application) : AndroidViewModel(app) {
     override fun onCleared() {
         super.onCleared()
         client.leave()
+        RoomService.stop(getApplication())
         bridge.stop()
         locator.stop()
         navi.stop()

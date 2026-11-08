@@ -99,6 +99,21 @@ class AutoCallTest {
         assertEquals("3호차, 800m 뒤 급제동, 감속하세요", Phrase.signal("brake_hard", "3호차", 870.0, false, null, null))
         assertEquals("선두, 300m 앞 우회전", Phrase.signal("turn_right", "1호차", null, true, null, 320))
         assertEquals("가자.", Phrase.shorten("가자. " + "가".repeat(40)))
+    }
+
+    @Test fun shortenKeepsKeySentences() {
+        // 말버릇만 지워도 40자 안이면 그대로
+        assertEquals("다음 휴게소에서 쉬었다 가자 화장실 가고 싶대", Phrase.shorten("어 저기 그러니까 혹시 다음 휴게소에서 좀 쉬었다 가자 음 일단 화장실 가고 싶대"))
+        // 잡담 문장은 빠지고 곳·숫자·요청 문장만 원래 순서로 남는다
+        assertEquals(
+            "2차선에 사고 났어요. 천천히 오세요.",
+            Phrase.shorten("오늘 날씨가 너무 좋아서 기분이 좋네. 2차선에 사고 났어요. 아까 먹은 김밥이 맛있었어. 천천히 오세요."),
+        )
+        // 문장이 하나뿐이면 자르지 않는다
+        val one = "가".repeat(45)
+        assertEquals(one, Phrase.shorten(one))
+        // "막혀"의 "막"은 말버릇이 아니다
+        assertEquals(true, Phrase.shorten("앞에 길이 막혀서 조금 늦어요 " + "가".repeat(30)).contains("막혀"))
         assertEquals(1, Phrase.voteChoice("이 번이요", 3))
         assertEquals(0, Phrase.voteChoice("1번", 3))
         assertNull(Phrase.voteChoice("5번", 3))

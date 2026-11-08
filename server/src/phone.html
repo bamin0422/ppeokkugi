@@ -228,11 +228,14 @@ $('fleet').onclick = async () => {
 $('go').onclick = () => { code = $('code').value.trim().toUpperCase(); if (!CONTROL) startGps(); connect(); };
 $('leave').onclick = () => { code = null; ws?.close(); stopGps(); location.reload(); };
 
+// 다시 붙을 때 같은 호차로 앉도록 서버가 준 재입장 토큰을 방마다 들고 있는다
+function savedToken() { try { return sessionStorage.getItem(`token:${code}`) || undefined; } catch { return undefined; } }
+
 function connect() {
   if (!code) return;
   $('status').textContent = '연결 중…';
   ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/api/rooms/${code}/ws`);
-  ws.onopen = () => { retry = 0; ws.send(JSON.stringify(CONTROL ? { type: 'hello', role: 'control', key: controlKey } : { type: 'hello', nickname: '휴대폰', seats: [{ id: 'driver', occupied: true }] })); };
+  ws.onopen = () => { retry = 0; ws.send(JSON.stringify(CONTROL ? { type: 'hello', role: 'control', key: controlKey } : { type: 'hello', nickname: '휴대폰', seats: [{ id: 'driver', occupied: true }], token: savedToken() })); };
   ws.onmessage = e => onMsg(JSON.parse(e.data));
   ws.onclose = () => {
     if (!code) return;
@@ -280,6 +283,7 @@ function onMsg(m) {
   switch (m.type) {
     case 'welcome':
       me = m.carLabel;
+      if (m.token) try { sessionStorage.setItem(`token:${code}`, m.token); } catch {}
       myColor = m.flagColor || myColor;
       (m.cars || []).forEach(c => { cars[c.from] = { color: c.flagColor, lat: c.lat, lng: c.lng }; });
       setTimeout(() => { map?.invalidateSize(); drawMap(); }, 0);

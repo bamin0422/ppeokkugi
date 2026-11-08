@@ -17,7 +17,8 @@ import java.util.concurrent.TimeUnit
 
 /** 서버가 보내는 메시지. 형식은 server/src/room.js 와 같다 */
 sealed interface RoomMsg {
-    data class Welcome(val carNum: Int, val carLabel: String, val flagColor: String?, val cars: List<Hello> = emptyList()) : RoomMsg
+    /** token 은 다시 붙을 때 같은 호차로 앉는 재입장 토큰. rejoined 는 그 토큰으로 예전 번호를 돌려받았는지 */
+    data class Welcome(val carNum: Int, val carLabel: String, val flagColor: String?, val cars: List<Hello> = emptyList(), val token: String? = null, val rejoined: Boolean = false) : RoomMsg
     /** lat·lng 는 welcome.cars 에만 온다(먼저 들어온 차의 마지막 위치) */
     data class Hello(val from: String, val nickname: String, val flagColor: String?, val lat: Double? = null, val lng: Double? = null) : RoomMsg
     data class Pos(val from: String, val lat: Double, val lng: Double, val heading: Double, val speed: Double) : RoomMsg
@@ -47,6 +48,7 @@ enum class Link { OFF, CONNECTING, ON }
 
 /**
  * 방 하나에 붙는 WebSocket. 끊기면 1·2·4…30초 간격으로 다시 붙고 매번 hello 를 보낸다.
+ * 서버가 welcome 에 준 재입장 토큰을 hello 에 실어 다시 붙어도 같은 호차 번호를 받는다.
  * 콜백은 모두 메인 스레드에서 부른다. send 는 어느 스레드에서 불러도 된다.
  */
 class RoomClient(
@@ -107,7 +109,11 @@ class RoomClient(
             }
             override fun onMessage(webSocket: WebSocket, text: String) {
                 val m = runCatching { parse(text) }.getOrElse { log("메시지 해석 실패: ${it.message}"); return }
-                main.post { onMessage(m) }
+                main.post {
+                    // 다음 재접속 hello 에 토큰을 실어 같은 호차 번호를 돌려받는다
+                    if (m is RoomMsg.Welcome) m.token?.let { hello?.put("token", it) }
+                    onMessage(m)
+                }
             }
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) = reconnect(webSocket, "끊김: ${t.message}")
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) = reconnect(webSocket, "닫힘 $code")
@@ -132,7 +138,7 @@ class RoomClient(
             return when (val type = o.optString("type")) {
                 "welcome" -> RoomMsg.Welcome(o.getInt("carNum"), o.optString("carLabel"), o.optStr("flagColor"), (o.optJSONArray("cars") ?: JSONArray()).let { a ->
                     (0 until a.length()).map { i -> a.getJSONObject(i).let { c -> RoomMsg.Hello(c.optString("from"), c.optString("nickname"), c.optStr("flagColor"), c.optNum("lat"), c.optNum("lng")) } }
-                })
+                }, o.optStr("token"), o.optBoolean("rejoined"))
                 "hello" -> RoomMsg.Hello(from, o.optString("nickname"), o.optStr("flagColor"))
                 "pos" -> RoomMsg.Pos(from, o.getDouble("lat"), o.getDouble("lng"), o.optDouble("heading", 0.0), o.optDouble("speed", 0.0))
                 "signal" -> RoomMsg.Signal(from, o.getString("kind"), o.optNum("lat"), o.optNum("lng"), o.optNum("value")?.toInt(), o.optNum("distanceM")?.toInt(), o.optNum("gapM"), if (o.has("ahead")) o.optBoolean("ahead") else null)

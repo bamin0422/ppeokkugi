@@ -121,12 +121,34 @@ object Phrase {
         }
     }
 
-    /** 40자를 넘으면 첫 문장만 남긴다. LLM 요약은 아직 쓰지 않는다 */
+    const val SHORT_MAX = 40
+    /** 말버릇. 혼자 떨어진 낱말일 때만 지운다 */
+    private val FILLER = Regex("(^|\\s)(음+|어+|아+|저기요?|그러니까|그니까|있잖아|혹시|일단|그냥|약간|진짜|막|좀)(?=[\\s,.!?]|$)")
+    /** 운전 중 무전의 핵심: 곳·숫자·길 상황·요청 */
+    private val KEY = Regex("휴게소|IC|JC|톨게이트|주유|충전|화장실|출구|차선|사고|고장|정체|막혀|공사|단속|경찰|긴급|위험|조심|천천히|멈춰|세워|기다려|먼저|\\d+")
+    private val REQUEST = Regex("(자|요|줘|세요|해|라)[.!?]?$")
+
+    /**
+     * 40자를 넘는 무전을 줄인다. 말버릇을 지우고, 그래도 길면 곳·숫자·길 상황·요청이 많은 문장부터
+     * 40자 안에서 골라 원래 순서로 잇는다. 핵심이 없으면 첫 문장만, 한 문장뿐이면 말버릇만 지운 채 보낸다. LLM 은 쓰지 않는다
+     */
     fun shorten(text: String): String {
         val t = text.trim()
-        if (t.length <= 40) return t
-        val end = t.indexOfFirst { it == '.' || it == '?' || it == '!' || it == '\n' }
-        return if (end in 1 until t.length - 1) t.substring(0, end + 1).trim() else t
+        if (t.length <= SHORT_MAX) return t
+        val clean = t.replace(FILLER, " ").replace(Regex("\\s+"), " ").replace(Regex(" ([,.!?])"), "$1").trim()
+        if (clean.length <= SHORT_MAX) return clean
+        val parts = Regex("[^.?!\\n]+[.?!]?").findAll(clean).map { it.value.trim() }.filter { it.isNotEmpty() }.toList()
+        if (parts.size < 2) return clean
+        fun score(s: String) = KEY.findAll(s).count() + if (REQUEST.containsMatchIn(s)) 1 else 0
+        val keep = sortedSetOf<Int>()
+        var len = 0
+        // 점수가 같으면 앞 문장이 먼저(정렬이 안정적이다). 핵심이 없는 문장은 남는 칸이 있어도 넣지 않는다
+        for (i in parts.indices.sortedByDescending { score(parts[it]) }) {
+            if (keep.isNotEmpty() && score(parts[i]) == 0) break
+            val add = parts[i].length + if (keep.isEmpty()) 0 else 1
+            if (keep.isEmpty() || len + add <= SHORT_MAX) { keep += i; len += add }
+        }
+        return keep.joinToString(" ") { parts[it] }
     }
 
     /** STT 로 들은 "1번", "이 번" 을 0부터 시작하는 후보 번호로 */

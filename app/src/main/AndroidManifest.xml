@@ -5,6 +5,10 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- 방에 있는 동안 내비 뒤에서도 살아 있도록(RoomService) -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- 기어(GEAR_SELECTION) -->
     <uses-permission android:name="android.car.permission.CAR_POWERTRAIN" />
     <!-- 주행가능거리(RANGE_REMAINING) -->
@@ -47,5 +51,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <service android:name=".RoomService" android:exported="false" android:foregroundServiceType="location" />
     </application>
 </manifest>

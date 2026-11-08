@@ -334,3 +334,30 @@ test('운행 보고서: 차량별 거리·신호·도착을 모으고 GPS 튐은
   assert.deepEqual(r.events.map(e => e.text), ['입장', '입장', '급제동', '관제 공지', '전원 도착', '퇴장']);
   assert.equal(r.rows.length, 2);
 });
+
+test('앞뒤: 모두 경로상 남은 거리를 보내면 직선 거리 대신 그 값을 쓴다', () => {
+  const dest = { lat: 37.0, lng: 127.0 };
+  // 1호차는 직선으로 더 가깝지만 굽은 길이라 경로상으로는 더 멀다
+  const near = { lat: 37.01, lng: 127.0, remainM: 9_000 };
+  const far  = { lat: 37.05, lng: 127.0, remainM: 6_000 };
+  assert.deepEqual(formationOrder({ 1: near, 2: far }, dest), [2, 1]);
+  assert.equal(isAhead(2, far, 1, near, dest), true);
+  // 한 대라도 remainM 이 없으면 직선 거리로 돌아간다
+  const phone = { lat: 37.05, lng: 127.0 };
+  assert.deepEqual(formationOrder({ 1: near, 2: phone }, dest), [1, 2]);
+  assert.equal(isAhead(2, phone, 1, near, dest), false);
+});
+
+test('validateMessage: 모양이 다른 재입장 토큰과 remainM 은 버린다', () => {
+  assert.equal(validateMessage(JSON.stringify({ type: 'hello', token: 'x' })).msg.token, undefined);
+  assert.equal(validateMessage(JSON.stringify({ type: 'hello', token: '0b6c1f2e-1234-4abc-9def-001122334455' })).msg.token, '0b6c1f2e-1234-4abc-9def-001122334455');
+  assert.equal(validateMessage(JSON.stringify({ type: 'pos', lat: 37, lng: 127, remainM: -1 })).msg.remainM, undefined);
+  assert.equal(validateMessage(JSON.stringify({ type: 'pos', lat: 37, lng: 127, remainM: 1200 })).msg.remainM, 1200);
+});
+
+test('운행 기록: 재접속은 입장과 따로 적는다', () => {
+  const t = newTrip(0);
+  tripUpdate(t, { kind: 'join', car: 1, nickname: 'a', at: 0 });
+  tripUpdate(t, { kind: 'join', car: 1, nickname: 'a', again: true, at: 1 });
+  assert.deepEqual(t.events.map(e => e.text), ['입장', '재접속']);
+});

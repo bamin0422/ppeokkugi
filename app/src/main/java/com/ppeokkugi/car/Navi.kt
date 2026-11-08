@@ -8,6 +8,7 @@ import ai.pleos.playground.navi.data.CameraAlert
 import ai.pleos.playground.navi.data.CautionPoint
 import ai.pleos.playground.navi.data.DestinationArrivedInfo
 import ai.pleos.playground.navi.data.DestinationInfo
+import ai.pleos.playground.navi.data.DrivingInfo
 import ai.pleos.playground.navi.data.RequestWaypointInfo
 import ai.pleos.playground.navi.data.RouteInfo
 import ai.pleos.playground.navi.data.RouteStartInfo
@@ -25,6 +26,19 @@ class Navi(context: Context, private val emit: (CarEvent) -> Unit, private val l
     var ready = false; private set
     private var dest: DestinationInfo? = null
     private var waypoints = emptyList<Waypoint>()
+    /** 내비 주행 정보의 목적지까지 경로상 남은 거리(m)와 받은 시각 */
+    private var remain: Pair<Int, Long>? = null
+
+    /**
+     * 내 내비가 (lat, lng) 근처를 목적지로 안내 중이면 경로상 남은 거리(m). 서버가 앞·뒤를 직선 대신 이 값으로 가린다.
+     * 목적지가 다르거나 10초 넘게 새 값이 없으면 null(서버는 직선 거리로 돌아간다)
+     */
+    fun remainTo(lat: Double, lng: Double): Int? {
+        val d = dest ?: return null
+        val (m, at) = remain ?: return null
+        if (System.currentTimeMillis() - at > REMAIN_FRESH_MS) return null
+        return m.takeIf { Locator.haversineM(lat, lng, d.latitude, d.longitude) < SAME_PLACE_M }
+    }
 
     fun start() {
         val h = helper ?: return log("NaviHelper 없음")
@@ -72,7 +86,12 @@ class Navi(context: Context, private val emit: (CarEvent) -> Unit, private val l
         override fun onRoutingCompleted() { helper?.getWaypointInfo(); helper?.getDestinationInfo() }
         // 내비가 onRoutingCompleted 없이 onRouteStarted 만 줄 때가 있다
         override fun onRouteStarted(routeStartInfo: RouteStartInfo) { helper?.getWaypointInfo(); helper?.getDestinationInfo() }
-        override fun onRouteCancelled() { dest = null; waypoints = emptyList() }
+        override fun onRouteCancelled() { dest = null; waypoints = emptyList(); remain = null }
+        override fun onDrivingInfo(drivingInfo: DrivingInfo) {
+            val m = drivingInfo.destination.distance.takeIf { it > 0 }
+            if (remain == null && m != null) log("내비 경로상 남은 거리 ${m}m")
+            remain = m?.let { it to System.currentTimeMillis() }
+        }
         override fun onDestinationInfo(destinationInfo: DestinationInfo) {
             // 탐색이 실패하거나 취소되면 (0, 0) 빈 목적지가 온다. 이걸 대장 콜로 내보내면 일행 내비가 모두 오류를 낸다
             if (destinationInfo.latitude == 0.0 && destinationInfo.longitude == 0.0) { dest = null; return }
@@ -106,7 +125,10 @@ class Navi(context: Context, private val emit: (CarEvent) -> Unit, private val l
         emit(CarEvent.NaviRoute(d.latitude, d.longitude, d.name, waypoints))
     }
 
-    private companion object { const val SAME_PLACE_M = 300.0 }
+    private companion object {
+        const val SAME_PLACE_M = 300.0
+        const val REMAIN_FRESH_MS = 10_000L
+    }
 
     fun stop() {
         runCatching { helper?.removeListener(listener); helper?.release() }

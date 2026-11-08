@@ -55,22 +55,26 @@ export function isDetached(carPos, leaderPos, leaderPath, detachedSince, now) {
 
 // --- 대열 순서 ---
 
-// 앞뒤는 공유된 목적지까지 남은 직선 거리로 본다. 목적지가 없으면 호차 번호가 작은 차가 앞이다
-// ponytail: 직선 거리라 굽은 길에서는 틀릴 수 있다. 경로 폴리라인을 받으면 경로상 진행 거리로 바꾼다
-function progressKey(num, p, dest) {
-  return dest ? haversine(p.lat, p.lng, dest.lat, dest.lng) : Number(num);
+// 앞뒤는 공유된 목적지까지 남은 거리로 본다. 견주는 차가 모두 내비의 경로상 남은 거리(remainM)를 보냈으면
+// 그 값을, 하나라도 없으면(휴대폰·내비 미연결) 직선 거리를 쓴다. 목적지가 없으면 호차 번호가 작은 차가 앞이다
+const hasRemain = p => typeof p.remainM === 'number';
+function progressKey(num, p, dest, byRoute) {
+  if (!dest) return Number(num);
+  return byRoute ? p.remainM : haversine(p.lat, p.lng, dest.lat, dest.lng);
 }
 
-// positions: { [carNum]: {lat, lng} }, dest: {lat, lng} | null
+// positions: { [carNum]: {lat, lng, remainM?} }, dest: {lat, lng} | null
 // 반환: 앞에서 뒤 순서의 carNum 배열
 export function formationOrder(positions, dest = null) {
+  const byRoute = Object.values(positions).every(hasRemain);
   return Object.keys(positions).map(Number)
-    .sort((a, b) => progressKey(a, positions[a], dest) - progressKey(b, positions[b], dest) || a - b);
+    .sort((a, b) => progressKey(a, positions[a], dest, byRoute) - progressKey(b, positions[b], dest, byRoute) || a - b);
 }
 
 // a 가 b 보다 앞이면 true. 같으면 번호가 작은 쪽
 export function isAhead(aNum, a, bNum, b, dest = null) {
-  const ka = progressKey(aNum, a, dest), kb = progressKey(bNum, b, dest);
+  const byRoute = hasRemain(a) && hasRemain(b);
+  const ka = progressKey(aNum, a, dest, byRoute), kb = progressKey(bNum, b, dest, byRoute);
   return ka === kb ? aNum < bNum : ka < kb;
 }
 
@@ -271,6 +275,10 @@ export function validateMessage(raw) {
     return { ok: false, error: `unknown signal kind: ${msg.kind}` };
   if (msg.type === 'route' && !(typeof msg.dest?.lat === 'number' && typeof msg.dest?.lng === 'number'))
     return { ok: false, error: 'route needs dest.lat/lng' };
+  // 재입장 토큰은 서버가 준 것만 돌려받는다. 모양이 다르면 처음 온 차로 본다
+  if (msg.type === 'hello' && msg.token !== undefined && !(typeof msg.token === 'string' && /^[\w-]{8,64}$/.test(msg.token)))
+    delete msg.token;
+  if (msg.type === 'pos' && !(Number.isFinite(msg.remainM) && msg.remainM >= 0)) delete msg.remainM;
   return { ok: true, msg };
 }
 
@@ -297,7 +305,7 @@ export function tripUpdate(trip, ev) {
   switch (ev.kind) {
     case 'join':
       c.nickname = ev.nickname ?? ''; c.leftAt = null;
-      log('입장');
+      log(ev.again ? '재접속' : '입장');
       break;
     case 'pos':
       if (c.last) {
