@@ -5,8 +5,8 @@ V=$(cd "$(dirname "$1")" && pwd)/$(basename "$1"); KIND=$2; OUT=$3
 cd "$(dirname "$0")/.."
 D=$(mktemp -d)
 node -e '
-const c=require("./src/scenes.json"); const T=c.transition; let t=0;
-c[process.argv[1]].forEach(([id,d],i)=>{ for (const f of [0.4,0.8]) console.log((t+d*f).toFixed(2), id); t+=d-T; });' "$KIND" |
+const c=require("./src/timeline.json"), fps=require("./src/scenes.json").fps;
+c[process.argv[1]].scenes.forEach(({id,from,dur})=>{ for (const f of [0.4,0.8]) console.log(((from+dur*f)/fps).toFixed(2), id); });' "$KIND" |
 while read ts id; do
   n=$(printf "%07.2f" "$ts")
   ffmpeg -nostdin -v error -y -ss "$ts" -i "$V" -frames:v 1 -vf "scale=$([ "$KIND" = wide ] && echo 480:270 || echo 270:480),drawtext=fontfile=/System/Library/Fonts/Supplemental/Arial.ttf:text=$ts ${id/f:/}:fontsize=16:fontcolor=yellow:box=1:boxcolor=black@0.6:x=4:y=4" "$D/$n.png"

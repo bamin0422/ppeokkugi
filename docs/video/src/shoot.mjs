@@ -120,7 +120,8 @@ async function main() {
   await at(63); tapAt('투표3', '앱 투표');   // 후보 순서: 서울 만남의광장, 기흥, 안성
   await at(67); await js(`[...document.querySelectorAll('#opts button')].find(b=>b.textContent.includes('안성'))?.click()`); mark('phone vote');
   // 투표 결과가 경유지로 들어가면 내비가 앞으로 나온다. 앱으로 돌아온다
-  await at(76); adb('shell', 'am', 'start', '--user', '10', '-n', 'com.ppeokkugi/.MainActivity'); mark('app front');
+  // 내비가 뜨는 시각은 투표 마감에 따라 76~100초로 달라진다. 늦게 뜬 경우에도 도착 장면이 앱에서 찍히도록 세 번 부른다
+  for (const s of [76, 105, 125]) { await at(s); adb('shell', 'am', 'start', '--user', '10', '-n', 'com.ppeokkugi/.MainActivity'); mark('app front'); }
   // 휴대폰은 기흥 부근에 서 있으므로 도착 판정 전에 방을 나간다
   await at(150); await js(`document.getElementById('leave').click()`); mark('phone leave');
   // 봇이 일행 도착(arrive)을 받으면 15초 머문 뒤 끝난다

@@ -1,136 +1,103 @@
 import React from 'react';
-import {AbsoluteFill, Audio, Composition, interpolate, Sequence, spring, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
-import {Feature, FEATURES, featureLead} from './Feature';
-import {Clock, Concept, Convoy, Logo, Outro, Sdk, UseCase} from './Scenes';
-import {Changes, Fleet, Pain, Purpose, Report} from './Story';
+import {AbsoluteFill, Audio, Composition, interpolate, Sequence, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
+import {Feature} from './Feature';
+import {BrakeCam, Concept, Convoy, Fleet, Outro, Pain, UseCase} from './Broll';
+import {Clock, Logo, Sdk} from './Scenes';
+import {Changes, Purpose, Report} from './Story';
 import cfg from './scenes.json';
-import speech from './speech.json';
+import tl from './timeline.json';
 import {C, Sfx} from './theme';
 
-export type Props = {
-  /**
-   * AI b-roll 자리. public/ 아래 경로(예: "broll/convoy.mp4")를 넣으면 첫 장면(convoy)이 그 영상으로 바뀐다.
-   * 의도한 장면: "highway convoy at dusk" — 해 질 녘 고속도로를 줄지어 달리는 승용차 3~4대, 3~4초, 무음.
-   * null 이면 벡터 그림 도로 장면을 쓴다.
-   */
-  introBroll: string | null;
-};
-
+/** 장면 시간표는 scripts/prep.py 가 나레이션 길이에 맞춰 계산한다(src/timeline.json, 프레임 단위) */
+type Item = {id: string; from: number; dur: number; vo: string | null; hold: number; index: number};
 const FPS = cfg.fps;
 const T = Math.round(cfg.transition * FPS);
-type Item = {id: string; from: number; dur: number; index: number};
+const VO_DELAY = Math.round(cfg.voDelay * FPS);
+const BGM = 'audio/bgm_flow_1.wav';
+const BGM_BASE = 0.12; // 처음부터 끝까지 같은 크기로 깐다(목소리에 맞춰 줄였다 키우면 출렁여 들린다)
 
-const layout = (list: (string | number)[][]): {items: Item[]; total: number} => {
-  let from = 0;
+const items = (kind: 'wide' | 'short'): Item[] => {
   let fi = 0;
-  const items = list.map(([id, d], i) => {
-    const dur = Math.round((d as number) * FPS);
-    const it = {id: id as string, from, dur, index: (id as string).startsWith('f:') ? ++fi : 0};
-    from += dur - (i < list.length - 1 ? T : 0);
-    return it;
-  });
-  return {items, total: from};
+  return tl[kind].scenes.map((s) => ({...s, index: s.id.startsWith('f:') ? ++fi : 0}));
 };
 
-const Scene: React.FC<{item: Item; broll: string | null}> = ({item, broll}) => {
+const Scene: React.FC<{item: Item}> = ({item}) => {
   const d = item.dur / FPS;
-  if (item.id.startsWith('f:')) return <Feature id={item.id.slice(2)} dur={d} index={item.index} />;
+  if (item.id.startsWith('f:')) return <Feature id={item.id.slice(2)} dur={d} index={item.index} hold={item.hold / FPS} />;
   switch (item.id) {
     case 'convoy':
-      return <Convoy broll={broll} />;
+      return <Convoy dur={d} />;
     case 'pain':
       return <Pain dur={d} />;
     case 'purpose':
       return <Purpose dur={d} />;
-    case 'changes':
-      return <Changes dur={d} />;
-    case 'fleet':
-      return <Fleet dur={d} />;
-    case 'report':
-      return <Report dur={d} />;
     case 'clock':
       return <Clock dur={d} />;
     case 'logo':
       return <Logo />;
     case 'concept':
       return <Concept dur={d} />;
+    case 'brakecam':
+      return <BrakeCam dur={d} />;
     case 'sdk':
       return <Sdk />;
     case 'usecase':
-      return <UseCase />;
+      return <UseCase dur={d} />;
+    case 'fleet':
+      return <Fleet dur={d} />;
+    case 'report':
+      return <Report dur={d} />;
+    case 'changes':
+      return <Changes dur={d} />;
     case 'outro':
-      return <Outro />;
+      return <Outro dur={d} />;
   }
   return null;
 };
 
-/** 장면 진입: 겹치는 T 프레임 동안 새 종이가 아래에서 올라와 덮는다 */
+/** 장면 진입: 겹치는 T 프레임 동안 천천히 겹쳐 나타난다 */
 const Enter: React.FC<{children: React.ReactNode; first: boolean}> = ({children, first}) => {
   const f = useCurrentFrame();
-  const {fps, height} = useVideoConfig();
   if (first) return <>{children}</>;
-  const e = spring({frame: f, fps, config: {damping: 18, stiffness: 120}, durationInFrames: T + 4});
-  return (
-    <AbsoluteFill
-      style={{
-        transform: `translateY(${(1 - e) * height * 0.5}px) rotate(${(1 - e) * 2}deg) scale(${0.94 + 0.06 * e})`,
-        transformOrigin: '50% 100%',
-        borderRadius: (1 - e) * 60,
-        overflow: 'hidden',
-        boxShadow: e < 1 ? `0 -20px 60px rgba(80,40,60,${0.25 * (1 - e)})` : undefined,
-      }}
-    >
-      {children}
-    </AbsoluteFill>
-  );
+  const e = interpolate(f, [0, T], [0, 1], {extrapolateRight: 'clamp', easing: (x) => x * x * (3 - 2 * x)});
+  return <AbsoluteFill style={{opacity: e, transform: `scale(${1.015 - 0.015 * e})`}}>{children}</AbsoluteFill>;
 };
 
-const Main: React.FC<Props & {kind: 'wide' | 'short'}> = ({kind, introBroll}) => {
-  const {items} = layout(cfg[kind]);
-  // 앱 TTS 가 나오는 구간(전역 프레임) → 배경음 낮춤
-  const windows: [number, number][] = [];
-  for (const it of items) {
-    if (!it.id.startsWith('f:')) continue;
-    const id = it.id.slice(2);
-    const mute = FEATURES[id]?.muteUntil ?? 0;
-    const off = it.from + featureLead(id) * FPS;
-    for (const [a, b] of (speech as Record<string, number[][]>)[id] ?? []) {
-      if (b <= mute || off + a * FPS >= it.from + it.dur) continue;
-      windows.push([off + Math.max(a, mute) * FPS, Math.min(off + b * FPS, it.from + it.dur)]);
-    }
-  }
-  const ramp = 0.3 * FPS;
-  const bgmVol = (f: number) => {
-    let duck = 0;
-    for (const [a, b] of windows) {
-      duck = Math.max(duck, interpolate(f, [a - ramp, a, b, b + ramp], [0, 1, 1, 0], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'}));
-    }
-    // 시연 장면 전체는 조금 낮게, 말소리 구간은 크게 낮춤
-    const inFeature = items.some((it) => it.id.startsWith('f:') && f >= it.from && f < it.from + it.dur);
-    const base = inFeature ? 0.26 : 0.6;
-    return base * (1 - 0.6 * duck);
-  };
+const Main: React.FC<{kind: 'wide' | 'short'}> = ({kind}) => {
+  const list = items(kind);
+  const {durationInFrames} = useVideoConfig();
+  // BGM은 일정한 크기로 깔고, 처음 1초 페이드 인·끝 2.5초 페이드 아웃만 한다
+  const bgmVol = (f: number) =>
+    BGM_BASE * interpolate(f, [0, FPS, durationInFrames - 2.5 * FPS, durationInFrames - 1], [0, 1, 1, 0], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
   return (
     <AbsoluteFill style={{background: C.bg}}>
-      {items.map((it, i) => (
+      {list.map((it, i) => (
         <Sequence key={i} from={it.from} durationInFrames={it.dur}>
           <Enter first={i === 0}>
-            <Scene item={it} broll={introBroll} />
+            <Scene item={it} />
           </Enter>
-          {i > 0 ? <Sfx name="whoosh" at={0} volume={0.32} /> : null}
+          {i > 0 ? <Sfx name="whoosh" at={0} volume={0.12} /> : null}
         </Sequence>
       ))}
-      <Audio src={staticFile(`audio/bgm_${kind}.wav`)} volume={bgmVol} />
+      {/* 나레이션은 장면 밖에 둔다: 다음 장면으로 넘어가는 줄(급제동)도 잘리지 않게 */}
+      {list.map((it, i) =>
+        it.vo ? (
+          <Sequence key={`vo${i}`} from={it.from + VO_DELAY} layout="none">
+            <Audio src={staticFile(`audio/vo/${it.vo}.mp3`)} />
+          </Sequence>
+        ) : null,
+      )}
+      <Audio src={staticFile(BGM)} volume={bgmVol} />
     </AbsoluteFill>
   );
 };
 
-export const Promo: React.FC<Props> = (p) => <Main {...p} kind="wide" />;
-export const Short: React.FC<Props> = (p) => <Main {...p} kind="short" />;
+export const Promo: React.FC = () => <Main kind="wide" />;
+export const Short: React.FC = () => <Main kind="short" />;
 
 export const RemotionRoot: React.FC = () => (
   <>
-    <Composition id="Promo" component={Promo} durationInFrames={layout(cfg.wide).total} fps={FPS} width={1920} height={1080} defaultProps={{introBroll: null} as Props} />
-    <Composition id="Short" component={Short} durationInFrames={layout(cfg.short).total} fps={FPS} width={1080} height={1920} defaultProps={{introBroll: null} as Props} />
+    <Composition id="Promo" component={Promo} durationInFrames={tl.wide.total} fps={FPS} width={1920} height={1080} />
+    <Composition id="Short" component={Short} durationInFrames={tl.short.total} fps={FPS} width={1080} height={1920} />
   </>
 );

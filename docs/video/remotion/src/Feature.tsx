@@ -1,5 +1,6 @@
 import React from 'react';
-import {AbsoluteFill, interpolate, OffthreadVideo, Sequence, spring, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
+import {AbsoluteFill, Freeze, interpolate, OffthreadVideo, Sequence, spring, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
+import cfg from './scenes.json';
 import speech from './speech.json';
 import {Backdrop, BeforeAfter, Brand, C, Chip, FONT, FONT_B, Led, Pop, SERIF, Sfx, Sprite, useT, useTall, WaveBars} from './theme';
 
@@ -26,8 +27,6 @@ export type FeatureDef = {
   /** 예전 방식 → 뻐꾸기 (장면 첫머리에 크게) */
   before: string;
   after: string;
-  /** 첫머리 전·후 자막을 크게 보여 주는 시간(초). 0이면 바로 화면 */
-  lead: number;
   title: string;
   sub: string;
   note?: string;
@@ -40,11 +39,12 @@ export type FeatureDef = {
   /** 무전 이벤트(딸깍+스켈치) 시각 */
   radio: number[];
   alert?: number;
-  /** 이 시각 전까지 클립 소리 끔(다른 장면 소리 겹침 방지) */
-  muteUntil?: number;
 };
 
-const LEAD = 1.7;
+/** 클립별 녹화 의존 값(scenes.json clips): lead 첫머리 전·후 자막 시간, mute~muteAfter 밖은 클립 소리 끔(초) */
+type ClipCfg = {lead?: number; mute?: number; muteAfter?: number};
+const clipCfg = (id: string) => (cfg.clips as Record<string, ClipCfg>)[id] ?? {};
+
 const TALL0: Rect = [640, 60, 1042, 800];
 
 export const FEATURES: Record<string, FeatureDef> = {
@@ -52,7 +52,6 @@ export const FEATURES: Record<string, FeatureDef> = {
     tag: '사람 무전',
     before: '전화 3통',
     after: '버튼 1번',
-    lead: LEAD,
     title: '버튼 한 번, 전 차량 동시 무전',
     sub: '누르고 말하면 일행 모든 차에 동시 전달',
     note: '에뮬레이터는 마이크 입력 없음 · 송신 표시만',
@@ -66,28 +65,25 @@ export const FEATURES: Record<string, FeatureDef> = {
     tag: '무전 수신',
     before: '단톡 확인 불가',
     after: '스피커 음성 전달',
-    lead: LEAD,
     title: '화면 대신 스피커로 듣는 무전',
     sub: '보낸 차·자리 표시, 차량 스피커 음성 재생',
     note: '왼쪽: Pleos 미탑재 일행의 휴대폰 웹',
     mood: 'rx',
     cam: [[0.2, CARDS]],
     camTall: [[0.0, TALL0], [0.4, [650, 120, 1020, 640]]],
-    ring: [[0.7, CARD1], [2.7, CARD2], [3.6, null]],
+    ring: [[0.7, CARD1], [3.6, null]],
     radio: [0.7],
-    muteUntil: 3.9,   // 앞 장면(급제동) 안내 음성이 끝난 뒤부터 클립 소리를 켠다
   },
   brake: {
     tag: '자동 무전',
     before: '앞차 급제동 늦은 인지',
     after: '자동 무전',
-    lead: LEAD,
     title: '급제동 자동 무전',
     sub: '앞차 급제동, 거리 포함 음성·카드·지도 핀 전달',
     mood: 'brake',
     cam: [[0.2, [0, 100, APP_W, 650]], [2.3, CARDS]],
     camTall: [[0.0, TALL0], [0.4, [650, 120, 1020, 640]]],
-    ring: [[0.7, CARD1], [3.7, CARD2], [5.7, CARD3], [6.6, null]],
+    ring: [[0.7, CARD1], [3.1, CARD2], [6.6, null]],
     radio: [0.7],
     alert: 0.75,
   },
@@ -95,7 +91,6 @@ export const FEATURES: Record<string, FeatureDef> = {
     tag: '쉬어 가',
     before: '휴게소 제각각 결정',
     after: '투표 후 전 차량 경유지',
-    lead: LEAD,
     title: '휴게소 투표',
     sub: '후보 3곳 · 번호 누르기나 "1번" 음성 투표',
     mood: 'vote',
@@ -108,21 +103,19 @@ export const FEATURES: Record<string, FeatureDef> = {
     tag: '내비 연동',
     before: '휴게소 제각각 결정',
     after: '투표 후 전 차량 경유지',
-    lead: 0,
     title: '순정 내비 경유지 등록',
     sub: '투표 결과 휴게소, 전 차량 내비에 자동 반영',
     note: '앱 → 차량 순정 내비 (NaviHelper)',
     mood: 'arrive',
-    cam: [[0.2, CARDS], [1.2, [0, 0, 1300, 1100]], [3.6, FULL]],   // 내비로 바뀌기 전에 미리 넓혀 빈 지도를 비추지 않는다
-    camTall: [[0.0, [640, 100, 1042, 800]], [1.2, [0, 0, 1000, 1210]]],
-    ring: [[0.3, CARD1], [1.1, null], [2.1, NAV_LIST], [3.2, NAV_ROUTE], [4.6, null]],
+    cam: [[0.2, CARDS], [0.7, [0, 0, 1300, 1100]], [3.0, FULL]],   // 내비로 바뀌기 전에 미리 넓혀 빈 지도를 비추지 않는다
+    camTall: [[0.0, [640, 100, 1042, 800]], [0.7, [0, 0, 1000, 1210]]],
+    ring: [[0.2, CARD1], [0.8, null], [1.8, NAV_LIST], [2.8, NAV_ROUTE], [3.7, null]],
     radio: [0.0],
   },
   arrive: {
     tag: '자동 무전',
     before: '"어디야?" 반복 확인',
     after: '위치·도착 자동 보고',
-    lead: LEAD,
     title: '도착 자동 보고',
     sub: '차량 간 거리 표시, 휴게소 도착 보고, 전원 도착 시 깃발 색 깜빡임',
     mood: 'arrive',
@@ -134,7 +127,7 @@ export const FEATURES: Record<string, FeatureDef> = {
 };
 
 /** 클립이 장면 안에서 시작하는 초: 전·후 자막이 사라지기 시작할 때 */
-export const featureLead = (id: string) => Math.max(0, (FEATURES[id]?.lead ?? 0) - 0.35);
+export const featureLead = (id: string) => Math.max(0, (clipCfg(id).lead ?? 0) - 0.35);
 
 /** 카메라 사각형 → 확대·이동. contain 으로 맞추고 앱 밖 빈 곳이 보이지 않게 고정 */
 const camTransform = (r: Rect, vw: number, vh: number) => {
@@ -163,7 +156,7 @@ const useKeyed = <T,>(keys: [number, T][], start: T, mix: (a: T, b: T, p: number
   return cur;
 };
 
-const AppView: React.FC<{id: string; def: FeatureDef; vw: number; vh: number; tall: boolean; dur: number}> = ({id, def, vw, vh, tall, dur}) => {
+const AppView: React.FC<{id: string; def: FeatureDef; vw: number; vh: number; tall: boolean; dur: number; still?: boolean}> = ({id, def, vw, vh, tall, dur, still}) => {
   const t = useT();
   const {fps} = useVideoConfig();
   const start: Rect = tall ? def.camTall[0][1] : FULL;
@@ -179,7 +172,7 @@ const AppView: React.FC<{id: string; def: FeatureDef; vw: number; vh: number; ta
   const ringRect = useKeyed<Rect | null>(def.ring, null, (a, b, p) => (b === null ? (p > 0.5 ? null : a) : a === null ? b : lerpRect(a, b, p)), 18);
   const ringIn = t >= firstRing[0] ? spring({frame: Math.round((t - firstRing[0]) * fps), fps, config: {damping: 10, stiffness: 140}}) : 0;
   const pulse = 0.5 + 0.5 * Math.sin(t * 7);
-  const muted = def.muteUntil ?? 0;
+  const {mute = 0, muteAfter = 99} = clipCfg(id);
   const edge = 0.3;
 
   return (
@@ -188,10 +181,12 @@ const AppView: React.FC<{id: string; def: FeatureDef; vw: number; vh: number; ta
         <OffthreadVideo
           src={staticFile(`clips/${id}.mp4`)}
           style={{width: APP_W, height: APP_H}}
+          muted={still}
           volume={(f) => {
             const ts = f / fps;
-            if (ts < muted) return 0;
-            return interpolate(ts, [muted, muted + edge, dur - edge, dur], [0, 1, 1, 0], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
+            const end = Math.min(dur, muteAfter + edge);
+            if (ts < mute || ts > end) return 0;
+            return interpolate(ts, [mute, mute + edge, end - edge, end], [0, 1, 1, 0], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
           }}
         />
         {ringRect ? (
@@ -259,26 +254,27 @@ const Phone: React.FC<{src: string; h: number; at: number; dur: number}> = ({src
   );
 };
 
-export const Feature: React.FC<{id: string; dur: number; index: number}> = ({id, dur, index}) => {
+/** hold: 나레이션이 끝날 때까지 클립 첫 프레임을 멈춰 두는 시간(초, prep.py 가 계산) */
+export const Feature: React.FC<{id: string; dur: number; index: number; hold: number}> = ({id, dur, index, hold}) => {
   const def = FEATURES[id];
   const tall = useTall();
   const t = useT();
   const {fps} = useVideoConfig();
   const sp = (speech as Record<string, number[][]>)[id] ?? [];
-  const lead = def.lead;
-  const vstart = featureLead(id);
+  const {lead = 0, mute = 0, muteAfter = 99} = clipCfg(id);
+  const vstart = featureLead(id) + hold;
   const clipDur = dur - vstart;
   // 첫머리 큰 전·후 자막 → 사라지고 화면 등장
   const introOut = lead ? ramp01(t, lead - 0.35, lead) : 1;
   // 무전기 LCD: 앱 음성이 나오는 동안 RX 파형이 출렁인다 (speech.json 기준)
   const ct = t - vstart;
-  const talking = sp.some(([a, b]) => ct >= a && ct < b && b > (def.muteUntil ?? 0));
+  const talking = sp.some(([a, b]) => ct >= a && ct < b && b > mute && a < muteAfter);
   const sending = def.radio.some((r) => ct >= r - 0.05 && ct < r + 0.6);
 
   const sfx = (
     <>
       {def.radio.map((r, i) => {
-        const after = sp.find(([a]) => a >= r - 0.2 && a >= (def.muteUntil ?? 0));
+        const after = sp.find(([a]) => a >= r - 0.2 && a >= mute && a < muteAfter);
         const end = after ? Math.min(after[1], clipDur - 0.3) : Math.min(r + 2.2, clipDur - 0.4);
         return (
           <React.Fragment key={i}>
@@ -288,6 +284,21 @@ export const Feature: React.FC<{id: string; dur: number; index: number}> = ({id,
         );
       })}
       {def.alert !== undefined ? <Sfx name="alert" at={def.alert} volume={0.5} /> : null}
+    </>
+  );
+  // 클립 자리: hold 동안 첫 프레임 정지(소리 없음) → 이어서 재생
+  const v0 = Math.round(featureLead(id) * fps);
+  const h = Math.round(hold * fps);
+  const appClip = (play: React.ReactNode, still: React.ReactNode) => (
+    <>
+      {h > 0 ? (
+        <Sequence from={v0} durationInFrames={h} layout="none">
+          <Freeze frame={0}>{still}</Freeze>
+        </Sequence>
+      ) : null}
+      <Sequence from={v0 + h} layout="none">
+        {play}
+      </Sequence>
     </>
   );
   const num = String(index).padStart(2, '0');
@@ -335,9 +346,7 @@ export const Feature: React.FC<{id: string; dur: number; index: number}> = ({id,
             <div style={{fontFamily: SERIF, fontSize: 62, color: C.ink, lineHeight: 1.15, marginTop: 14, wordBreak: 'keep-all'}}>{def.title}</div>
           </div>
           <div style={{position: 'absolute', left: 24, top: 500, width: vw, height: vh, borderRadius: 32, overflow: 'hidden', border: `8px solid ${C.paper}`, boxShadow: '0 24px 50px rgba(80,40,60,.18)', background: C.lcd}}>
-            <Sequence from={Math.round(vstart * fps)} layout="none">
-              <AppView id={id} def={def} vw={vw - 16} vh={vh - 16} tall dur={clipDur} />
-            </Sequence>
+            {appClip(<AppView id={id} def={def} vw={vw - 16} vh={vh - 16} tall dur={clipDur} />, <AppView id={id} def={def} vw={vw - 16} vh={vh - 16} tall dur={clipDur} still />)}
           </div>
           <div style={{position: 'absolute', left: 48, top: 1335, right: 48, textAlign: 'center'}}>
             <div style={{fontFamily: FONT_B, fontSize: 44, color: C.ink, lineHeight: 1.35, wordBreak: 'keep-all'}}>{def.sub}</div>
@@ -385,9 +394,7 @@ export const Feature: React.FC<{id: string; dur: number; index: number}> = ({id,
           </div>
         )}
         <Bezel x={620} y={Math.round((1080 - vh) / 2) + 20} w={vw} h={vh} tilt={-3 + Math.min(1, t / dur) * 1.5}>
-          <Sequence from={Math.round(vstart * fps)} layout="none">
-            <AppView id={id} def={def} vw={vw} vh={vh} tall={false} dur={clipDur} />
-          </Sequence>
+          {appClip(<AppView id={id} def={def} vw={vw} vh={vh} tall={false} dur={clipDur} />, <AppView id={id} def={def} vw={vw} vh={vh} tall={false} dur={clipDur} still />)}
         </Bezel>
       </div>
       <Sequence from={Math.round(vstart * fps)} layout="none">

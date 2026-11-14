@@ -31,7 +31,6 @@ export const C = {
 /** 차량 색: 1호차부터 차례로 */
 export const CARS = ['#ff5a4e', '#2b8cff', '#ffbf1f', '#7b55ff', '#ff3d8b', '#14b8d4'];
 export const VEH_COLORS = CARS;
-export const BUS = '#ffbf1f';
 
 /** 본문(Pretendard SemiBold) · 굵은 글자(Pretendard ExtraBold) · 제목(Gowun Batang Bold) */
 export const FONT = 'PretendardSB';
@@ -74,7 +73,7 @@ export const Sfx: React.FC<{name: string; at: number; volume?: number}> = ({name
   const {fps} = useVideoConfig();
   return (
     <Sequence from={Math.max(0, Math.round(at * fps))} layout="none">
-      <Audio src={staticFile(`audio/${name}.wav`)} volume={volume} />
+      <Audio src={staticFile(`audio/${name}.wav`)} volume={volume * 0.6} />
     </Sequence>
   );
 };
@@ -98,61 +97,6 @@ export const Sprite: React.FC<{mood: string; scale: number; fps?: number; style?
         src={staticFile(`character/cuckoo_${k}.svg`)}
         style={{width: s, height: s, display: 'block', transformOrigin: '50% 90%', transform: `scale(${1 + sq * 0.025}, ${1 - sq * 0.025})`}}
       />
-    </div>
-  );
-};
-
-/** 옆에서 본 차(벡터). 크기는 예전 픽셀 그림과 같다: 승용차 18×10px, 버스 26×10px 단위 */
-export const Vehicle: React.FC<{kind: 'car' | 'bus'; color: string; px: number; brake?: boolean; style?: React.CSSProperties}> = ({
-  kind,
-  color,
-  px,
-  brake,
-  style,
-}) => {
-  const W = kind === 'car' ? 180 : 260;
-  const glass = '#e3f0ff';
-  return (
-    <svg width={(W / 10) * px} height={10 * px} viewBox={`0 0 ${W} 100`} style={{overflow: 'visible', ...style}}>
-      <ellipse cx={W / 2} cy={97} rx={W * 0.46} ry={5} fill="rgba(42,34,48,.14)" />
-      {kind === 'car' ? (
-        <>
-          <path d="M40 46 L58 14 Q62 8 70 8 L116 8 Q124 8 129 14 L150 46 Z" fill={color} />
-          <path d="M60 42 L73 18 L94 18 L94 42 Z M101 42 L101 18 L120 18 Q124 18 126 22 L138 42 Z" fill={glass} />
-          <rect x={6} y={40} width={168} height={42} rx={20} fill={color} />
-          <rect x={6} y={60} width={168} height={6} fill="rgba(255,255,255,.28)" />
-        </>
-      ) : (
-        <>
-          <rect x={4} y={6} width={252} height={76} rx={20} fill={color} />
-          {[0, 1, 2, 3, 4, 5].map((i) => (
-            <rect key={i} x={18 + i * 36} y={18} width={28} height={26} rx={7} fill={glass} />
-          ))}
-          <rect x={232} y={18} width={16} height={44} rx={6} fill={glass} />
-          <rect x={4} y={56} width={252} height={6} fill="rgba(255,255,255,.28)" />
-        </>
-      )}
-      <rect x={W - 14} y={kind === 'car' ? 48 : 50} width={10} height={10} rx={4} fill="#ffe9a3" />
-      <rect x={2} y={kind === 'car' ? 48 : 50} width={8} height={12} rx={4} fill={brake ? C.tx : '#c43a4e'} />
-      {brake ? <circle cx={4} cy={kind === 'car' ? 54 : 56} r={16} fill={C.tx} opacity={0.35} /> : null}
-      {(kind === 'car' ? [44, 136] : [50, 210]).map((x) => (
-        <g key={x}>
-          <circle cx={x} cy={82} r={16} fill={C.ink} />
-          <circle cx={x} cy={82} r={6} fill="#ece3dc" />
-        </g>
-      ))}
-    </svg>
-  );
-};
-
-/** 도로: 흐르는 흰 차선 */
-export const Road: React.FC<{y: number; h: number; speed?: number; left?: number}> = ({y, h, speed = 260, left = 0}) => {
-  const t = useT();
-  const {width} = useVideoConfig();
-  const off = (t * speed) % 140;
-  return (
-    <div style={{position: 'absolute', left, top: y, width: width - left, height: h, background: '#efe3da', borderTop: '10px solid #f7ece4', borderBottom: '10px solid #e6d6ca', overflow: 'hidden'}}>
-      <div style={{position: 'absolute', left: -140 - off, right: -140, top: h / 2 - 6, height: 12, backgroundImage: 'repeating-linear-gradient(90deg, #ffffff 0 70px, transparent 70px 140px)', borderRadius: 6}} />
     </div>
   );
 };

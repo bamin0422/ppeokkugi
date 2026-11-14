@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Remotion public/ 준비: 실제 녹화 클립 자르기, 앱 TTS 구간 찾기, 마스코트·글꼴 복사, BGM·효과음 합성.
+"""Remotion public/ 준비: 실제 녹화 클립 자르기·앱 음성 정규화, 앱 TTS 구간 찾기, 마스코트·글꼴 복사, 효과음 합성,
+나레이션 길이에 맞춘 장면 시간표(src/timeline.json) 계산.
 
 사용: python3 scripts/prep.py            (docs/video/remotion 에서)
-원본: ../src/raw (take1·take2 녹화, gitignore). 결과: public/ (gitignore), src/speech.json
+원본: ../src/raw (take3·take4·take5 녹화, gitignore), public/audio/vo/*.mp3(나레이션), public/audio/bgm_flow_1.wav(BGM)
+결과: public/ (gitignore), src/speech.json, src/timeline.json
 """
 import json
 import re
@@ -19,7 +21,7 @@ RAW = HERE.parent / "src/raw"
 PUB = HERE / "public"
 FF = shutil.which("ffmpeg") or "/opt/homebrew/bin/ffmpeg"
 CROP = "crop=1682:1210:853:90"  # 2560x1440 에뮬레이터 녹화에서 앱 화면
-GAIN = "volume=18dB,alimiter=limit=0.9"  # 에뮬레이터 TTS 녹음이 -45dB 안팎
+PEAK = -7.0  # 앱 음성 정규화 목표 피크(dBFS). 에뮬레이터 TTS 녹음은 피크 -28dB 안팎이라 구간마다 따로 맞춘다
 SR = 48000
 CFG = json.loads((HERE / "src/scenes.json").read_text())
 
@@ -33,13 +35,21 @@ def rec_start(take, seg):
     return [e["t"] for e in t if e["what"] == "rec start"][seg - 1] / 1000
 
 
-SRCS = {"A1": ("take1/emu-1.webm", ("take1", 1)), "A2": ("take1/emu-2.webm", ("take1", 2)),
-        "B": ("take2/emu-1.webm", ("take2", 1))}
+SRCS = {"A1": ("take3/emu-1.webm", ("take3", 1)), "A2": ("take5/emu-2.webm", ("take5", 2)),
+        "B": ("take4/emu-1.webm", ("take4", 1))}
+
+
+def aligned_audio(f):
+    """녹화 소리를 영상 시각에 맞춘 wav. webm 오디오는 무음 구간이 통째로 빠져 있어 그대로 자르면 말이 당겨지고 끊긴다"""
+    out = PUB / f"clips/_aud_{f.replace('/', '_')}.wav"
+    if not out.exists():
+        run("-i", RAW / f, "-vn", "-af", f"aresample={SR}:async=1:first_pts=0", "-ac", "1", out)
+    return out
 
 
 def phone_video(out):
     """휴대폰 웹 CDP 스크린캐스트(가변 간격 jpg) → 30fps. 반환: 첫 프레임 epoch 초"""
-    d = RAW / "take1/phone"
+    d = RAW / "take3/phone"
     rows = [l.split() for l in (d / "frames.txt").read_text().splitlines() if l.strip()]
     lst = []
     for (n, t), (_, t2) in zip(rows, rows[1:] + [(rows[-1][0], str(int(rows[-1][1]) + 100))]):
@@ -52,9 +62,17 @@ def phone_video(out):
     return int(rows[0][1]) / 1000
 
 
+def gain_for(src, a, b):
+    """구간 피크가 PEAK 가 되도록 올릴 dB(증폭 고정값 대신 정규화). 리미터는 안전장치로만 둔다"""
+    r = subprocess.run([FF, "-hide_banner", "-ss", str(a), "-t", str(b - a), "-i", str(src), "-vn", "-af", "highpass=f=80,volumedetect", "-f", "null", "-"],
+                       capture_output=True, text=True).stderr
+    peak = float(re.findall(r"max_volume: (-?[\d.]+) dB", r)[-1])
+    return f"highpass=f=80,volume={PEAK - peak:.1f}dB,alimiter=limit={10 ** ((PEAK + 0.5) / 20):.3f}:level=false"
+
+
 def speech_windows(clip):
-    """증폭한 클립 소리에서 말소리 구간 [시작, 끝] 목록"""
-    r = subprocess.run([FF, "-v", "info", "-i", str(clip), "-vn", "-af", "silencedetect=n=-42dB:d=0.3", "-f", "null", "-"],
+    """정규화한 클립 소리에서 말소리 구간 [시작, 끝] 목록 (피크보다 32dB 낮으면 조용함)"""
+    r = subprocess.run([FF, "-v", "info", "-i", str(clip), "-vn", "-af", f"silencedetect=n={PEAK - 32:.0f}dB:d=0.3", "-f", "null", "-"],
                        capture_output=True, text=True).stderr
     dur = float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(clip)],
                                capture_output=True, text=True).stdout)
@@ -79,22 +97,22 @@ def clips():
         f, (take, seg) = SRCS[c["src"]]
         out = PUB / f"clips/{cid}.mp4"
         if not out.exists():
-            parts = []
-            for k, (a, b) in enumerate(c["segs"]):
-                p = PUB / f"clips/{cid}_{k}.mp4"
-                run("-ss", a, "-t", b - a, "-i", RAW / f, "-vf", f"{CROP},fps=30,format=yuv420p",
-                    "-af", f"aresample={SR},{GAIN}", "-c:v", "libx264", "-crf", "16", "-preset", "medium",
-                    "-c:a", "aac", "-b:a", "192k", "-ar", SR, p)
-                parts.append(p)
-            if len(parts) == 1:
-                parts[0].rename(out)
-            else:
-                lst = PUB / f"clips/{cid}.txt"
-                lst.write_text("".join(f"file '{p}'\n" for p in parts))
-                run("-f", "concat", "-safe", "0", "-i", lst, "-c", "copy", out)
-                lst.unlink()
-                for p in parts:
-                    p.unlink()
+            # 소리는 영상 조각과 따로 이어 붙인다(aseg). 에뮬레이터 TTS 는 카드가 뜬 뒤 몇 초 늦게 나와서
+            # 화면 구간과 말 구간을 따로 고르고, 말 한마디가 이음매에 걸리지 않게 한다
+            wav = aligned_audio(f)
+            segs, asegs = c["segs"], c.get("aseg", c["segs"])
+            total = sum(b - a for a, b in segs)
+            aud = PUB / f"clips/_a_{cid}.wav"
+            run("-i", wav, "-filter_complex",
+                "".join(f"[0:a]atrim={a}:{b},asetpts=PTS-STARTPTS[a{k}];" for k, (a, b) in enumerate(asegs))
+                + "".join(f"[a{k}]" for k in range(len(asegs))) + f"concat=n={len(asegs)}:v=0:a=1[a]", "-map", "[a]", aud)
+            ins = [x for a, b in segs for x in ("-ss", a, "-t", b - a, "-i", RAW / f)]
+            n = len(segs)
+            vf = ("".join(f"[{k}:v]{CROP},fps=30,format=yuv420p,setpts=PTS-STARTPTS[v{k}];" for k in range(n))
+                  + "".join(f"[v{k}]" for k in range(n)) + f"concat=n={n}:v=1:a=0[v]")
+            run(*ins, "-i", aud, "-filter_complex", vf, "-map", "[v]", "-map", f"{n}:a", "-af", gain_for(aud, 0, total), "-t", total,
+                "-c:v", "libx264", "-crf", "16", "-preset", "medium", "-c:a", "aac", "-b:a", "192k", "-ar", SR, out)
+            aud.unlink()
         speech[cid] = speech_windows(out)
         if c.get("phone"):
             t0 = phone_video(phone_all)
@@ -104,6 +122,8 @@ def clips():
             if not pout.exists():
                 run("-ss", f"{ps:.3f}", "-t", b - a, "-i", phone_all, "-c:v", "libx264", "-crf", "16", "-an", pout)
     phone_all.unlink(missing_ok=True)
+    for w in (PUB / "clips").glob("_aud_*.wav"):
+        w.unlink()
     (HERE / "src/speech.json").write_text(json.dumps(speech, indent=1) + "\n")
     print("speech", json.dumps(speech))
 
@@ -120,7 +140,7 @@ def assets():
     shutil.copy(ROOT / "design/screens/control-report.png", PUB / "shots/report.png")
 
 
-# ---------------- 소리 합성 (모두 코드로 생성, 외부 음원 없음) ----------------
+# ---------------- 효과음 합성 (코드로 생성) ----------------
 RNG = np.random.default_rng(7)
 
 
@@ -219,106 +239,58 @@ def sfx():
     write(d / "cuckoo.wav", cu * 0.5)
 
 
-NOTE = {n: i for i, n in enumerate(["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"])}
+def probe_len(path):
+    return float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(path)],
+                                capture_output=True, text=True).stdout)
 
 
-def hz(name):
-    n, o = name[:-1], int(name[-1])
-    return 440 * 2 ** ((NOTE[n] + 12 * (o + 1) - 69) / 12)
-
-
-def bgm(total, path):
-    """96 BPM 따뜻한 로파이 팝: 전자 피아노 화음, 부드러운 베이스, 가벼운 드럼, 종소리 선율.
-    인트로 2마디(피아노만) → 본곡 반복 → 끝 화음. 길이는 영상 길이에 맞춘다."""
-    bpm = 96
-    beat = 60 / bpm
-    bar = 4 * beat
-    swing = beat * 0.06  # 8분음표 뒤 박을 살짝 늦춘다
-    nbar = int(np.ceil(total / bar))
-    N = int(total * SR) + 4 * SR
-    L, R = np.zeros(N), np.zeros(N)
-
-    def put(x, t, pan=0.0, g=1.0):
-        i = int(t * SR)
-        x = x[: max(0, N - i)]
-        L[i:i + len(x)] += x * g * (1 - max(0, pan))
-        R[i:i + len(x)] += x * g * (1 + min(0, pan))
-
-    def ep(f, dur, vel=1.0):
-        """전자 피아노: 감쇠하는 FM 종소리 + 사인 몸통"""
-        t = t_(dur)
-        idx = 1.6 * np.exp(-t * 6) * vel
-        x = np.sin(2 * np.pi * f * t + idx * np.sin(2 * np.pi * f * t)) + 0.3 * np.sin(2 * np.pi * 2 * f * t) * np.exp(-t * 4)
-        return x * np.exp(-t * 1.6) * env(len(t), 0.004, 0.25)
-
-    def bell(f, dur):
-        t = t_(dur)
-        x = np.sin(2 * np.pi * f * t + 0.8 * np.exp(-t * 9) * np.sin(2 * np.pi * 3.5 * f * t))
-        return x * np.exp(-t * 3.2) * env(len(t), 0.002, 0.1)
-
-    def bass(f, dur):
-        t = t_(dur)
-        x = np.sin(2 * np.pi * f * t) + 0.25 * np.sin(4 * np.pi * f * t)
-        return x * env(len(t), 0.01, 0.08) * (0.75 + 0.25 * np.exp(-t * 5))
-
-    # Cmaj7 → Am7 → Dm7 → G7sus 순환
-    prog = [(["E3", "G3", "B3", "D4"], "C2"), (["E3", "G3", "C4", "E4"], "A1"),
-            (["F3", "A3", "C4", "E4"], "D2"), (["F3", "A3", "C4", "D4"], "G1")]
-    # 종소리 선율(8분음표 칸, '.' 쉼): 4마디마다 바뀌는 두 줄
-    melA = ["E5 . G5 . . D5 . .", "C5 . E5 . G5 . . .", "A5 . G5 . F5 . E5 .", "D5 . . . . . . ."]
-    melB = ["G5 . . E5 . . C5 .", "E5 . D5 . C5 . A4 .", "C5 . D5 . F5 . A5 .", "G5 . . . D5 . . ."]
-    ending = nbar - 1
-    for b in range(nbar):
-        t0 = b * bar
-        chord, root = prog[b % 4]
-        if b == ending:
-            chord, root = ["E3", "G3", "B3", "D4", "G4"], "C2"
-        # 피아노: 1박 길게, 2박 반 뒤 짧게 다시
-        for k, n in enumerate(chord):
-            pan = -0.3 + 0.6 * k / max(1, len(chord) - 1)
-            put(ep(hz(n), bar * (2.2 if b == ending else 1.1)), t0 + k * 0.012, pan, 0.075)
-            if b != ending:
-                put(ep(hz(n), beat * 1.2, 0.6), t0 + 2.5 * beat + swing + k * 0.01, pan, 0.045)
-        if b < 2:
-            continue
-        # 베이스
-        f = hz(root)
-        if b == ending:
-            put(bass(f, bar * 1.5), t0, 0, 0.32)
-            continue
-        for at, ln, ff in [(0, 1.5, f), (1.5 * beat + swing, 0.5, f), (2 * beat, 1.0, f * 1.5), (3 * beat, 0.9, f * 2)]:
-            put(bass(ff, ln * beat), t0 + at, 0, 0.3)
-        # 드럼: 부드러운 킥, 둥근 스네어, 셰이커
-        for k in range(8):
-            tt = t0 + k * beat / 2 + (swing if k % 2 else 0)
-            if k in (0, 5):
-                d = 0.25
-                t = t_(d)
-                kick = np.sin(2 * np.pi * np.cumsum(48 + 70 * np.exp(-t * 30)) / SR) * np.exp(-t * 14)
-                put(kick, tt, 0, 0.5)
-            if k in (2, 6):
-                n = int(0.18 * SR)
-                sn = lowpass(bandpass(RNG.uniform(-1, 1, n), 900, 5000), 4500) * decay(n, 22) + 0.4 * sine(190, 0.18) * decay(n, 30)
-                put(sn, tt, 0.05, 0.14)
-            n = int(0.05 * SR)
-            sh = bandpass(RNG.uniform(-1, 1, n), 5000, 10000) * env(n, 0.012, 0.03)
-            put(sh, tt, 0.3, 0.04 if k % 2 else 0.06)
-        # 선율: 6마디째부터
-        if b >= 6:
-            line = (melA if (b // 4) % 2 == 0 else melB)[b % 4]
-            for i, tok in enumerate(line.split()):
-                if tok != ".":
-                    put(bell(hz(tok), beat * 1.6), t0 + i * beat / 2 + (swing if i % 2 else 0), 0.2, 0.06)
-    # 마스터: 고역을 살짝 깎아 따뜻하게, 아주 옅은 지연 반향
-    st = np.stack([lowpass(L, 9000), lowpass(R, 9000)], 1)
-    dl = int(0.19 * SR)
-    st[dl:, 0] += st[:-dl, 1] * 0.18
-    st[dl:, 1] += st[:-dl, 0] * 0.18
-    n = int(total * SR)
-    st = st[:n]
-    fade = int(1.2 * SR)
-    st[-fade:] *= np.linspace(1, 0, fade)[:, None]
-    write(path, None, st / (np.max(np.abs(st)) or 1) * 0.8)
+def timeline():
+    """장면 시간표(프레임). 장면 길이 = max(기본 길이, 나레이션 + pad).
+    다음 장면에 나레이션이 없으면 이번 나레이션이 다음 장면으로 넘어가도 된다(급제동 실사 → 급제동 시연).
+    시연 장면은 앱 음성이 나레이션과 겹치지 않도록 클립 첫 프레임을 멈춰 두는 시간(hold)을 둔다."""
+    fps, T = CFG["fps"], round(CFG["transition"] * CFG["fps"])
+    delay, pad, gap = (round(CFG[k] * fps) for k in ("voDelay", "voPad", "voGap"))
+    speech = json.loads((HERE / "src/speech.json").read_text())
+    vo = {p.stem: probe_len(p) for p in sorted((PUB / "audio/vo").glob("n*.mp3"))}
+    out = {"vo": vo}
+    for kind in ("wide", "short"):
+        rows, duck, frm, vo_end = [], [], 0, -10 ** 9
+        lst = CFG[kind]
+        for i, (sid, base, *rest) in enumerate(lst):
+            v = rest[0] if rest else None
+            nxt_vo = i + 1 < len(lst) and len(lst[i + 1]) > 2
+            dur, hold, vlen = round(base * fps), 0, round(vo[v] * fps) if v else 0
+            if v:
+                at = frm + delay
+                duck.append([at, at + vlen])
+                vo_end = at + vlen
+                if nxt_vo or i + 1 == len(lst):
+                    dur = max(dur, delay + vlen + pad)
+            wins = []
+            if sid.startswith("f:"):
+                c = CFG["clips"][sid[2:]]
+                vstart = round(max(0, c.get("lead", 0) - 0.35) * fps)
+                lo, hi = c.get("mute", 0), c.get("muteAfter", 99)
+                wins = [[max(a, lo), min(b, hi)] for a, b in speech[sid[2:]] if b > lo and a < hi]
+                if wins:
+                    hold = max(0, vo_end + gap - (frm + vstart + round(wins[0][0] * fps)))
+                dur = max(dur, round(base * fps) + hold)
+                wins = [[frm + vstart + hold + round(a * fps), frm + vstart + hold + round(b * fps)] for a, b in wins]
+                duck += wins
+                if wins:  # 앱 음성이 다음 장면 나레이션 전에 끝나게
+                    dur = max(dur, wins[-1][1] - frm + T - delay + gap)
+            rows.append({"id": sid, "from": frm, "dur": dur, "vo": v, "hold": hold, "speech": wins})
+            frm += dur - (T if i < len(lst) - 1 else 0)
+        # 나레이션과 앱 음성이 겹치면 실패
+        vos = [[r["from"] + delay, r["from"] + delay + round(vo[r["vo"]] * fps)] for r in rows if r["vo"]]
+        for a, b in (w for r in rows for w in r["speech"]):
+            for c, d in vos:
+                assert b <= c or a >= d, f"{kind}: 앱 음성 {a}-{b} 이 나레이션 {c}-{d} 와 겹침"
+        out[kind] = {"total": frm, "scenes": rows, "duck": sorted(duck)}
+        print(kind, "total", round(frm / fps, 2), "s")
+        for r in rows:
+            print(f"  {r['id']:12s} {r['dur'] / fps:5.2f}s vo={r['vo']} hold={r['hold'] / fps:.2f}")
+    (HERE / "src/timeline.json").write_text(json.dumps(out, indent=1) + "\n")
 
 
 def main():
@@ -327,12 +299,7 @@ def main():
     if "--audio-only" not in sys.argv:
         clips()
     sfx()
-    T = CFG["transition"]
-    for name in ("wide", "short"):
-        sc = CFG[name]
-        total = sum(d for _, d in sc) - T * (len(sc) - 1)
-        bgm(total, PUB / f"audio/bgm_{name}.wav")
-        print(name, "total", round(total, 2))
+    timeline()
 
 
 if __name__ == "__main__":
