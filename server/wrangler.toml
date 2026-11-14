@@ -10,6 +10,6 @@ class_name = "Room"
 tag = "v1"
 new_classes = ["Room"]
 
-# 휴대폰 화면의 마스코트 그림(앱 drawable-nodpi/cuckoo_* 사본). 맞는 파일이 없으면 Worker 로 넘어간다
+# 휴대폰 화면의 마스코트 그림(design/character/cuckoo_*.svg 사본). 맞는 파일이 없으면 Worker 로 넘어간다
 [assets]
 directory = "./public"

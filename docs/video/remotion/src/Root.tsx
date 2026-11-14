@@ -1,17 +1,17 @@
 import React from 'react';
-import {AbsoluteFill, Audio, Composition, interpolate, Sequence, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
-import {Feature, featureLead} from './Feature';
+import {AbsoluteFill, Audio, Composition, interpolate, Sequence, spring, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
+import {Feature, FEATURES, featureLead} from './Feature';
 import {Clock, Concept, Convoy, Logo, Outro, Sdk, UseCase} from './Scenes';
 import {Changes, Fleet, Pain, Purpose, Report} from './Story';
 import cfg from './scenes.json';
 import speech from './speech.json';
-import {Sfx} from './theme';
+import {C, Sfx} from './theme';
 
 export type Props = {
   /**
    * AI b-roll 자리. public/ 아래 경로(예: "broll/convoy.mp4")를 넣으면 첫 장면(convoy)이 그 영상으로 바뀐다.
    * 의도한 장면: "highway convoy at dusk" — 해 질 녘 고속도로를 줄지어 달리는 승용차 3~4대, 3~4초, 무음.
-   * null 이면 픽셀 그림 도로 장면을 쓴다.
+   * null 이면 벡터 그림 도로 장면을 쓴다.
    */
   introBroll: string | null;
 };
@@ -64,15 +64,22 @@ const Scene: React.FC<{item: Item; broll: string | null}> = ({item, broll}) => {
   return null;
 };
 
-/** 장면 진입: 겹치는 T 프레임 동안 밀려 들어오며 나타남 */
+/** 장면 진입: 겹치는 T 프레임 동안 새 종이가 아래에서 올라와 덮는다 */
 const Enter: React.FC<{children: React.ReactNode; first: boolean}> = ({children, first}) => {
   const f = useCurrentFrame();
-  const {width} = useVideoConfig();
+  const {fps, height} = useVideoConfig();
   if (first) return <>{children}</>;
-  const p = interpolate(f, [0, T], [0, 1], {extrapolateRight: 'clamp'});
-  const e = 1 - Math.pow(1 - p, 3);
+  const e = spring({frame: f, fps, config: {damping: 18, stiffness: 120}, durationInFrames: T + 4});
   return (
-    <AbsoluteFill style={{opacity: e, transform: `translateX(${(1 - e) * width * 0.06}px) scale(${1.03 - 0.03 * e})`, filter: p < 1 ? `blur(${(1 - e) * 6}px)` : undefined}}>
+    <AbsoluteFill
+      style={{
+        transform: `translateY(${(1 - e) * height * 0.5}px) rotate(${(1 - e) * 2}deg) scale(${0.94 + 0.06 * e})`,
+        transformOrigin: '50% 100%',
+        borderRadius: (1 - e) * 60,
+        overflow: 'hidden',
+        boxShadow: e < 1 ? `0 -20px 60px rgba(80,40,60,${0.25 * (1 - e)})` : undefined,
+      }}
+    >
       {children}
     </AbsoluteFill>
   );
@@ -85,7 +92,7 @@ const Main: React.FC<Props & {kind: 'wide' | 'short'}> = ({kind, introBroll}) =>
   for (const it of items) {
     if (!it.id.startsWith('f:')) continue;
     const id = it.id.slice(2);
-    const mute = id === 'rx' ? 4.8 : 0;
+    const mute = FEATURES[id]?.muteUntil ?? 0;
     const off = it.from + featureLead(id) * FPS;
     for (const [a, b] of (speech as Record<string, number[][]>)[id] ?? []) {
       if (b <= mute || off + a * FPS >= it.from + it.dur) continue;
@@ -104,7 +111,7 @@ const Main: React.FC<Props & {kind: 'wide' | 'short'}> = ({kind, introBroll}) =>
     return base * (1 - 0.6 * duck);
   };
   return (
-    <AbsoluteFill style={{background: '#121417'}}>
+    <AbsoluteFill style={{background: C.bg}}>
       {items.map((it, i) => (
         <Sequence key={i} from={it.from} durationInFrames={it.dur}>
           <Enter first={i === 0}>

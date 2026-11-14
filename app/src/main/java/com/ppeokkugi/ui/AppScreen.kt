@@ -40,6 +40,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.font.FontWeight
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -61,13 +62,11 @@ fun AppScreen(vm: StatusViewModel) {
         repeat(3) { flagOn = false; delay(400); flagOn = true; delay(400) }
     }
     Box(Modifier.fillMaxSize()) {
-    Column(Modifier.fillMaxSize().background(C.paper)) {
-        // 깃발 색 띠: 서버가 정한 우리 차 색. 앰비언트 조명이 없을 때의 대안이기도 하다(§8)
-        s.myColor?.let { Box(Modifier.fillMaxWidth().height(10.dp).background(if (flagOn) Color(it) else C.paper)) }
+    Column(Modifier.fillMaxSize().background(C.bg)) {
+        // 깃발 색 띠: 우리 호차 색. 앰비언트 조명이 없을 때의 대안이기도 하다(§8)
+        s.me?.let { Box(Modifier.fillMaxWidth().height(8.dp).background(if (flagOn) C.car(it) else C.bg)) }
         Row(
-            Modifier.fillMaxWidth().background(C.surface).grille().drawBehind {
-                drawRect(C.bezel, topLeft = Offset(0f, size.height - 3.dp.toPx()), size = Size(size.width, 3.dp.toPx()))
-            }.padding(horizontal = R_.lg, vertical = 10.dp),
+            Modifier.fillMaxWidth().padding(start = 28.dp, end = 28.dp, top = 18.dp, bottom = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Logo()
@@ -78,37 +77,32 @@ fun AppScreen(vm: StatusViewModel) {
                     Link.CONNECTING -> 2 to "연결 중"
                     Link.OFF -> 0 to "끊김"
                 }
-                // 방 코드는 채널 읽힘으로, 연결은 신호 막대, 일행 수는 배터리 칸으로
+                // 방 코드는 채널 읽힘으로, 연결은 신호 막대, 일행 수는 대수로
                 Lcd {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("CH ${s.code}", style = T.lcd.copy(fontSize = 36.sp, letterSpacing = 3.sp))
+                        Text("CH", style = T.lcd.copy(fontSize = 18.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 2.sp, color = C.lcdDim))
+                        Spacer(Modifier.width(14.dp))
+                        Text("${s.code}", style = T.lcd.copy(fontSize = 30.sp, lineHeight = 34.sp, letterSpacing = 1.5.sp))
                         Spacer(Modifier.width(18.dp))
                         SignalBars(bars, C.lcdInk)
                         Spacer(Modifier.width(14.dp))
-                        MemberCells(s.cars.size, C.lcdInk)
-                        Spacer(Modifier.width(6.dp))
-                        Text("${s.cars.size}", style = T.lcd.copy(fontSize = 24.sp))
+                        Text("${s.cars.size}대", style = T.lcd.copy(fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = C.lcdDim))
                     }
                 }
-                Spacer(Modifier.width(R_.md))
+                Spacer(Modifier.width(R_.lg))
                 Led(C.rx, on = s.link == Link.ON)
-                Spacer(Modifier.width(10.dp))
-                Text(word + (s.me?.let { " · ${it}호차" + if (it == 1) " (선두)" else "" } ?: ""), style = T.sectionLabel)
+                Spacer(Modifier.width(12.dp))
+                Text(word + (s.me?.let { " · ${it}호차" + if (it == 1) " (선두)" else "" } ?: ""), style = T.body.copy(fontWeight = FontWeight.Bold, color = C.ink2))
                 Spacer(Modifier.width(R_.md))
-                Text("나가기", style = T.note, modifier = Modifier.clickable { vm.leaveRoom() }.padding(8.dp))
+                Text("나가기", style = T.button.copy(fontSize = 20.sp, color = C.ink2),
+                    modifier = Modifier.pin(shape = Pill, lift = 0.dp).clickable { vm.leaveRoom() }.padding(horizontal = 18.dp, vertical = 10.dp))
             }
             if (s.driving) {
                 Spacer(Modifier.width(R_.md))
-                Text("주행 중", style = T.note.copy(color = C.warn))
+                Text("주행 중", style = T.body.copy(fontWeight = FontWeight.Bold, color = C.warnInk))
             }
             Spacer(Modifier.weight(1f))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TABS.forEachIndexed { i, name ->
-                    PixelButton(onClick = { tab = i }, fill = if (tab == i) C.accent else C.sunk) {
-                        Text(name, style = T.button.copy(color = if (tab == i) C.onAccent else C.ink), modifier = Modifier.padding(horizontal = 28.dp, vertical = 14.dp))
-                    }
-                }
-            }
+            Segmented(TABS.mapIndexed { i, n -> "$i" to n }, "$tab", padH = 30.dp) { tab = it.toInt() }
         }
         Box(Modifier.weight(1f)) {
             when {
@@ -123,39 +117,41 @@ fun AppScreen(vm: StatusViewModel) {
     }
 }
 
-/** 로고: 기기 몸체에 찍힌 상표처럼 "뻐꾸기" */
+/** 로고: 마스코트 + 세리프 "뻐꾸기" */
 @Composable
 private fun Logo() {
-    Text(
-        "뻐꾸기", style = T.brand.copy(letterSpacing = 1.sp),
-        modifier = Modifier.pixelBox(C.surface, C.line, shadow = 0.dp).padding(horizontal = 14.dp, vertical = 8.dp),
-    )
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        CuckooView(Mood.BASE, Modifier.size(60.dp), Play.STILL)
+        Spacer(Modifier.width(8.dp))
+        Text("뻐꾸기", style = T.brand.copy(fontSize = 42.sp, letterSpacing = (-1).sp))
+    }
 }
 
-/** 긴급 콜: 다른 화면을 모두 덮는 빨간 LCD 알림. 송신 LED 가 깜빡인다. 확인을 눌러야 닫힌다 */
+/** 긴급 콜: 다른 화면을 모두 덮는 짙은 빨강 화면. 송신 LED 가 깜빡인다. 확인을 눌러야 닫힌다 */
 @Composable
 private fun EmergencyAlert(e: Emergency, onOk: () -> Unit) {
-    Box(Modifier.fillMaxSize().background(C.sos).clickable(enabled = false) {}.padding(48.dp), contentAlignment = Alignment.Center) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(48.dp)) {
-            // 긴급 콜은 주행 중에도 계속 돈다
-            SpeakerBox(Modifier.size(272.dp)) { CuckooView(Mood.EMERGENCY, Modifier.size(256.dp)) }
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(R_.md)) {
+    Box(Modifier.fillMaxSize().background(C.sos).clickable(enabled = false) {}.padding(64.dp), contentAlignment = Alignment.Center) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(56.dp)) {
+            // 긴급 콜은 주행 중에도 계속 들썩인다
+            SpeakerBox(Modifier.size(300.dp), C.tint(Mood.EMERGENCY)) { CuckooView(Mood.EMERGENCY, Modifier.size(256.dp)) }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(R_.lg)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Led(C.tx, on = true, size = 36.dp, blink = true)
-                    Spacer(Modifier.width(R_.md))
-                    Text("긴급 콜", style = T.brand.copy(fontSize = 72.sp, lineHeight = 72.sp))
+                    Led(C.tx, on = true, size = 32.dp, blink = true)
+                    Spacer(Modifier.width(28.dp))
+                    Text("긴급 콜", style = T.brand.copy(fontSize = 76.sp, lineHeight = 84.sp, color = Color.White))
                 }
-                Lcd(Modifier.fillMaxWidth(), color = C.lcdAlert) {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("EMERGENCY · ${e.from} 에어백", style = T.lcd.copy(fontSize = 60.sp, color = C.alertInk))
-                        Text(e.text, style = T.cardText.copy(fontSize = 48.sp, lineHeight = 60.sp, color = C.alertInk))
-                        e.lat?.let { Text("${"%.4f".format(it)}, ${"%.4f".format(e.lng)} · ${TIME.format(Date(e.at))}", style = T.lcd.copy(fontSize = 36.sp, color = C.alertInk)) }
-                    }
+                Column(
+                    Modifier.fillMaxWidth().pin(C.paper, C.tx, RoundedCornerShape(36.dp), lift = 0.dp, borderWidth = 4.dp).padding(horizontal = 40.dp, vertical = 32.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Text("EMERGENCY · ${e.from} 에어백", style = T.lcd.copy(fontSize = 36.sp, lineHeight = 44.sp, fontWeight = FontWeight.ExtraBold, color = Color.White),
+                        modifier = Modifier.background(C.txInk, Pill).padding(horizontal = 22.dp, vertical = 6.dp))
+                    Text(e.text, style = T.cardText.copy(fontSize = 48.sp, lineHeight = 60.sp))
+                    e.lat?.let { Text("${"%.4f".format(it)}, ${"%.4f".format(e.lng)} · ${TIME.format(Date(e.at))}", style = T.lcd.copy(fontSize = 28.sp, color = C.ink2)) }
                 }
-                Text("안전한 곳에 차를 세우고 연락하십시오.", style = T.body.copy(fontSize = 24.sp))
-                Spacer(Modifier.height(R_.sm))
-                PixelButton(onClick = onOk, fill = C.ink, modifier = Modifier.width(360.dp).height(100.dp)) {
-                    Text("확인", style = T.button.copy(fontSize = 36.sp, lineHeight = 36.sp, color = C.sos))
+                Text("안전한 곳에 차를 세우고 연락하십시오.", style = T.body.copy(fontSize = 28.sp, lineHeight = 36.sp, color = C.sosInk))
+                SoftButton(onClick = onOk, fill = C.paper, border = C.paper, modifier = Modifier.width(360.dp).height(100.dp)) {
+                    Text("확인", style = T.button.copy(fontSize = 36.sp, lineHeight = 40.sp, fontWeight = FontWeight.ExtraBold, color = C.txInk))
                 }
             }
         }

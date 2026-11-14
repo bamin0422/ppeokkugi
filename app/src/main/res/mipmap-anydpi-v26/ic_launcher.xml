@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Flow 로 만든 뻐꾸기 얼굴 그림을 배경 층에 꽉 채운다 -->
+<!-- design/character/app_icon_{background,foreground}.svg 를 432px 로 그린 그림 -->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-    <background android:drawable="@drawable/ic_launcher_art" />
-    <foreground android:drawable="@android:color/transparent" />
+    <background android:drawable="@drawable/ic_launcher_background" />
+    <foreground android:drawable="@drawable/ic_launcher_foreground" />
 </adaptive-icon>

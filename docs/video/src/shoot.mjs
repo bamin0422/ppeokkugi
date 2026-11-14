@@ -12,7 +12,9 @@ import { fileURLToPath } from 'node:url';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 const OUT = resolve(process.argv[2] || 'take');
 mkdirSync(`${OUT}/phone`, { recursive: true });
-const SPEED = 2;            // 봇 배속. 2배속이면 급제동 17초, 비 32초, 키즈 47초, 화장실 62초, 도착 약 205초
+// 봇 배속. 2배속이면 급제동 17초, 비 32초, 키즈 47초, 화장실 62초, 도착 약 205초.
+// 1배속은 봇의 도착 대기(실제 180초)가 먼저 끝나 도착 장면이 안 나온다. 2배속을 쓴다
+const SPEED = Number(process.env.SPEED || 2);
 const SEG = 170;            // 에뮬레이터 녹화 한 토막(초). 콘솔 녹화 상한 180초 안
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const adb = (...a) => execFileSync('adb', ['-s', 'emulator-5554', ...a], { encoding: 'utf8' });
@@ -20,16 +22,15 @@ const timeline = [];
 const mark = (what, extra = {}) => { const e = { t: Date.now(), what, ...extra }; timeline.push(e); console.log(new Date(e.t).toISOString().slice(11, 23), what, JSON.stringify(extra)); writeFileSync(`${OUT}/timeline.json`, JSON.stringify(timeline, null, 1)); };
 const tap = (x, y, why) => { adb('shell', 'input', 'tap', String(x), String(y)); mark('tap', { x, y, why }); };
 
-/** 화면에서 글자를 찾아 그 가운데를 누른다(uiautomator) */
-function tapText(text, why) {
-  adb('shell', 'uiautomator', 'dump', '/sdcard/ui.xml');
-  const xml = adb('shell', 'cat', '/sdcard/ui.xml');
-  const m = xml.match(new RegExp(`text="${text}"[^>]*bounds="\\[(\\d+),(\\d+)\\]\\[(\\d+),(\\d+)\\]"`));
-  if (!m) { mark('tapText 실패', { text }); return false; }
-  const xy = [(+m[1] + +m[3]) >> 1, (+m[2] + +m[4]) >> 1];
-  tap(...xy, why || text);
-  return xy;
-}
+/** 글자 대신 좌표로 누른다. 새 앱은 마스코트 애니메이션이 계속 돌아 uiautomator dump 가 "could not get idle state"로 실패한다.
+ *  좌표는 2560x1440 에뮬레이터 화면 기준(앱 화면은 x 853~2535, y 90~1300). 앱 배치가 바뀌면 여기만 고친다. */
+const XY = {
+  '운전석': [2226, 154], '승객': [2342, 154], '나가기': [1680, 154], '나가기2': [1632, 154],   // 나가기 위치는 머리줄 글 길이(1호차 선두/2호차)에 따라 달라 두 곳을 누른다
+  '시연 모드': [1277, 977], 'PTT': [2280, 1203],
+  '코드 칸': [2110, 840], '들어가기': [2300, 870],   // 자판이 뜨면 들어가기 버튼 왼쪽 아래를 가린다
+  '투표1': [1660, 440], '투표2': [2000, 440], '투표3': [2340, 440],
+};
+const tapAt = (name, why) => tap(...XY[name], why || name);
 
 // --- 에뮬레이터 녹화: 콘솔 screenrecord 를 토막으로 잇는다 ---
 let segN = 0, recording = false;
@@ -87,13 +88,13 @@ async function main() {
   // 앱을 입장 화면으로: 이미 방에 있으면 나가기
   adb('shell', 'am', 'start', '--user', '10', '-n', 'com.ppeokkugi/.MainActivity');
   await sleep(2500);
-  tapText('운전석');
-  if (tapText('나가기', '방 나가기')) await sleep(1500);
+  tapAt('운전석');
+  tapAt('나가기', '방 나가기'); await sleep(1500); tapAt('나가기2', '방 나가기'); await sleep(1500);   // 입장 화면이면 빈 곳을 누른다
 
   await phoneStart();                                  // Chrome 을 먼저 띄워 둔다(기동 수 초)
   const rec = recLoop();
   await sleep(5000);                                   // 입장 화면(마스코트)
-  tapText('시연 모드 · 봇과 함께 달리기', '시연 모드');
+  tapAt('시연 모드');
   let code;
   for (let i = 0; i < 40 && !code; i++) { await sleep(250); code = adb('logcat', '-d', '-s', 'Ppeokkugi').match(/방 ([A-Z0-9]{6,8}) 입장 시도/)?.[1]; }
   if (!code) throw new Error('방 코드를 찾지 못함');
@@ -105,20 +106,20 @@ async function main() {
   bots.stdout.on('data', d => { botLog.write(`${Date.now()} ${d}`); });
   bots.stderr.pipe(botLog);
   const T0 = Date.now(); mark('bots start', { speed: SPEED });
-  const at = s => sleep(Math.max(0, T0 + s * 1000 - Date.now()));
+  const at = s => sleep(Math.max(0, T0 + s * (2 / SPEED) * 1000 - Date.now()));   // 아래 시각은 2배속 기준
 
   await at(3);  await cdpSend('Page.navigate', { url: `http://localhost:8792/?code=${code}` }); mark('phone open');
   await at(5);  await js(`document.getElementById('agree').click()`);
   await at(6);  await js(`document.getElementById('go').click()`); mark('phone join');
-  await at(9);  tap(2028, 1202, 'PTT 누름');           // 송신 표시. 에뮬레이터에는 마이크 입력이 없다
-  await at(14); tap(2028, 1202, 'PTT 끔');
   await at(21); await js(`document.getElementById('text').value='천천히 갑시다';document.getElementById('send').click()`); mark('phone say');
-  await at(26); tap(2339, 128, '승객 탭');
-  await at(55); tap(2211, 128, '운전석 탭');
-  await at(63); tapText('안성 휴게소', '앱 투표');
+  // 급제동(17초)·휴대폰 무전(21초) 안내 음성이 운전석 화면에서 바로 읽히도록 PTT·승객 탭은 그 뒤로 미룬다
+  await at(42); tapAt('PTT', 'PTT 누름');           // 송신 표시. 에뮬레이터에는 마이크 입력이 없다
+  await at(46); tapAt('PTT', 'PTT 끔');
+  await at(48); tapAt('승객', '승객 탭');
+  await at(57); tapAt('운전석', '운전석 탭');
+  await at(63); tapAt('투표3', '앱 투표');   // 후보 순서: 서울 만남의광장, 기흥, 안성
   await at(67); await js(`[...document.querySelectorAll('#opts button')].find(b=>b.textContent.includes('안성'))?.click()`); mark('phone vote');
-  // 시연 모드 선두(앱)는 내비에 경로가 없어 경유지 추가가 "경로 탐색 오류"로 끝난다. 대화 상자를 닫고 앱으로 돌아온다
-  await at(74); tapText('닫기', '내비 오류 닫기');
+  // 투표 결과가 경유지로 들어가면 내비가 앞으로 나온다. 앱으로 돌아온다
   await at(76); adb('shell', 'am', 'start', '--user', '10', '-n', 'com.ppeokkugi/.MainActivity'); mark('app front');
   // 휴대폰은 기흥 부근에 서 있으므로 도착 판정 전에 방을 나간다
   await at(150); await js(`document.getElementById('leave').click()`); mark('phone leave');

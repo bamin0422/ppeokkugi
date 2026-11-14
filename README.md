@@ -82,8 +82,8 @@ curl -X POST "$B/gear?gear=Park"         # 기어 P → 도착 판정
 ## 테스트
 
 ```bash
-./gradlew :app:testDebugUnitTest   # 차량 앱 단위 테스트 12건
-cd server && npm test              # 서버 테스트 36건
+./gradlew :app:testDebugUnitTest   # 차량 앱 단위 테스트 13건
+cd server && npm test              # 서버 테스트 40건
 ```
 
 ## 확인 환경

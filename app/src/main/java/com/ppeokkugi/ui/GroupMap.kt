@@ -6,12 +6,16 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.ColorMatrix
 import android.graphics.ColorMatrixColorFilter
+import android.graphics.Matrix
 import android.graphics.Paint
+import android.graphics.Path
 import android.graphics.RectF
 import android.graphics.drawable.BitmapDrawable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -33,6 +37,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.res.ResourcesCompat
 import com.ppeokkugi.Pin
@@ -52,20 +57,19 @@ import java.io.File
 // 길품 GilpumMap 에서 가져와 일행 지도로 고쳤다
 
 /**
- * OSM 기본 타일을 반전하고 채도를 뺀 뒤, 어두운 곳은 바탕(paper)·밝은 곳은 흐린 글자색(muted)으로 맞춘 중립 밤 지도.
+ * OSM 기본 타일의 채도를 빼고 대비를 줄인 뒤, 어두운 곳은 옅은 회갈색·밝은 곳은 따뜻한 종이색으로 맞춘 낮 지도.
  * 테마 색만 바꾸면 지도도 따라간다. 그 위의 차·핀만 제 색을 갖는다
  */
-private val NIGHT_TILES = run {
-    val lo = C.paper; val hi = C.muted
-    val k = 0.75f // 가장 밝은 글자도 muted 까지는 가지 않게
-    fun sc(l: Float, h: Float) = (h - l) * k
+private val MAP_LAND = Color(0xFFFBF1E8)
+private val DAY_TILES = run {
+    val lo = Color(0xFFCDBDBA); val hi = MAP_LAND // 지도 글자·선은 ink3 보다 옅게
     ColorMatrixColorFilter(
-        ColorMatrix(floatArrayOf(-1f, 0f, 0f, 0f, 255f, 0f, -1f, 0f, 0f, 255f, 0f, 0f, -1f, 0f, 255f, 0f, 0f, 0f, 1f, 0f)).apply {
-            postConcat(ColorMatrix().apply { setSaturation(0f) })
+        ColorMatrix().apply {
+            setSaturation(0f)
             postConcat(ColorMatrix(floatArrayOf(
-                sc(lo.red, hi.red), 0f, 0f, 0f, lo.red * 255f,
-                0f, sc(lo.green, hi.green), 0f, 0f, lo.green * 255f,
-                0f, 0f, sc(lo.blue, hi.blue), 0f, lo.blue * 255f,
+                hi.red - lo.red, 0f, 0f, 0f, lo.red * 255f,
+                0f, hi.green - lo.green, 0f, 0f, lo.green * 255f,
+                0f, 0f, hi.blue - lo.blue, 0f, lo.blue * 255f,
                 0f, 0f, 0f, 1f, 0f,
             )))
         },
@@ -74,19 +78,19 @@ private val NIGHT_TILES = run {
 
 /** 이슈 핀 글자·색·이름 */
 private fun pinStyle(kind: String): Triple<String, Color, String> = when (kind) {
-    "brake_hard" -> Triple("급", C.danger, "급제동")
-    "rain" -> Triple("비", C.rain, "비")
+    "brake_hard" -> Triple("급", C.tx, "급제동")
+    "rain" -> Triple("비", C.car(6), "비")
     "turn_left" -> Triple("좌", C.accent, "좌회전")
     "turn_right" -> Triple("우", C.accent, "우회전")
-    "speed_limit" -> Triple("속", C.warn, "제한속도")
-    "caution" -> Triple("주", C.warn, "주의 구간")
+    "speed_limit" -> Triple("속", C.amber, "제한속도")
+    "caution" -> Triple("주", C.amber, "주의 구간")
     "airbag" -> Triple("!", C.tx, "에어백")
-    "fall_behind" -> Triple("이", C.muted, "대열 이탈")
-    else -> Triple("?", C.muted, kind)
+    "fall_behind" -> Triple("이", C.ink2, "대열 이탈")
+    else -> Triple("?", C.ink2, kind)
 }
 
 /**
- * 일행 지도. 모든 차를 흰 테를 두른 깃발 색 원과 "N호차" 이름표로, 우리 차는 굵은 테로 그린다.
+ * 일행 지도. 모든 차를 흰 테를 두른 호차 색 물방울 핀과 "N호차" 이름표로, 우리 차는 더 크게 그린다.
  * 손으로 움직이지 않고 맨 앞 차부터 맨 뒤 차까지 들어오게 스스로 맞춘다(주행 중에도 조작이 필요 없다).
  * 이슈 핀은 [StatusViewModel.PIN_TTL_MS] 동안 남는다.
  */
@@ -94,14 +98,15 @@ private fun pinStyle(kind: String): Triple<String, Color, String> = when (kind) 
 fun GroupMap(s: RoomState, modifier: Modifier = Modifier) {
     val now = System.currentTimeMillis()
     val pins = s.pins.filter { now - it.at < StatusViewModel.PIN_TTL_MS }
-    Box(modifier.clipToBounds().background(C.sunk).border(3.dp, C.bezel)) {
+    val shape = RoundedCornerShape(R_.card)
+    Box(modifier.clip(shape).background(MAP_LAND).border(R_.stroke, C.line, shape)) {
         if (LocalInspectionMode.current) {
             Text("지도", style = T.note, modifier = Modifier.align(Alignment.Center))
         } else {
             OsmMap(s, pins)
         }
         if (s.cars.none { it.lat != null }) Text("일행 위치를 기다립니다", style = T.note, modifier = Modifier.align(Alignment.Center))
-        if (pins.isNotEmpty()) Legend(pins, Modifier.align(Alignment.TopStart).padding(12.dp))
+        if (pins.isNotEmpty()) Legend(pins, Modifier.align(Alignment.TopStart).padding(16.dp))
     }
 }
 
@@ -110,7 +115,7 @@ fun GroupMap(s: RoomState, modifier: Modifier = Modifier) {
 private fun OsmMap(s: RoomState, pins: List<Pin>) {
     val ctx = LocalContext.current
     val latest by rememberUpdatedState(s)
-    val icons = remember { HashMap<String, BitmapDrawable>() }
+    val icons = remember { HashMap<String, Pair<BitmapDrawable, Float>>() }
     val map = remember {
         Configuration.getInstance().apply {
             userAgentValue = ctx.packageName
@@ -120,7 +125,7 @@ private fun OsmMap(s: RoomState, pins: List<Pin>) {
         MapView(ctx).apply {
             // OSM 타일 정책: 앱을 알아볼 수 있는 User-Agent 와 출처 표기
             setTileSource(TileSourceFactory.MAPNIK)
-            overlayManager.tilesOverlay.setColorFilter(NIGHT_TILES)
+            overlayManager.tilesOverlay.setColorFilter(DAY_TILES)
             isTilesScaledToDpi = true
             zoomController.setVisibility(CustomZoomButtonsController.Visibility.NEVER)
             // 운전 중이라 손으로 움직이지 않는다
@@ -156,19 +161,21 @@ private fun fit(m: MapView, s: RoomState, pins: List<Pin>) {
     m.zoomToBoundingBox(b, false, 90)
 }
 
-private fun draw(m: MapView, s: RoomState, pins: List<Pin>, icons: HashMap<String, BitmapDrawable>) {
+private fun draw(m: MapView, s: RoomState, pins: List<Pin>, icons: HashMap<String, Pair<BitmapDrawable, Float>>) {
     val ctx = m.context
     m.overlays.clear()
     pins.forEach { p ->
         val (label, color, name) = pinStyle(p.kind)
-        m.overlays += marker(m, p.lat, p.lng, icons.getOrPut("pin$label") { pin(ctx, label, color) }, "$name · ${p.from}", Marker.ANCHOR_BOTTOM)
+        val (icon, tip) = icons.getOrPut("pin$label") { pin(ctx, label, color) }
+        m.overlays += marker(m, p.lat, p.lng, icon, "$name · ${p.from}", tip)
     }
     // 차는 핀 위에 그린다. 우리 차를 맨 마지막에
     s.cars.filter { it.lat != null }.sortedBy { it.me }.forEach { c ->
         val name = if (c.me) "우리 차" else c.label
-        m.overlays += marker(m, c.lat!!, c.lng!!, icons.getOrPut("car${c.num}${c.color}${c.me}") { car(ctx, c.num, name, Color(c.color), c.me) }, c.label, CAR_ANCHOR)
+        val (icon, tip) = icons.getOrPut("car${c.num}${c.me}") { car(ctx, c.num, name, C.car(c.num), c.me) }
+        m.overlays += marker(m, c.lat!!, c.lng!!, icon, c.label, tip)
     }
-    m.overlays += CopyrightOverlay(ctx).apply { setTextColor(C.muted.toArgb()) }
+    m.overlays += CopyrightOverlay(ctx).apply { setTextColor(C.ink2.toArgb()) }
     m.invalidate()
 }
 
@@ -180,87 +187,91 @@ private fun marker(m: MapView, lat: Double, lng: Double, icon: BitmapDrawable, t
     infoWindow = null
 }
 
-/** 차 그림에서 칸 가운데의 세로 위치(이름표가 아래에 붙는다). 핀은 아래 꼭짓점이 위치 */
-private const val CAR_ANCHOR = 0.33f
+/** 지도 글자는 프리텐다드 ExtraBold */
+private fun sans(ctx: Context) = ResourcesCompat.getFont(ctx, R.font.pretendard_extrabold)
 
-/** 지도 글자도 픽셀 글꼴(Galmuri11 Bold, 12px 격자라 24px) */
-private fun pixel(ctx: Context) = ResourcesCompat.getFont(ctx, R.font.galmuri11_bold)
-
-/** 계단 모서리 네모: 가로·세로 두 사각형을 겹쳐 네 귀퉁이를 한 칸씩 비운다 */
-private fun notched(cv: Canvas, l: Float, t: Float, r: Float, b: Float, n: Float, p: Paint) {
-    cv.drawRect(l + n, t, r - n, b, p)
-    cv.drawRect(l, t + n, r, b - n, p)
-}
-
-/** 테·바탕·딱딱한 그림자를 갖춘 픽셀 칸 */
-private fun pixelBox(cv: Canvas, l: Float, t: Float, r: Float, b: Float, d: Float, fill: Int, border: Int, stroke: Float) {
-    val p = Paint() // 픽셀이라 안티에일리어스 없이
-    val n = 2 * d; val sh = 3 * d
-    p.color = C.bezel.toArgb(); notched(cv, l + sh, t + sh, r + sh, b + sh, n, p)
-    p.color = border; notched(cv, l, t, r, b, n, p)
-    p.color = fill; notched(cv, l + stroke, t + stroke, r - stroke, b - stroke, n, p)
-}
-
-/** 차: 깃발 색 네모 칸 안에 픽셀 호차 번호(깃발 밝기에 따라 검정·흰색), 아래에 이름표. 흰 테, 우리 차는 굵게 */
-private fun car(ctx: Context, num: Int, name: String, fill: Color, me: Boolean): BitmapDrawable {
+/**
+ * 물방울 핀: 한 귀퉁이만 덜 둥근 네모를 45도 돌려 뾰족한 끝이 아래로 오게 한다. 흰 테, 부드러운 그림자, 가운데 글자.
+ * [top] 은 핀 머리 위 끝, 돌아온 값은 뾰족한 끝의 y
+ */
+private fun drop(ctx: Context, cv: Canvas, cx: Float, top: Float, side: Float, fill: Color, label: String, textSize: Float): Float {
     val d = ctx.resources.displayMetrics.density
-    val box = (if (me) 48f else 40f) * d
-    val p = Paint().apply { typeface = pixel(ctx); textSize = 24f * d; textAlign = Paint.Align.CENTER }
-    val tagW = p.measureText(name) + 16 * d
-    val w = maxOf(box, tagW) + 8 * d
-    val h = box + 40 * d
+    val half = side / 2
+    val diag = side * 0.7071f
+    val cy = top + diag
+    val r = half
+    val path = Path().apply {
+        addRoundRect(RectF(cx - half, cy - half, cx + half, cy + half), floatArrayOf(r, r, r, r, r, r, side * 0.15f, side * 0.15f), Path.Direction.CW)
+        transform(Matrix().apply { setRotate(-45f, cx, cy) })
+    }
+    val p = Paint(Paint.ANTI_ALIAS_FLAG)
+    p.color = android.graphics.Color.WHITE
+    p.setShadowLayer(8 * d, 0f, 4 * d, SHADOW.toArgb())
+    cv.save(); cv.scale(1.12f, 1.12f, cx, cy); cv.drawPath(path, p); cv.restore() // 흰 테
+    p.clearShadowLayer()
+    p.color = fill.toArgb(); cv.drawPath(path, p)
+    p.typeface = sans(ctx); p.textSize = textSize; p.textAlign = Paint.Align.CENTER; p.color = onFlag(fill).toArgb()
+    cv.drawText(label, cx, cy - (p.descent() + p.ascent()) / 2, p)
+    return cy + diag * 1.12f
+}
+
+private val SHADOW = Color(0x47502838)
+
+/** 차: 호차 색 물방울 핀에 번호(색 밝기에 따라 ink·흰색), 아래에 흰 알약 이름표. 우리 차는 핀이 크다 */
+private fun car(ctx: Context, num: Int, name: String, fill: Color, me: Boolean): Pair<BitmapDrawable, Float> {
+    val d = ctx.resources.displayMetrics.density
+    val side = (if (me) 50f else 42f) * d
+    val p = Paint(Paint.ANTI_ALIAS_FLAG).apply { typeface = sans(ctx); textSize = 20f * d; textAlign = Paint.Align.CENTER }
+    val tagW = p.measureText(name) + 28 * d
+    val w = maxOf(side * 1.6f, tagW) + 20 * d
+    val pad = 10 * d
+    val tipGuess = pad + side * 0.7071f * 2.12f
+    val h = tipGuess + 6 * d + 34 * d + pad
     val bmp = Bitmap.createBitmap(w.toInt(), h.toInt(), Bitmap.Config.ARGB_8888)
     val cv = Canvas(bmp)
     val cx = w / 2
-    pixelBox(cv, cx - box / 2, 2 * d, cx + box / 2, 2 * d + box, d, fill.toArgb(), C.ink.toArgb(), (if (me) 4f else 2f) * d)
-    p.color = onFlag(fill).toArgb()
-    val cy = 2 * d + box / 2
-    cv.drawText("$num", cx, cy - (p.descent() + p.ascent()) / 2, p)
+    val tip = drop(ctx, cv, cx, pad, side, fill, "$num", (if (me) 26f else 22f) * d)
     // 이름표
-    val top = 2 * d + box + 6 * d
-    val tag = RectF(cx - tagW / 2, top, cx + tagW / 2, top + 30 * d)
+    val top = tip + 6 * d
+    val tag = RectF(cx - tagW / 2, top, cx + tagW / 2, top + 32 * d)
     p.color = (if (me) C.ink else C.paper).toArgb()
-    notched(cv, tag.left, tag.top, tag.right, tag.bottom, 2 * d, p)
+    p.setShadowLayer(6 * d, 0f, 3 * d, SHADOW.toArgb())
+    cv.drawRoundRect(tag, tag.height() / 2, tag.height() / 2, p)
+    p.clearShadowLayer()
     p.color = (if (me) C.paper else C.ink).toArgb()
     cv.drawText(name, cx, tag.centerY() - (p.descent() + p.ascent()) / 2, p)
-    return BitmapDrawable(ctx.resources, bmp)
+    return BitmapDrawable(ctx.resources, bmp) to tip / h
 }
 
-/** 이슈 핀: 색 네모 칸에 픽셀 글자 하나, 아래로 계단 꼬리 */
-private fun pin(ctx: Context, label: String, fill: Color): BitmapDrawable {
+/** 이슈 핀: 색 물방울에 글자 하나, 뾰족한 끝이 위치 */
+private fun pin(ctx: Context, label: String, fill: Color): Pair<BitmapDrawable, Float> {
     val d = ctx.resources.displayMetrics.density
-    val box = 36 * d
-    val w = box + 6 * d
-    val h = box + 18 * d
+    val side = 36 * d
+    val pad = 8 * d
+    val w = side * 1.6f + pad * 2
+    val h = pad + side * 0.7071f * 2.12f + pad
     val bmp = Bitmap.createBitmap(w.toInt(), h.toInt(), Bitmap.Config.ARGB_8888)
-    val cv = Canvas(bmp)
-    val p = Paint()
-    // 계단 꼬리: 아래로 갈수록 4dp 씩 좁아진다
-    val cx = box / 2
-    p.color = C.ink.toArgb()
-    for (i in 0 until 3) { val half = (6 - i * 2) * d; cv.drawRect(cx - half, box + i * 4 * d, cx + half, box + (i + 1) * 4 * d, p) }
-    pixelBox(cv, 0f, 0f, box, box, d, fill.toArgb(), C.ink.toArgb(), 2 * d)
-    p.color = C.paper.toArgb()
-    p.textSize = 24 * d
-    p.textAlign = Paint.Align.CENTER
-    p.typeface = pixel(ctx)
-    cv.drawText(label, cx, box / 2 - (p.descent() + p.ascent()) / 2, p)
-    return BitmapDrawable(ctx.resources, bmp).apply { setFilterBitmap(false) }
+    val tip = drop(ctx, Canvas(bmp), w / 2, pad, side, fill, label, 20 * d)
+    return BitmapDrawable(ctx.resources, bmp) to tip / h
 }
 
 /** 지금 지도에 있는 핀 종류만 */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun Legend(pins: List<Pin>, modifier: Modifier) {
-    Row(
-        modifier.background(C.paper.copy(alpha = 0.9f)).border(R_.stroke, C.bezel).padding(horizontal = 12.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically,
+    // 종류가 많으면 다음 줄로 넘긴다
+    FlowRow(
+        modifier.padding(end = 16.dp).pin(shape = RoundedCornerShape(24.dp), lift = 6.dp).padding(horizontal = 14.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         pins.map { it.kind }.distinct().forEach { k ->
             val (label, color, name) = pinStyle(k)
-            Box(Modifier.size(28.dp).background(color), contentAlignment = Alignment.Center) {
-                Text(label, style = T.note.copy(color = C.paper))
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(30.dp).background(color, RoundedCornerShape(50)), contentAlignment = Alignment.Center) {
+                    Text(label, style = T.note.copy(fontWeight = FontWeight.ExtraBold, color = onFlag(color)))
+                }
+                Text(name, style = T.note.copy(fontWeight = FontWeight.Bold, color = C.ink), maxLines = 1)
             }
-            Text(name, style = T.note.copy(color = C.ink))
         }
     }
 }

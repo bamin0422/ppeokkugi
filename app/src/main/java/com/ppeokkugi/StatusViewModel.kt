@@ -36,8 +36,8 @@ data class SdkState(
 )
 
 /**
- * 카드에 띄울 마스코트 표정. 그림은 drawable-nodpi/sprite_<이름>.png(없으면 cuckoo_<이름>.png).
- * 새 표정 그림이 아직 없으면 [fallback] 의 그림을 쓴다(ui/Cuckoo.kt)
+ * 카드에 띄울 마스코트 표정. 그림은 drawable-nodpi/cuckoo_<이름>.png(design/character 의 SVG 를 512px 로 그린 것).
+ * 제 그림이 없는 표정은 [fallback] 의 그림을 쓴다(ui/Cuckoo.kt)
  */
 enum class Mood {
     BASE, TALK, ALERT, REST, ROLLCALL, KIDS,
@@ -46,9 +46,8 @@ enum class Mood {
     val fallback: Mood get() = when (this) {
         TX, RX -> TALK
         BRAKE, CAMERA, LOST, EMERGENCY -> ALERT
-        RAIN -> BASE
-        WAIT -> REST
-        VOTE, ARRIVE -> ROLLCALL
+        RAIN, WAIT, ARRIVE -> BASE
+        VOTE -> ROLLCALL
         else -> this
     }
 
@@ -362,13 +361,14 @@ class StatusViewModel(app: Application) : AndroidViewModel(app) {
         val me = _room.value.me
         when (m) {
             is RoomMsg.Welcome -> {
-                val color = m.flagColor?.let(::parseColor)
+                // 서버 깃발 색은 쓰지 않고 호차 번호로 정한다(휴대폰 화면과 같은 색)
+                val color = FLAG[(m.carNum - 1).mod(FLAG.size)]
                 // 재입장 토큰으로 같은 번호를 받지만, 서버가 방을 잊었으면 번호가 바뀌므로 예전 우리 차 줄을 지운다
                 _room.update { st -> st.copy(me = m.carNum, myColor = color, cars = st.cars.filter { !it.me }) }
                 auto.leader = m.carNum == 1
-                upsertCar(m.carLabel) { it.copy(nickname = "우리 차", me = true, color = color ?: it.color) }
+                upsertCar(m.carLabel) { it.copy(nickname = "우리 차", me = true, color = color) }
                 m.cars.forEach(::onHello)
-                log("${if (m.rejoined) "재접속" else "입장"}: ${m.carLabel}${if (auto.leader) " (선두)" else ""}, 깃발 색 ${m.flagColor}")
+                log("${if (m.rejoined) "재접속" else "입장"}: ${m.carLabel}${if (auto.leader) " (선두)" else ""}")
                 bridge.setAmbientColor(flagRgb())
                 maybeSendRoll()
             }
@@ -389,7 +389,8 @@ class StatusViewModel(app: Application) : AndroidViewModel(app) {
                     else -> Mood.BASE
                 }
                 addRadio("위치", m.text, "all", mood)
-                speak(m.text, "guide")
+                // 처짐·다시 붙음은 차마다 마지막 것만 읽는다(한꺼번에 여러 줄이 와도 밀리지 않게)
+                speak(m.text, "guide", m.target?.takeIf { m.kind == "fall_behind" || m.kind == "catch_up" }?.let { "formation:$it" })
                 // 대열 이탈은 그 차 자리에 핀을 꽂는다
                 if (m.kind == "fall_behind" && m.lat != null && m.lng != null) addPin(m.kind, m.target ?: "", m.lat, m.lng)
             }
@@ -489,7 +490,7 @@ class StatusViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    private fun onHello(m: RoomMsg.Hello) = upsertCar(m.from) { c -> c.copy(nickname = m.nickname, color = m.flagColor?.let(::parseColor) ?: c.color, lat = m.lat ?: c.lat, lng = m.lng ?: c.lng) }
+    private fun onHello(m: RoomMsg.Hello) = upsertCar(m.from) { c -> c.copy(nickname = m.nickname, lat = m.lat ?: c.lat, lng = m.lng ?: c.lng) }
 
     private fun rollLine(from: String, seats: List<RoomMsg.Seat>): String {
         val on = seats.filter { it.occupied }
@@ -520,7 +521,7 @@ class StatusViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** 채널별 오디오 존으로 읽는다. guide = 운전석 안내, all 도 운전석에 짧게 읽는다 */
-    private fun speak(text: String, channel: String) {
+    private fun speak(text: String, channel: String, key: String? = null) {
         val s = _seats.value
         val (zone, name) = when (channel) {
             "adult" -> s.adultZone to "어른 채널"
@@ -528,7 +529,7 @@ class StatusViewModel(app: Application) : AndroidViewModel(app) {
             else -> s.guideZone to null
         }
         val line = if (s.prefixChannel && name != null) "$name, $text" else text
-        voice.speak(line, zone)
+        voice.speak(line, zone, key)
         log("TTS(존 $zone) $line")
     }
 
@@ -591,10 +592,9 @@ class StatusViewModel(app: Application) : AndroidViewModel(app) {
             SeatValue.ROW_2_LEFT to "rear-l", SeatValue.ROW_2_RIGHT to "rear-r",
         )
         val SEAT_NAME = mapOf("driver" to "운전석", "passenger" to "조수석", "rear-l" to "뒷좌석 왼쪽", "rear-r" to "뒷좌석 오른쪽")
-        /** 서버가 깃발 색을 주지 않으면 호차 번호로 고른다 */
         /** 이슈 핀은 5분 동안 지도에 남는다 */
         const val PIN_TTL_MS = 5 * 60_000L
-        val FLAG = listOf(0xFFE88E7DL, 0xFF7FB3D5L, 0xFF9CC3A8L, 0xFFE6C27AL, 0xFFC39BD3L)
-        private fun parseColor(hex: String): Long? = hex.removePrefix("#").toLongOrNull(16)?.let { 0xFF000000L or it }
+        /** 호차 색 1..6(ui/Theme.kt C.cars, 휴대폰 화면과 같은 순서). 서버가 보내는 깃발 색은 쓰지 않는다 */
+        val FLAG = listOf(0xFFFF5A4EL, 0xFF2B8CFFL, 0xFFFFBF1FL, 0xFF7B55FFL, 0xFFFF3D8BL, 0xFF14B8D4L)
     }
 }

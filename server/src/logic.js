@@ -205,7 +205,7 @@ export function noticeText(n, meNum, positions, dest = null) {
 // --- 깃발 색 ---
 
 // 앱 StatusViewModel.FLAG 와 같은 순서
-const FLAG_COLORS = ['#E88E7D', '#7FB3D5', '#9CC3A8', '#E6C27A', '#C39BD3'];
+const FLAG_COLORS = ['#FF5A4E', '#2B8CFF', '#FFBF1F', '#7B55FF', '#FF3D8B', '#14B8D4'];
 export function flagColorFor(carNum) {
   return FLAG_COLORS[(carNum - 1) % FLAG_COLORS.length];
 }

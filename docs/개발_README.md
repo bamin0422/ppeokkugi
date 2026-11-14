@@ -89,7 +89,7 @@ curl -X POST "$B/gear?gear=Park"                # 기어 P
 | 점호 | ✅ | 기어가 처음 D가 되면 좌석별 착석과 벨트를 `roll`로 보냅니다. 벨트 신호가 없으면 `buckled: null`, 화면에는 "벨트 확인 불가"로 보입니다. 선두는 받은 점호를 읽습니다 |
 | 다시 붙기 | ✅ | `rejoin`을 받으면 경유지를 넣고 "선두를 따라가는 경로로 바꿨습니다"라고 읽습니다. 서버가 이탈 동안 계속 보내므로 1분에 한 번만 따릅니다 |
 | 화면 | ✅ | 입장, 운전석(일행 목록·깃발 색·최근 무전 3개·무전 버튼, 주행 중에는 입력과 스크롤 없음), 승객(채널·좌석·오디오 존·무전 기록·투표 카드), 상태(기존 디버그 로그) |
-| 마스코트 | ✅ | 64px 픽셀 그림 뻐꾸기. `ui/Cuckoo.kt`의 `CuckooView(mood)` 한 곳에서만 그리며, `drawable-nodpi/sprite_<표정>.png`(64px 프레임을 가로로 이은 원본, `design/character/pixel/`에서 복사)를 125ms마다 한 칸씩 넘기고 칸에 들어가는 가장 큰 정수 배로 필터 없이 그립니다. 주행 중(CarUxRestrictions) 운전석 카드는 새로 온 때 한 번(2초)만 돌고 첫 프레임에 멈춥니다. 런처 아이콘은 `ic_launcher_art`입니다 |
+| 마스코트 | ✅ | 아기 뻐꾸기 그림 6종(`design/character/cuckoo_*.svg`, 앱은 512px `drawable-nodpi/cuckoo_<표정>.png`). `ui/Cuckoo.kt`의 `CuckooView(mood)` 한 곳에서만 그리며, 없는 표정은 `Mood.fallback`의 그림을 씁니다. 승객·입장 화면은 천천히 들썩이고(LOOP), 운전석 카드는 새로 온 때 한 번 튀어나온 뒤 멈춥니다(ONCE). 런처 아이콘은 `ic_launcher_foreground`·`ic_launcher_background`입니다 |
 
 ## P1 기능 (2026-11-01 구현)
 
@@ -196,7 +196,7 @@ Pleos Connect Emulator 2.1.0, 사용자 10, 로컬 서버(`wrangler dev --port 8
 | release APK | ✅ | `apksigner verify`: `CN=Android Debug`, 에뮬레이터 사용자 10에 `adb install -r` 성공 후 실행 |
 | 단위 테스트 | ✅ | 앱 `./gradlew :app:testDebugUnitTest` 10개 통과, 서버 `npm test` 28개 통과(깃발 색·도착 판정 3개·route 검증 추가) |
 
-화면 캡처는 `design/screens/`에 있습니다. 2026-11-01 픽셀 무전기 디자인과 픽셀 마스코트로 다시 찍었습니다(`navi-after-waypoint.png`만 이전 화면).
+새 디자인(핀 카드 무전기) 화면 캡처는 `design/screens-v2/`에 있습니다. 아래 표의 `design/screens/`는 2026-11-01 픽셀 디자인 때 찍은 이전 화면입니다(`navi-after-waypoint.png`는 그보다 이전 화면).
 
 | 파일 | 장면 |
 |---|---|
@@ -219,16 +219,16 @@ Pleos Connect Emulator 2.1.0, 사용자 10, 로컬 서버(`wrangler dev --port 8
 | `navi-after-waypoint.png` | 경유지를 넣은 직후 앞으로 나온 Pleos 내비(이전 화면) |
 | `mascot-anim.mp4`, `mascot-join.mp4`, `mascot-passenger.mp4`, `mascot-driver-once.mp4` | 화면 캡처를 이어 만든 짧은 영상: 긴급 콜·입장·승객 화면 반복 재생, 운전석 새 카드 한 번 재생 뒤 멈춤 |
 
-## 디자인 (2026-11-01)
+## 디자인 (핀 카드 무전기)
 
-픽셀 무전기 정체성: 검은 기기 몸체(#121417)에 디더 무늬 패널, 초록 백라이트 LCD(#C9D86A, 글자 #1A1F12)와 스캔라인, 신호 주황(#FF6A1A, 마스코트 부리), 송신 빨강·수신 초록 네모 LED. 둥근 모서리는 없습니다.
+밝은 종이 바탕(#FFFAF6)에 흰 핀 카드(모서리 28dp, 1.5dp 옅은 테 #F1E6DF, 부드러운 그림자)를 붙이고, 무전기 느낌은 짙은 LCD 창(#2A2230, 글자 #FFE9A3), 주황 무전 버튼(#FF7A1A), 송신 빨강(#FF3D5A)·수신 파랑(#2B8CFF) 둥근 LED, 스피커 그릴 점으로 남깁니다. 호차 색은 #FF5A4E·#2B8CFF·#FFBF1F·#7B55FF·#FF3D8B·#14B8D4 여섯 가지이고 초록은 쓰지 않습니다.
 
-- **색 토큰**은 앱 `ui/Theme.kt`의 `object C`와 휴대폰 `server/src/phone.html`의 `:root` 두 곳에만 둡니다. 지도 타일 필터도 `paper`·`muted`에서 계산합니다. 글자 대비는 모두 WCAG AA(4.5:1) 이상이며, 송신 빨강은 대비가 모자라 LED·테에만 씁니다.
-- **글꼴**: 모든 글자가 픽셀 글꼴 Galmuri(한글 11,172자 모두)입니다. Galmuri11(Regular·Bold)은 12px 격자라 24·36·48sp처럼 12의 배수로 쓰고, 운전석 본문은 24sp(큰 카드 36sp) 아래로 내리지 않습니다. 작은 메타 글자만 Galmuri9 20sp. 라이선스는 `app/src/main/assets/licenses/Galmuri-OFL.txt`. 휴대폰은 jsDelivr의 `galmuri@2.40.3`.
-- **모양**(`ui/Radio.kt`): 4dp 계단 모서리(`PixelShape`), 2dp 굵은 테와 흐림 없는 4dp 그림자(`pixelBox`), 누르면 그림자만큼 내려앉는 8비트 버튼(`PixelButton`), 2dp 체커 디더·스피커 홈·LCD 스캔라인(작은 타일 비트맵 반복), 네모 LED·신호 막대·배터리 칸·2dp 단위 파형, 깃발 밝기에 따라 고르는 호차 번호 글자색(`onFlag`). 지도 차·핀도 네모 칸에 픽셀 번호입니다.
+- **색 토큰**은 앱 `ui/Theme.kt`의 `object C`와 휴대폰 `server/src/phone.html`의 `:root` 두 곳에만 둡니다. 바탕·카드 위 글자와 LCD 위 글자는 WCAG AA(4.5:1) 이상이고, `ink3`은 시각 같은 덧붙임 글자에만 씁니다.
+- **글꼴**: 제목·상표·무전 버튼은 고운바탕 Bold(KS X 1001 한글로 줄인 파일), 나머지는 Pretendard(Regular·SemiBold·Bold·ExtraBold)입니다. 운전석 본문은 24sp, 무전 카드 글은 36sp 아래로 내리지 않습니다. 라이선스는 `app/src/main/assets/licenses/OFL-GowunBatang.txt`, `OFL-Pretendard.txt`. 휴대폰은 Google Fonts 고운바탕과 jsDelivr Pretendard를 씁니다.
+- **모양**(`ui/Radio.kt`): 핀 카드(`pin`), 스피커 그릴(`grille`), LCD 창(`Lcd`), 둥근 LED(`Led`, 깜빡임 가능), 신호 세기 막대, 수신 파형(`Waveform`), 표정 색으로 옅게 칠한 마스코트 칸(`SpeakerBox`), 누르면 살짝 작아지는 둥근 버튼(`SoftButton`).
 - **무전 버튼**: 듣는 동안 STT `onUpdatedRms` 값으로 미터를 채웁니다(`Voice.level`, 범위 0~10 가정).
-- **표정**(`Mood`): TX(무전 버튼·보낸 무전), RX(받은 무전·신호), BRAKE, RAIN, CAMERA(제한속도·주의 구간), LOST(대열 이탈), VOTE, ARRIVE(도착 알림), EMERGENCY(에어백·긴급 화면), WAIT(시연 대기). 앱은 `sprite_<이름>.png`를, 휴대폰은 `server/public/cuckoo/<이름>.webp`(512px, 8배 확대본)를 `image-rendering: pixelated`로 32·64·128px에만 그립니다. 그림이 없으면 `Mood.fallback`의 기존 표정을 씁니다.
-- **검증**: 픽셀 디자인 뒤 앱 단위 테스트 12개·서버 `npm test` 36개 통과, `assembleRelease` 성공(`apk/팀명_뻐꾸기_release.apk`, 67.5MB, `sprite_*` 16종·Galmuri 3종 포함 확인). 앱·휴대폰 마스코트 영역 색 수가 14~23개로 흐림(중간색)이 없음을 확인했습니다.
+- **표정**(`Mood`): 그림은 기본·무전·경고·휴게·점호·키즈 6종이고, TX·RX·BRAKE·RAIN·CAMERA·LOST·VOTE·ARRIVE·EMERGENCY·WAIT는 `Mood.fallback`으로 이 중 하나를 씁니다. 휴대폰은 `server/public/cuckoo/<이름>.svg`를 씁니다.
+- **검증**: 이전 픽셀 디자인(2026-11-01) 때 앱 단위 테스트 12개·서버 `npm test` 36개 통과를 확인했습니다. 새 디자인으로 바꾼 뒤의 테스트·APK 결과는 이 문서에 아직 적지 않았습니다.
 
 ## 에뮬레이터 확인 결과 (2026-11-01, 일행 지도·위치 알림)
 
@@ -247,7 +247,7 @@ Pleos Connect Emulator 2.1.0, 사용자 10, 로컬 서버(`wrangler dev --port 8
 
 - **에뮬레이터 과부하(2026-11-01)**: 512px 움직이는 WebP를 카드마다 디코드하던 때 시연 중 에뮬레이터 부하가 28까지 올라 `pm install`이 멈췄고(`adb reboot`으로 풀림), 경유지로 Pleos 내비가 앞으로 나올 때 앱이 두 번 ANR(입력 5초 무응답, 메인 스레드는 `activityTopResumedStateLost` 바인더 호출에서 대기)을 냈습니다. 같은 때 내비 앱도 ANR을 여러 번 냈습니다. 이후 마스코트를 64px 스프라이트 시트 한 장 그리기로 바꿨고, 재부팅한 에뮬레이터의 마지막 시연(투표·경유지 포함)에서는 ANR이 다시 나지 않았지만 부하 원인을 앱으로 좁히지는 못했습니다.
 - **마이크 미터**: 에뮬레이터에는 실제 마이크 입력이 없어 미터가 움직이는 것은 확인하지 못했습니다. RMS 범위(`Voice.RMS_MAX`)는 실차에서 맞춥니다. 휴대폰 미터도 헤드리스 Chrome에서는 마이크를 열 수 없어 확인하지 못했습니다.
-- **APK 크기**: Pretendard를 빼고 Galmuri 세 개(12MB)와 마스코트 그림을 넣어 제출용 APK가 67.5MB입니다. 예전 512px `cuckoo_*_anim.webp`는 런처·대체용으로 남아 있어 더 줄일 수 있습니다.
+- **APK 크기**: 픽셀 디자인 때 제출용 APK는 67.5MB였습니다. 새 디자인은 Galmuri를 빼고 Pretendard 4개와 줄인 고운바탕 Bold를 넣었으며, 새 APK 크기는 아직 재지 않았습니다.
 - **화자 식별**: `AmbientAiApi.setRecognitionResultListener`가 "privileged 앱만 사용 가능" 오류를 냅니다. 일반 앱은 화자 id를 받을 수 없으므로 승객 화면에서 고른 좌석을 화자로 보냅니다.
 - **호출어 "무전"**: STT의 호출어 설정(`WakeUpWordConfig`)은 음성 모델 데이터가 필요하고 같은 privileged API에 있어 넣지 않았습니다. 지금은 무전 버튼만 씁니다.
 - **좌석별 스피커**: `setAudioZoneId`는 예외 없이 호출되지만(`audioInfo={"zoneId":2}`) 에뮬레이터 스피커가 하나라 실제로 좌석별로 나뉘는지는 확인하지 못했습니다. 그래서 채널 이름을 붙여 읽는 대안을 기본으로 켜 두었습니다.

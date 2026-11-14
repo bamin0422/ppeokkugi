@@ -23,6 +23,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.font.FontWeight
 import com.ppeokkugi.SdkState
 import com.ppeokkugi.StatusViewModel
 
@@ -35,8 +36,8 @@ fun StatusScreen(vm: StatusViewModel) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(C.paper)
-            .padding(R_.md),
+            .background(C.bg)
+            .padding(horizontal = 28.dp, vertical = R_.md),
     ) {
         Text("뻐꾸기", style = T.brand)
         Spacer(Modifier.height(R_.md))
@@ -44,13 +45,13 @@ fun StatusScreen(vm: StatusViewModel) {
         SdkStateRow(sdk)
         Spacer(Modifier.height(R_.md))
 
-        PixelButton(onClick = { vm.runDemo() }, enabled = !demoRunning, fill = C.accent, modifier = Modifier.fillMaxWidth().height(80.dp)) {
-            Text(if (demoRunning) "데모 주행 중…" else "데모 주행", style = T.button.copy(color = if (demoRunning) C.muted else C.onAccent))
+        SoftButton(onClick = { vm.runDemo() }, enabled = !demoRunning, fill = C.accent, border = C.accent, modifier = Modifier.fillMaxWidth().height(84.dp)) {
+            Text(if (demoRunning) "데모 주행 중…" else "데모 주행", style = T.button.copy(color = if (demoRunning) C.ink2 else C.ink))
         }
 
         // 디버그 메뉴: 에뮬레이터가 지원하지 않는 신호를 흉내 낸다
-        Spacer(Modifier.height(8.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Spacer(Modifier.height(12.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             DebugButton("에어백 전개 주입 (긴급 콜)", Modifier.weight(1f), vm::injectAirbag)
             DebugButton("깃발 조명 깜빡임 시험", Modifier.weight(1f), vm::blinkFlag)
         }
@@ -64,8 +65,9 @@ fun StatusScreen(vm: StatusViewModel) {
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f),
-            contentPadding = PaddingValues(vertical = 4.dp),
+                .weight(1f)
+                .pin(lift = 0.dp),
+            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             items(logs) { entry ->
@@ -77,7 +79,7 @@ fun StatusScreen(vm: StatusViewModel) {
 
 @Composable
 private fun DebugButton(text: String, modifier: Modifier, onClick: () -> Unit) {
-    PixelButton(onClick = onClick, modifier = modifier.height(80.dp)) { Text(text, style = T.button) }
+    SoftButton(onClick = onClick, modifier = modifier.height(80.dp)) { Text(text, style = T.button) }
 }
 
 @Composable
@@ -98,7 +100,7 @@ private fun SdkStateRow(sdk: SdkState) {
 private fun SdkChip(label: String, ready: Boolean) {
     Text(
         label,
-        style = T.note.copy(color = if (ready) C.lcdInk else C.muted),
-        modifier = Modifier.background(if (ready) C.rx else C.sunk).padding(horizontal = 8.dp, vertical = 4.dp),
+        style = T.note.copy(fontWeight = FontWeight.Bold, color = if (ready) C.ink else C.ink2),
+        modifier = Modifier.pin(if (ready) C.rx else C.paper, if (ready) C.rx else C.line, Pill, lift = 0.dp).padding(horizontal = 18.dp, vertical = 6.dp),
     )
 }

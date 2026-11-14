@@ -1,6 +1,6 @@
 """deck.html → 16:9 PDF. 사용: python3 docs/deck/build_deck.py [미리보기 폴더]
 
-1) 에뮬레이터 화면에서 필요한 부분만 잘라 assets/에 넣고
+1) 에뮬레이터·휴대폰 화면(design/screens-v2)에서 필요한 부분만 잘라 assets/에 넣고
 2) SDK 다이어그램을 그려 deck.html에 끼운 뒤
 3) 헤드리스 Chrome으로 PDF를 만들고
 4) 본문 글을 deck_text.md로 뽑아 문체 검사를 돌리고
@@ -12,53 +12,76 @@ from PIL import Image
 DECK = pathlib.Path(__file__).resolve().parent
 ROOT = DECK.parent.parent
 A = DECK / "assets"
-SCR = ROOT / "design/screens"
-NODPI = ROOT / "app/src/main/res/drawable-nodpi"
+SCR = ROOT / "design/screens-v2"
+OLD_SCR = ROOT / "design/screens"
+CHAR = ROOT / "design/character"
 OUT = [pathlib.Path.home() / "Downloads/뻐꾸기_서비스소개서.pdf", ROOT / "docs/뻐꾸기_서비스소개서.pdf"]
 CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 CHECK = pathlib.Path.home() / ".claude/skills/writing-korean-docs/check_register.py"
-APP = (852, 88)  # 2560×1440 캡처에서 앱 영역이 시작하는 점. 아래 좌표는 앱 영역 기준
 
-CROPS = {  # 이름: (원본, (x0, y0, x1, y1) 앱 영역 좌표). 원본 이름이 phone-로 시작하면 휴대폰 캡처 원본 좌표
-    "drv-map":    ("driver", (25, 160, 645, 1065)),
-    "tail":       ("driver", (680, 170, 1655, 325)),
-    "roll-list":  ("driver", (25, 740, 645, 1065)),
-    "rollcall":   ("driver", (835, 560, 1310, 655)),
-    "share":      ("route-share", (680, 170, 1655, 330)),
-    "rejoin":     ("passenger", (690, 860, 1655, 1060)),
-    "rejoin-1":   ("passenger", (800, 893, 1300, 935)),
-    "arrive2":    ("arrive", (680, 355, 1655, 690)),
-    "arrive-1":   ("arrive", (840, 390, 1450, 470)),
-    "brake":      ("brake-alert", (25, 160, 1660, 700)),
-    "brake-map":  ("brake-alert", (25, 160, 645, 725)),
-    "brake-card": ("brake-alert", (835, 560, 1480, 660)),
-    "vote":       ("vote", (670, 120, 1660, 490)),
-    "vote-cards": ("vote", (1000, 270, 1660, 490)),
-    "navi-eta":   ("route-follow-navi", (25, 870, 605, 1190)),
-    "seat":       ("passenger", (20, 110, 665, 700)),
-    "kids-row":   ("passenger", (20, 555, 560, 615)),
-    "phone":      ("phone-map", (0, 0, 780, 1090)),
-    "ptt":        ("ptt-tx", (680, 1050, 1650, 1180)),
-    "rx-cards":   ("route-share", (680, 355, 1655, 690)),
-    "talk-1":     ("route-share", (835, 390, 1640, 470)),
-    "tail-1":     ("driver", (835, 195, 1640, 295)),
-    "share-1":    ("route-share", (835, 185, 1640, 310)),
+# 10쪽 컷(brake-card·tail-1·arrive-1·vote-cards·rollcall·talk-1·kids-row)은 카드에서 말풍선 글 부분만 잘라 칸을 채운다
+CROPS = {  # 이름: (screens-v2 원본, (x0, y0, x1, y1) 원본 픽셀 좌표). 차 화면 2560×1440, 휴대폰 780×N
+    "drv-map":    ("driver", (876, 252, 1484, 1144)),
+    "seat":       ("passenger", (872, 200, 1548, 904)),
+    "brake":      ("brake-alert", (870, 250, 2512, 790)),
+    "brake-card": ("phone-10-feed-full", (200, 2722, 596, 2885)),
+    "tail-1":     ("brake-alert", (1670, 428, 2125, 530)),
+    "rx-cards":   ("brake-alert", (1500, 258, 2512, 682)),
+    "ptt":        ("ptt-tx", (1500, 1126, 2512, 1282)),
+    "arrive2":    ("arrive", (1500, 258, 2512, 736)),
+    "arrive-1":   ("arrive", (1670, 428, 2160, 572)),
+    "vote":       ("vote", (1500, 200, 2512, 548)),
+    "vote-cards": ("phone-10-feed-full", (200, 1350, 600, 1470)),
+    "rollcall":   ("passenger", (1665, 790, 1955, 930)),
+    "phone":      ("phone-04-radio", (0, 0, 780, 1320)),
+    "talk-1":     ("phone-10-feed-full", (200, 3640, 596, 3770)),
+    "kids-row":   ("phone-10-feed-full", (200, 3178, 605, 3336)),
+    "control-seat": ("phone-13-control-room", (0, 0, 780, 1688)),
 }
-SPRITES = ["tx", "rx", "brake", "rain", "camera", "lost", "vote", "arrive",
-           "emergency", "wait", "base", "talk", "alert", "rest", "rollcall", "kids"]
+NAVI = ("route-follow-navi", (877, 958, 1457, 1278))  # 순정 내비 화면은 새로 찍지 않아 이전 캡처에서 자른다
+CHARS = ["base", "talk"]
+JPG = {"drv-map", "brake", "phone", "control-seat"}
+
+# 12쪽 운행 보고서: 2026-11-04 가상 차량 3대 운행 기록(이전 캡처의 값)을 지금 보고서 화면(server/src/report.js)으로 다시 그린다
+REPORT = """
+import { reportHtml } from '%s';
+const t = (h, m) => Date.UTC(2026, 10, 4, h - 9, m);
+const row = (car, nickname, brake, airbag, says, people) => ({ car, nickname, joinedAt: t(14, 44), arrivedAt: t(15, 22),
+  minutes: 37, km: 61.9, maxSpeed: 100, brake, airbag, rejoins: 0, says, people });
+const ev = [[44, 1, '입장'], [44, 2, '입장'], [44, 3, '입장'], [44, 1, '점호 3명'], [44, 2, '점호 3명'], [44, 3, '점호 4명'],
+  [45, 1, '급제동'], [45, 2, '비'], [46, 0, '관제 공지'], [46, 0, '휴게소 투표: 안성 휴게소'], [47, 3, '에어백']]
+  .map(([m, car, text]) => ({ at: t(14, m), car, text }))
+  .concat([[1, '퇴장'], [2, '퇴장'], [3, '퇴장']].map(([car, text]) => ({ at: t(15, 22), car, text })));
+ev.splice(11, 0, { at: t(15, 22), car: 0, text: '전원 도착' });
+process.stdout.write(reportHtml({ startedAt: t(14, 44), events: ev,
+  rows: [row(1, '선두차(봇)', 1, 0, 0, 3), row(2, '2호차(봇)', 0, 0, 0, 3), row(3, '3호차(봇)', 0, 1, 2, 4)] }));
+"""
+
+
+def shoot(html, png, w, h):
+    tmp = A / "_tmp.html"
+    tmp.write_text(html)
+    subprocess.run([CHROME, "--headless", "--disable-gpu", "--hide-scrollbars", f"--window-size={w},{h}",
+                    "--force-device-scale-factor=2", "--virtual-time-budget=6000", f"--screenshot={png}", tmp.as_uri()],
+                   check=True, capture_output=True)
+    tmp.unlink()
 
 
 def assets():
     A.mkdir(exist_ok=True)
-    for name, (src, (x0, y0, x1, y1)) in CROPS.items():
-        im = Image.open(SCR / f"{src}.png").convert("RGB")
-        ox, oy = (0, 0) if src.startswith("phone-") else APP
-        im.crop((ox + x0, oy + y0, ox + x1, oy + y1)).save(A / f"{name}.png")
-    for s in SPRITES:
-        shutil.copy(NODPI / f"cuckoo_{s}.png", A / f"cuckoo_{s}.png")
-    shutil.copy(NODPI / "ic_launcher_art.png", A / "icon.png")
-    for f in ("galmuri11_bold.ttf", "galmuri11.ttf"):
-        shutil.copy(ROOT / "app/src/main/res/font" / f, A / f)
+    for name, (src, box) in CROPS.items():
+        im = Image.open(SCR / f"{src}.png").convert("RGB").crop(box)
+        if name in JPG:  # 지도 타일이 든 화면은 JPEG로 줄인다
+            im.save(A / f"{name}.jpg", quality=88)
+        else:
+            im.save(A / f"{name}.png")
+    Image.open(OLD_SCR / f"{NAVI[0]}.png").convert("RGB").crop(NAVI[1]).save(A / "navi-eta.png")
+    for c in CHARS:
+        shutil.copy(CHAR / f"cuckoo_{c}.svg", A / f"cuckoo_{c}.svg")
+    shutil.copy(ROOT / "app/src/main/res/font/gowun_batang_bold.ttf", A / "gowun_batang_bold.ttf")
+    js = REPORT % (ROOT / "server/src/report.js").as_uri()
+    html = subprocess.run(["node", "--input-type=module", "-e", js], capture_output=True, text=True, check=True).stdout
+    shoot(html, A / "control-report.png", 1100, 830)
 
 
 # ---- 9쪽: SDK 5종 ↔ 기능 12개 연결선 ----

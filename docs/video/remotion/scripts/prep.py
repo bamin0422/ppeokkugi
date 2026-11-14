@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Remotion public/ 준비: 실제 녹화 클립 자르기, 앱 TTS 구간 찾기, 스프라이트·글꼴 복사, BGM·효과음 합성.
+"""Remotion public/ 준비: 실제 녹화 클립 자르기, 앱 TTS 구간 찾기, 마스코트·글꼴 복사, BGM·효과음 합성.
 
 사용: python3 scripts/prep.py            (docs/video/remotion 에서)
 원본: ../src/raw (take1·take2 녹화, gitignore). 결과: public/ (gitignore), src/speech.json
@@ -109,13 +109,14 @@ def clips():
 
 
 def assets():
-    (PUB / "sprites").mkdir(parents=True, exist_ok=True)
-    (PUB / "fonts").mkdir(parents=True, exist_ok=True)
-    for p in (ROOT / "app/src/main/res/drawable-nodpi").glob("sprite_*.png"):
-        shutil.copy(p, PUB / "sprites" / p.name)
-    for n in ("galmuri11.ttf", "galmuri11_bold.ttf"):
-        shutil.copy(ROOT / "app/src/main/res/font" / n, PUB / "fonts" / n)
-    (PUB / "shots").mkdir(exist_ok=True)
+    """마스코트 벡터(design/character), 글꼴(remotion/fonts), 관제 보고서 화면"""
+    for d in ("character", "fonts", "shots"):
+        (PUB / d).mkdir(parents=True, exist_ok=True)
+    for p in (ROOT / "design/character").glob("cuckoo_*.svg"):
+        shutil.copy(p, PUB / "character" / p.name)
+    for p in (HERE / "fonts").iterdir():
+        if p.suffix in (".ttf", ".otf"):
+            shutil.copy(p, PUB / "fonts" / p.name)
     shutil.copy(ROOT / "design/screens/control-report.png", PUB / "shots/report.png")
 
 
@@ -137,20 +138,17 @@ def env(n, a=0.005, r=0.05, sustain=1.0):
     return e
 
 
-def pulse(f, d, duty=0.5):
-    ph = (t_(d) * f) % 1.0
-    return np.where(ph < duty, 1.0, -1.0)
+def sine(f, d, ph=0.0):
+    return np.sin(2 * np.pi * f * t_(d) + ph)
 
 
-def tri(f, d):
-    ph = (t_(d) * f) % 1.0
-    return 4 * np.abs(ph - 0.5) - 1
+def decay(n, k):
+    return np.exp(-np.arange(n) / SR * k)
 
 
 def lowpass(x, fc):
-    a = np.exp(-2 * np.pi * fc / SR)
-    from scipy.signal import lfilter
-    return lfilter([1 - a], [1, -a], x)
+    from scipy.signal import butter, sosfilt
+    return sosfilt(butter(2, fc, btype="low", fs=SR, output="sos"), x)
 
 
 def bandpass(x, lo, hi):
@@ -170,37 +168,46 @@ def write(path, x, stereo=None):
 
 
 def sfx():
+    """무전기 느낌은 살리되 깨끗한 소리: 사인파 위주, 잡음은 짧고 대역을 좁게"""
     d = PUB / "audio"
     d.mkdir(parents=True, exist_ok=True)
-    # 무전 버튼 딸깍 + 스켈치
-    click = np.zeros(int(0.02 * SR))
-    click[:200] = RNG.uniform(-1, 1, 200) * np.linspace(1, 0, 200)
-    sq = bandpass(RNG.uniform(-1, 1, int(0.16 * SR)), 900, 3200) * env(int(0.16 * SR), 0.004, 0.12) * 0.9
-    write(d / "ptt.wav", np.concatenate([click * 0.35, sq * 0.6]))
-    # 로저 비프: 스켈치 꼬리 + 짧은 두 음
-    tail = bandpass(RNG.uniform(-1, 1, int(0.08 * SR)), 900, 3200) * env(int(0.08 * SR), 0.003, 0.06) * 0.5
-    b1 = pulse(1200, 0.07, 0.5) * env(int(0.07 * SR), 0.002, 0.01) * 0.35
-    b2 = pulse(1600, 0.09, 0.5) * env(int(0.09 * SR), 0.002, 0.03) * 0.35
-    write(d / "roger.wav", lowpass(np.concatenate([b1, b2, tail]), 6000))
-    # 휙: 대역이 올라가는 잡음
+
+    def tone(f, dur, a=0.004, r=0.03, h2=0.15):
+        x = sine(f, dur) + h2 * sine(2 * f, dur)
+        return x * env(len(x), a, r)
+
+    def squelch(dur, g):
+        n = int(dur * SR)
+        return lowpass(bandpass(RNG.uniform(-1, 1, n), 1200, 2800), 5000) * env(n, 0.003, dur * 0.8) * decay(n, 18) * g
+
+    # 무전 버튼: 부드러운 딸깍(낮은 톡 + 짧은 고음) + 아주 짧은 스켈치
+    n = int(0.03 * SR)
+    click = (sine(180, 0.03) * 0.6 + sine(2400, 0.03) * 0.25) * decay(n, 160)
+    write(d / "ptt.wav", np.concatenate([click * 0.7, squelch(0.14, 0.38)]))
+    # 로저 비프: 두 음 사인
+    write(d / "roger.wav", np.concatenate([tone(1175, 0.07) * 0.32, np.zeros(int(0.015 * SR)), tone(1568, 0.11, r=0.06) * 0.32, squelch(0.06, 0.12)]))
+    # 휙: 대역이 올라가는 부드러운 바람
     n = int(0.45 * SR)
     noise = RNG.uniform(-1, 1, n)
     out = np.zeros(n)
-    for i, (lo, hi) in enumerate([(200, 600), (400, 1200), (800, 2400), (1500, 4500), (2500, 7000)]):
+    for i, (lo, hi) in enumerate([(200, 600), (350, 1000), (600, 1800), (1000, 3000), (1600, 4500)]):
         seg = slice(i * n // 5, (i + 1) * n // 5 + 2000)
         out[seg] += bandpass(noise, lo, hi)[seg][: len(out[seg])]
-    w = np.sin(np.linspace(0, np.pi, n)) ** 2
-    write(d / "whoosh.wav", out * w * 0.7)
-    # 픽셀 블립(자막 등장)
-    blip = np.concatenate([pulse(988, 0.035, 0.25), pulse(1480, 0.05, 0.25)])
-    write(d / "blip.wav", lowpass(blip * env(len(blip), 0.001, 0.02) * 0.28, 7000))
-    # 급제동 경보음: 두 음 번갈아 3회
+    write(d / "whoosh.wav", lowpass(out * np.sin(np.linspace(0, np.pi, n)) ** 2, 4000) * 0.5)
+    # 톡(자막 등장): 음높이가 살짝 내려가는 물방울 소리
+    dur = 0.09
+    tt = t_(dur)
+    ph = 2 * np.pi * np.cumsum(1400 - 500 * (1 - np.exp(-tt * 40))) / SR
+    write(d / "blip.wav", np.sin(ph) * decay(len(tt), 45) * env(len(tt), 0.002, 0.02) * 0.3)
+    # 급제동 경보: 두 음 번갈아 3회(사인 + 약한 3배음)
     beeps = []
-    for k in range(3):
-        for f in (1046, 1568):
-            beeps.append(pulse(f, 0.09, 0.5) * env(int(0.09 * SR), 0.002, 0.01) * 0.4)
-        beeps.append(np.zeros(int(0.04 * SR)))
-    write(d / "alert.wav", lowpass(np.concatenate(beeps), 5000))
+    for _ in range(3):
+        for f in (1046, 1397):
+            x = sine(f, 0.1) + 0.18 * sine(3 * f, 0.1)
+            beeps.append(x * env(len(x), 0.006, 0.03) * 0.38)
+        beeps.append(np.zeros(int(0.05 * SR)))
+    write(d / "alert.wav", np.concatenate(beeps))
+
     # 뻐꾹: 내려가는 두 음(장3도), 부드러운 플루트 같은 음색
     def coo(f, dur):
         t = t_(dur)
@@ -221,12 +228,14 @@ def hz(name):
 
 
 def bgm(total, path):
-    """118 BPM 8비트 곡: 인트로 4마디 → A/B 반복 → 아웃트로 2마디. 길이는 영상 길이에 맞춘다."""
-    bpm = 118
+    """96 BPM 따뜻한 로파이 팝: 전자 피아노 화음, 부드러운 베이스, 가벼운 드럼, 종소리 선율.
+    인트로 2마디(피아노만) → 본곡 반복 → 끝 화음. 길이는 영상 길이에 맞춘다."""
+    bpm = 96
     beat = 60 / bpm
     bar = 4 * beat
+    swing = beat * 0.06  # 8분음표 뒤 박을 살짝 늦춘다
     nbar = int(np.ceil(total / bar))
-    N = int(total * SR) + SR
+    N = int(total * SR) + 4 * SR
     L, R = np.zeros(N), np.zeros(N)
 
     def put(x, t, pan=0.0, g=1.0):
@@ -235,86 +244,81 @@ def bgm(total, path):
         L[i:i + len(x)] += x * g * (1 - max(0, pan))
         R[i:i + len(x)] += x * g * (1 + min(0, pan))
 
-    chords = [("C", ["C4", "E4", "G4"], "C2"), ("G", ["B3", "D4", "G4"], "G2"),
-              ("Am", ["C4", "E4", "A4"], "A2"), ("F", ["C4", "F4", "A4"], "F2")]
-    # A 선율(8마디, 8분음표 단위, '-' 이음, '.' 쉼)
-    melA = ["E5 . G5 - C6 - B5 G5", "D5 - G5 - B5 - A5 G5", "A5 . C6 - E6 - D6 C6", "A5 - G5 - F5 - E5 F5",
-            "E5 . G5 - C6 - D6 E6", "D6 - B5 - G5 - A5 B5", "C6 - A5 - E5 - G5 A5", "F5 - A5 - C6 . . ."]
-    melB = ["G5 G5 . E5 G5 . C6 .", "B5 B5 . G5 D5 . G5 .", "A5 A5 . E5 C6 . A5 .", "F5 . A5 . C6 . A5 .",
-            "G5 G5 . E5 G5 . C6 E6", "D6 . B5 . G5 . D6 .", "C6 . E6 . A5 . C6 .", "A5 G5 F5 E5 F5 . . ."]
+    def ep(f, dur, vel=1.0):
+        """전자 피아노: 감쇠하는 FM 종소리 + 사인 몸통"""
+        t = t_(dur)
+        idx = 1.6 * np.exp(-t * 6) * vel
+        x = np.sin(2 * np.pi * f * t + idx * np.sin(2 * np.pi * f * t)) + 0.3 * np.sin(2 * np.pi * 2 * f * t) * np.exp(-t * 4)
+        return x * np.exp(-t * 1.6) * env(len(t), 0.004, 0.25)
 
-    def lead(line, t0, g=0.11):
-        toks = line.split()
-        i = 0
-        while i < len(toks):
-            tok = toks[i]
-            n = 1
-            while i + n < len(toks) and toks[i + n] == "-":
-                n += 1
-            if tok not in (".", "-"):
-                d = n * beat / 2
-                x = pulse(hz(tok), d * 0.92, 0.25)
-                x = x * env(len(x), 0.004, 0.04, 1.0) * (1 + 0.003 * np.sin(2 * np.pi * 5.5 * t_(d * 0.92)))
-                put(lowpass(x, 5200), t0 + i * beat / 2, 0.15, g)
-            i += n
+    def bell(f, dur):
+        t = t_(dur)
+        x = np.sin(2 * np.pi * f * t + 0.8 * np.exp(-t * 9) * np.sin(2 * np.pi * 3.5 * f * t))
+        return x * np.exp(-t * 3.2) * env(len(t), 0.002, 0.1)
 
+    def bass(f, dur):
+        t = t_(dur)
+        x = np.sin(2 * np.pi * f * t) + 0.25 * np.sin(4 * np.pi * f * t)
+        return x * env(len(t), 0.01, 0.08) * (0.75 + 0.25 * np.exp(-t * 5))
+
+    # Cmaj7 → Am7 → Dm7 → G7sus 순환
+    prog = [(["E3", "G3", "B3", "D4"], "C2"), (["E3", "G3", "C4", "E4"], "A1"),
+            (["F3", "A3", "C4", "E4"], "D2"), (["F3", "A3", "C4", "D4"], "G1")]
+    # 종소리 선율(8분음표 칸, '.' 쉼): 4마디마다 바뀌는 두 줄
+    melA = ["E5 . G5 . . D5 . .", "C5 . E5 . G5 . . .", "A5 . G5 . F5 . E5 .", "D5 . . . . . . ."]
+    melB = ["G5 . . E5 . . C5 .", "E5 . D5 . C5 . A4 .", "C5 . D5 . F5 . A5 .", "G5 . . . D5 . . ."]
+    ending = nbar - 1
     for b in range(nbar):
         t0 = b * bar
-        outro = b >= nbar - 2
-        intro = b < 4
-        name, triad, root = chords[b % 4]
-        if outro:
-            name, triad, root = chords[0]
-        # 베이스(삼각파): 8분음표 근음-옥타브
+        chord, root = prog[b % 4]
+        if b == ending:
+            chord, root = ["E3", "G3", "B3", "D4", "G4"], "C2"
+        # 피아노: 1박 길게, 2박 반 뒤 짧게 다시
+        for k, n in enumerate(chord):
+            pan = -0.3 + 0.6 * k / max(1, len(chord) - 1)
+            put(ep(hz(n), bar * (2.2 if b == ending else 1.1)), t0 + k * 0.012, pan, 0.075)
+            if b != ending:
+                put(ep(hz(n), beat * 1.2, 0.6), t0 + 2.5 * beat + swing + k * 0.01, pan, 0.045)
+        if b < 2:
+            continue
+        # 베이스
+        f = hz(root)
+        if b == ending:
+            put(bass(f, bar * 1.5), t0, 0, 0.32)
+            continue
+        for at, ln, ff in [(0, 1.5, f), (1.5 * beat + swing, 0.5, f), (2 * beat, 1.0, f * 1.5), (3 * beat, 0.9, f * 2)]:
+            put(bass(ff, ln * beat), t0 + at, 0, 0.3)
+        # 드럼: 부드러운 킥, 둥근 스네어, 셰이커
         for k in range(8):
-            f = hz(root) * (2 if k % 2 else 1)
-            if outro and k >= 4:
-                break
-            x = tri(f, beat / 2 * 0.9) * env(int(beat / 2 * 0.9 * SR), 0.003, 0.03)
-            put(x, t0 + k * beat / 2, 0, 0.32)
-        # 아르페지오(16분음표, 펄스 12.5%)
-        if not outro:
-            for k in range(16):
-                f = hz(triad[k % 3]) * (2 if (k // 3) % 2 else 1)
-                x = pulse(f, beat / 4 * 0.8, 0.125) * env(int(beat / 4 * 0.8 * SR), 0.002, 0.02)
-                put(lowpass(x, 4000), t0 + k * beat / 4, -0.35, 0.045 if intro else 0.055)
-        # 드럼
-        for k in range(8):
-            tt = t0 + k * beat / 2
-            if outro and k > 0:
-                break
-            if k in (0, 4) or (k == 7 and b % 2):
-                d = 0.16
+            tt = t0 + k * beat / 2 + (swing if k % 2 else 0)
+            if k in (0, 5):
+                d = 0.25
                 t = t_(d)
-                kick = np.sin(2 * np.pi * np.cumsum(55 + 110 * np.exp(-t * 35)) / SR) * env(len(t), 0.001, 0.12)
-                put(kick, tt, 0, 0.5 if not intro or k == 0 else 0.35)
-            if k in (2, 6) and not (intro and b < 2):
-                n = int(0.12 * SR)
-                sn = bandpass(RNG.uniform(-1, 1, n), 1200, 6000) * env(n, 0.001, 0.11)
-                put(sn, tt, 0, 0.22)
-            n = int(0.03 * SR)
-            hat = bandpass(RNG.uniform(-1, 1, n), 7000, 14000) * env(n, 0.001, 0.025)
-            put(hat, tt, 0.25, 0.07 if k % 2 else 0.1)
-        # 선율: 인트로 뒤부터, A(8마디)/B(8마디) 번갈아
-        if not intro and not outro:
-            k = (b - 4) % 16
-            lead((melA if k < 8 else melB)[k % 8], t0)
-        if outro and b == nbar - 2:
-            for i, n in enumerate(["C6", "G5", "E5", "C5"]):
-                x = pulse(hz(n), 0.3 if i < 3 else 1.6, 0.25)
-                x = x * env(len(x), 0.004, 0.25)
-                put(lowpass(x, 5000), t0 + i * beat / 2, 0.15, 0.12)
-            ch = sum(pulse(hz(n), bar * 1.6, 0.125) for n in ["C4", "E4", "G4", "C5"]) / 4
-            put(lowpass(ch * env(len(ch), 0.01, bar * 1.2), 3000), t0 + 2 * beat, -0.2, 0.18)
-            d = 1.2
-            t = t_(d)
-            cym = bandpass(RNG.uniform(-1, 1, len(t)), 5000, 15000) * np.exp(-t * 3)
-            put(cym, t0 + 2 * beat, 0, 0.12)
+                kick = np.sin(2 * np.pi * np.cumsum(48 + 70 * np.exp(-t * 30)) / SR) * np.exp(-t * 14)
+                put(kick, tt, 0, 0.5)
+            if k in (2, 6):
+                n = int(0.18 * SR)
+                sn = lowpass(bandpass(RNG.uniform(-1, 1, n), 900, 5000), 4500) * decay(n, 22) + 0.4 * sine(190, 0.18) * decay(n, 30)
+                put(sn, tt, 0.05, 0.14)
+            n = int(0.05 * SR)
+            sh = bandpass(RNG.uniform(-1, 1, n), 5000, 10000) * env(n, 0.012, 0.03)
+            put(sh, tt, 0.3, 0.04 if k % 2 else 0.06)
+        # 선율: 6마디째부터
+        if b >= 6:
+            line = (melA if (b // 4) % 2 == 0 else melB)[b % 4]
+            for i, tok in enumerate(line.split()):
+                if tok != ".":
+                    put(bell(hz(tok), beat * 1.6), t0 + i * beat / 2 + (swing if i % 2 else 0), 0.2, 0.06)
+    # 마스터: 고역을 살짝 깎아 따뜻하게, 아주 옅은 지연 반향
+    st = np.stack([lowpass(L, 9000), lowpass(R, 9000)], 1)
+    dl = int(0.19 * SR)
+    st[dl:, 0] += st[:-dl, 1] * 0.18
+    st[dl:, 1] += st[:-dl, 0] * 0.18
     n = int(total * SR)
-    st = np.stack([L[:n], R[:n]], 1)
-    fade = int(0.6 * SR)
+    st = st[:n]
+    fade = int(1.2 * SR)
     st[-fade:] *= np.linspace(1, 0, fade)[:, None]
-    write(path, None, st)
+    write(path, None, st / (np.max(np.abs(st)) or 1) * 0.8)
 
 
 def main():

@@ -94,43 +94,63 @@ class Voice(context: Context, private val log: (String) -> Unit) {
         }
     }
 
-    // Pleos TTS 는 새 speak 가 앞 발화를 끊으므로 하나씩 차례로 읽는다
-    private val queue = ArrayDeque<Pair<String, Int?>>()
-    private var speaking = false
-    private val next = Runnable { speaking = false; drain() }
+    /** 읽을 줄 하나. [key] 가 같은 줄이 아직 대기 중이면 새 줄로 바꾼다(같은 차의 처짐·다시 붙음은 마지막 것만) */
+    private class Line(val text: String, val zone: Int?, val key: String?)
 
-    /** [audioZoneId] 가 있으면 setAudioZoneId 를 먼저 호출한다(좌석 채널용). 메인 스레드에서 부른다 */
-    fun speak(text: String, audioZoneId: Int? = null) {
+    // Pleos TTS 는 새 speak 가 앞 발화를 끊으므로 하나씩 차례로 읽는다
+    private val queue = ArrayDeque<Line>()
+    private var speaking = false
+    private var seq = 0
+    private val next = Runnable { speaking = false; drain() }
+    private val timeout = Runnable { log("TTS #$seq 응답 없음, 다음 줄로"); next.run() }
+
+    /**
+     * [audioZoneId] 가 있으면 setAudioZoneId 를 먼저 호출한다(좌석 채널용). 메인 스레드에서 부른다.
+     * [key] 를 주면 같은 key 로 대기 중인 줄을 지우고 맨 뒤에 넣는다. 경고(급제동·에어백 등)는 key 없이 넘겨 지워지지 않게 한다
+     */
+    fun speak(text: String, audioZoneId: Int? = null, key: String? = null) {
         if (pleosTts == null) {
             androidTts?.speak(text, android.speech.tts.TextToSpeech.QUEUE_ADD, null, "ppeokkugi")
             return
         }
-        queue.addLast(text to audioZoneId)
+        if (key != null && queue.removeAll { it.key == key }) log("TTS 대기 중인 같은 줄 교체: $key")
+        queue.addLast(Line(text, audioZoneId, key))
         drain()
     }
 
     private fun drain() {
         val t = pleosTts ?: return
         if (speaking) return
-        val (text, zone) = queue.removeFirstOrNull() ?: return
+        val line = queue.removeFirstOrNull() ?: return
         speaking = true
-        zone?.let { zoneId ->
+        line.zone?.let { zoneId ->
             runCatching { t.setAudioZoneId(zoneId) }
                 .onFailure { log("TTS 오디오존 $zoneId 실패: ${it.message}") }
         }
-        t.speak(text)
-        // onDone 이 오지 않을 때를 대비해 글 길이로 잡은 시간 뒤에는 다음으로 넘어간다
-        main.postDelayed(next, 3000L + text.length * 250L)
+        log("TTS 시작 #${++seq} (대기 ${queue.size}) ${line.text}")
+        t.speak(line.text)
+        // 다음 줄은 onDone·onStop·onError 를 받고 넘어간다. 이 타이머는 콜백이 끝내 오지 않을 때만 쓴다.
+        // 받아 적기(STT)를 쓴 뒤에는 TTS 모델을 다시 올리느라 소리가 5초 넘게 늦게 나온다(에뮬레이터 실측 5.3초).
+        // 타이머가 짧으면 다음 speak 가 아직 소리도 안 난 줄을 끊어 버려 줄줄이 무음이 된다
+        main.postDelayed(timeout, WATCHDOG_MS + line.text.length * 300L)
     }
 
     private val ttsEvents = object : EventListener {
-        override fun onStart() = Unit
+        override fun onStart() = log("TTS onStart #$seq")
         override fun onReady() = Unit
-        override fun onDone() = done()
-        override fun onError(errorType: TtsError) = done()
-        override fun onStop() = done()
+        override fun onDone() = done("onDone")
+        override fun onError(errorType: TtsError) = done("onError $errorType")
+        override fun onStop() = done("onStop")
         override fun onUpdatedRms(rms: Double) = Unit
-        private fun done() { main.removeCallbacks(next); main.post(next) }
+        // 콜백은 바인더 스레드에서 온다. 읽는 줄이 없을 때 온 늦은 콜백은 버린다
+        private fun done(why: String) {
+            main.post {
+                log("TTS $why #$seq")
+                if (!speaking) return@post
+                main.removeCallbacks(timeout)
+                next.run()
+            }
+        }
     }
 
     fun listen(onText: (String, Boolean) -> Unit): Boolean {
@@ -141,6 +161,7 @@ class Voice(context: Context, private val log: (String) -> Unit) {
     }
 
     fun stopListening() {
+        log("STT stop")
         stt?.stop()
         onText = null
         _level.value = 0f
@@ -159,7 +180,7 @@ class Voice(context: Context, private val log: (String) -> Unit) {
         override fun onUpdatedEpdData(on: Long, off: Long) = Unit
         // ponytail: RMS 범위를 0..RMS_MAX 로 가정했다. 실차에서 미터가 늘 바닥이거나 꼭대기면 RMS_MAX 를 맞춘다
         override fun onUpdatedRms(rms: Double) { _level.value = (rms / RMS_MAX).toFloat().coerceIn(0f, 1f) }
-        override fun onEndedRecognition() { _level.value = 0f }
+        override fun onEndedRecognition() { log("STT onEndedRecognition"); _level.value = 0f }
         override fun onError(errorType: SttError) {
             log("STT 오류 $errorType")
             main.post { onText?.invoke("", true); onText = null }
@@ -186,5 +207,9 @@ class Voice(context: Context, private val log: (String) -> Unit) {
         androidTts?.shutdown()
     }
 
-    private companion object { const val RMS_MAX = 10.0 }
+    private companion object {
+        const val RMS_MAX = 10.0
+        /** 콜백이 오지 않을 때 다음 줄로 넘어가기까지 기다리는 기본 시간(글자당 0.3초를 더한다) */
+        const val WATCHDOG_MS = 20_000L
+    }
 }

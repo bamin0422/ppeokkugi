@@ -65,7 +65,7 @@ node scripts/bots.mjs $CODE --speed 10 --airbag
 
 서버는 `from`(호차 레이블)과 `at`(서버 타임스탬프)을 모든 릴레이 메시지에 덧씌웁니다.  
 앞뒤는 선두가 `route`로 보낸 목적지까지 남은 직선 거리로 정합니다. 목적지가 없으면 호차 번호가 작은 차가 앞입니다.  
-`public/`은 Worker 정적 자산(`[assets]`)입니다. 휴대폰 화면 마스코트 `/cuckoo/*.webp`를 줍니다.  
+`public/`은 Worker 정적 자산(`[assets]`)입니다. 휴대폰 화면 마스코트 `/cuckoo/*.svg`(design/character 사본)를 줍니다.  
 단속 카메라 공유는 지원하지 않습니다.
 
 ## 검증 결과

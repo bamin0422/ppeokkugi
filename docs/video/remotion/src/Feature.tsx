@@ -1,17 +1,25 @@
 import React from 'react';
 import {AbsoluteFill, interpolate, OffthreadVideo, Sequence, spring, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
 import speech from './speech.json';
-import {Backdrop, BeforeAfter, Brand, C, Chip, FONT, FONT_B, Pop, Sfx, Sprite, useT, useTall} from './theme';
+import {Backdrop, BeforeAfter, Brand, C, Chip, FONT, FONT_B, Led, Pop, SERIF, Sfx, Sprite, useT, useTall, WaveBars} from './theme';
 
 type Rect = [number, number, number, number]; // x, y, w, h (앱 화면 1682x1210 좌표)
 const APP_W = 1682;
 const APP_H = 1210;
 const FULL: Rect = [0, 0, APP_W, APP_H];
 
-const CARDS: Rect = [640, 120, 1035, 600];
-const CARD1: Rect = [665, 160, 990, 165];
-const CARD2: Rect = [665, 360, 990, 150];
-const PTT: Rect = [665, 1030, 990, 140];
+// 새 앱 배치(2026-11-14 녹화) 기준. 화면 좌표에서 (853, 90)을 뺀 값
+const CARDS: Rect = [640, 120, 1040, 640];
+const CARD1: Rect = [652, 172, 1003, 128];
+const CARD2: Rect = [652, 318, 1003, 128];
+const CARD2_TALL: Rect = [652, 318, 1003, 176];
+const CARD3: Rect = [652, 464, 1003, 128];
+const PTT: Rect = [652, 1043, 1002, 142];
+const VOTE_OPTS: Rect = [655, 255, 1000, 195];
+const VOTE_2: Rect = [994, 255, 315, 195];
+const CAR_LIST: Rect = [20, 700, 615, 360];
+const NAV_LIST: Rect = [5, 5, 595, 800];
+const NAV_ROUTE: Rect = [800, 20, 480, 1060];
 
 export type FeatureDef = {
   tag: string;
@@ -49,10 +57,10 @@ export const FEATURES: Record<string, FeatureDef> = {
     sub: '누르고 말하면 일행 모든 차에 동시 전달',
     note: '에뮬레이터는 마이크 입력 없음 · 송신 표시만',
     mood: 'tx',
-    cam: [[0.3, [600, 640, 1082, 570]]],
-    camTall: [[0.0, TALL0], [0.5, [650, 700, 1020, 500]]],
+    cam: [[0.3, [600, 150, 1082, 1060]]],
+    camTall: [[0.0, TALL0], [0.5, [650, 560, 1020, 640]]],
     ring: [[1.0, PTT]],
-    radio: [0.97],
+    radio: [1.0],
   },
   rx: {
     tag: '무전 수신',
@@ -65,9 +73,9 @@ export const FEATURES: Record<string, FeatureDef> = {
     mood: 'rx',
     cam: [[0.2, CARDS]],
     camTall: [[0.0, TALL0], [0.4, [650, 120, 1020, 640]]],
-    ring: [[0.5, CARD1]],
-    radio: [0.5],
-    muteUntil: 4.8,
+    ring: [[0.7, CARD1], [2.7, CARD2], [3.6, null]],
+    radio: [0.7],
+    muteUntil: 3.9,   // 앞 장면(급제동) 안내 음성이 끝난 뒤부터 클립 소리를 켠다
   },
   brake: {
     tag: '자동 무전',
@@ -79,9 +87,9 @@ export const FEATURES: Record<string, FeatureDef> = {
     mood: 'brake',
     cam: [[0.2, [0, 100, APP_W, 650]], [2.3, CARDS]],
     camTall: [[0.0, TALL0], [0.4, [650, 120, 1020, 640]]],
-    ring: [[0.5, CARD1], [3.5, CARD2]],
-    radio: [0.5],
-    alert: 0.55,
+    ring: [[0.7, CARD1], [3.7, CARD2], [5.7, CARD3], [6.6, null]],
+    radio: [0.7],
+    alert: 0.75,
   },
   vote: {
     tag: '쉬어 가',
@@ -93,8 +101,8 @@ export const FEATURES: Record<string, FeatureDef> = {
     mood: 'vote',
     cam: [[0.2, [600, 100, 1082, 560]]],
     camTall: [[0.0, TALL0], [0.4, [650, 110, 1020, 560]]],
-    ring: [[0.3, [675, 250, 975, 240]], [4.9, [675, 250, 330, 240]]],
-    radio: [1.2],
+    ring: [[0.4, VOTE_OPTS], [7.0, VOTE_2], [7.7, CARD1]],
+    radio: [0.2],
   },
   waypoint: {
     tag: '내비 연동',
@@ -105,9 +113,9 @@ export const FEATURES: Record<string, FeatureDef> = {
     sub: '투표 결과 휴게소, 전 차량 내비에 자동 반영',
     note: '앱 → 차량 순정 내비 (NaviHelper)',
     mood: 'arrive',
-    cam: [[0.3, [0, 60, 1300, 900]], [6.0, FULL]],
-    camTall: [[0.0, [0, 60, 1000, 760]], [3.8, [560, 0, 1122, 1210]]],
-    ring: [[2.4, [20, 115, 590, 230]], [4.0, [860, 60, 560, 1120]], [5.9, null]],
+    cam: [[0.2, CARDS], [1.2, [0, 0, 1300, 1100]], [3.6, FULL]],   // 내비로 바뀌기 전에 미리 넓혀 빈 지도를 비추지 않는다
+    camTall: [[0.0, [640, 100, 1042, 800]], [1.2, [0, 0, 1000, 1210]]],
+    ring: [[0.3, CARD1], [1.1, null], [2.1, NAV_LIST], [3.2, NAV_ROUTE], [4.6, null]],
     radio: [0.0],
   },
   arrive: {
@@ -118,9 +126,9 @@ export const FEATURES: Record<string, FeatureDef> = {
     title: '도착 자동 보고',
     sub: '차량 간 거리 표시, 휴게소 도착 보고, 전원 도착 시 깃발 색 깜빡임',
     mood: 'arrive',
-    cam: [[0.1, [0, 600, 900, 450]], [1.7, CARDS]],
-    camTall: [[0.0, [0, 500, 1000, 760]], [1.7, [650, 120, 1020, 640]]],
-    ring: [[0.2, [10, 780, 630, 250]], [2.1, CARD2]],
+    cam: [[0.1, [0, 520, 900, 560]], [1.8, CARDS]],
+    camTall: [[0.0, [0, 480, 1000, 760]], [1.8, [650, 120, 1020, 640]]],
+    ring: [[0.2, CAR_LIST], [1.7, null], [2.2, CARD2_TALL]],
     radio: [2.0],
   },
 };
@@ -175,7 +183,7 @@ const AppView: React.FC<{id: string; def: FeatureDef; vw: number; vh: number; ta
   const edge = 0.3;
 
   return (
-    <div style={{position: 'absolute', width: vw, height: vh, overflow: 'hidden', background: '#0E1013'}}>
+    <div style={{position: 'absolute', width: vw, height: vh, overflow: 'hidden', background: C.lcd}}>
       <div style={{position: 'absolute', left: 0, top: 0, width: APP_W, height: APP_H, transformOrigin: '0 0', transform: `translate(${tx}px, ${ty}px) scale(${s})`}}>
         <OffthreadVideo
           src={staticFile(`clips/${id}.mp4`)}
@@ -195,8 +203,8 @@ const AppView: React.FC<{id: string; def: FeatureDef; vw: number; vh: number; ta
               width: ringRect[2] + 16,
               height: ringRect[3] + 16,
               border: `${7 / Math.max(1, s)}px solid ${C.orange}`,
-              borderRadius: 12,
-              boxShadow: `0 0 ${18 + pulse * 22}px ${C.orange}, inset 0 0 ${10 + pulse * 10}px ${C.orange}88`,
+              borderRadius: 24,
+              boxShadow: `0 0 0 ${(6 + pulse * 10) / Math.max(1, s)}px ${C.orange}40`,
               opacity: ringIn,
               transform: `scale(${1.25 - 0.25 * ringIn})`,
             }}
@@ -207,7 +215,7 @@ const AppView: React.FC<{id: string; def: FeatureDef; vw: number; vh: number; ta
   );
 };
 
-/** 차량 디스플레이 테두리 */
+/** 차량 디스플레이: 흰 테두리 카드 + 부드러운 그림자 */
 const Bezel: React.FC<{x: number; y: number; w: number; h: number; children: React.ReactNode; tilt?: number}> = ({x, y, w, h, children, tilt = 0}) => (
   <div
     style={{
@@ -216,23 +224,14 @@ const Bezel: React.FC<{x: number; y: number; w: number; h: number; children: Rea
       top: y - 18,
       width: w + 36,
       height: h + 36,
-      borderRadius: 30,
-      background: 'linear-gradient(160deg, #3A3F46 0%, #15171A 40%, #0A0B0D 100%)',
-      boxShadow: '0 40px 80px #000a, 0 0 0 2px #4a505833 inset',
+      borderRadius: 40,
+      background: C.paper,
+      border: `1.5px solid ${C.line}`,
+      boxShadow: '0 30px 60px rgba(80,40,60,.18)',
       transform: `perspective(2600px) rotateY(${tilt}deg)`,
     }}
   >
-    <div style={{position: 'absolute', left: 18, top: 18, width: w, height: h, borderRadius: 14, overflow: 'hidden'}}>
-      {children}
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'linear-gradient(115deg, #ffffff10 0%, #ffffff05 30%, transparent 31%, transparent 100%)',
-          pointerEvents: 'none',
-        }}
-      />
-    </div>
+    <div style={{position: 'absolute', left: 17, top: 17, width: w, height: h, borderRadius: 24, overflow: 'hidden'}}>{children}</div>
   </div>
 );
 
@@ -247,10 +246,10 @@ const Phone: React.FC<{src: string; h: number; at: number; dur: number}> = ({src
         width: w + 24,
         height: h + 24,
         borderRadius: 40,
-        background: '#0A0B0D',
-        border: '3px solid #3A3F46',
+        background: C.paper,
+        border: `1.5px solid ${C.line}`,
         padding: 12,
-        boxShadow: '0 30px 60px #000a',
+        boxShadow: '0 24px 50px rgba(80,40,60,.18)',
         opacity: p,
         transform: `translateY(${(1 - p) * 60}px)`,
       }}
@@ -271,6 +270,10 @@ export const Feature: React.FC<{id: string; dur: number; index: number}> = ({id,
   const clipDur = dur - vstart;
   // 첫머리 큰 전·후 자막 → 사라지고 화면 등장
   const introOut = lead ? ramp01(t, lead - 0.35, lead) : 1;
+  // 무전기 LCD: 앱 음성이 나오는 동안 RX 파형이 출렁인다 (speech.json 기준)
+  const ct = t - vstart;
+  const talking = sp.some(([a, b]) => ct >= a && ct < b && b > (def.muteUntil ?? 0));
+  const sending = def.radio.some((r) => ct >= r - 0.05 && ct < r + 0.6);
 
   const sfx = (
     <>
@@ -288,20 +291,31 @@ export const Feature: React.FC<{id: string; dur: number; index: number}> = ({id,
     </>
   );
   const num = String(index).padStart(2, '0');
+  const tagChip = (size: number) => (
+    <Chip size={size}>
+      <span style={{color: C.lcdDim, marginRight: size * 0.4}}>CH {num}</span>
+      {def.tag}
+    </Chip>
+  );
+  const lcd = (size: number) => (
+    <div style={{display: 'inline-flex', alignItems: 'center', gap: size * 0.6, background: C.lcd, color: C.lcdInk, borderRadius: 999, padding: `${size * 0.4}px ${size * 0.9}px`, fontFamily: FONT_B, fontSize: size, letterSpacing: '0.06em', boxShadow: '0 8px 20px rgba(42,34,48,.18)'}}>
+      <Led color={sending ? C.tx : C.rx} on={sending || talking} size={size * 0.55} />
+      <span style={{width: size * 1.6}}>{sending ? 'TX' : 'RX'}</span>
+      <WaveBars on={talking || sending} color={sending ? '#ff8a9b' : C.lcdInk} h={size * 1.2} n={9} />
+    </div>
+  );
   const intro = lead ? (
-    <AbsoluteFill style={{opacity: 1 - introOut, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 40}}>
-      <Pop at={0.05} blip={false}>
-        <Chip size={tall ? 36 : 30}>
-          기능 {num} · {def.tag}
-        </Chip>
+    <AbsoluteFill style={{opacity: 1 - introOut, transform: `scale(${1 + introOut * 0.04})`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 44}}>
+      <Pop at={0.05} blip={false} style={{transformOrigin: 'center'}}>
+        {tagChip(tall ? 34 : 30)}
       </Pop>
-      <BeforeAfter before={def.before} after={def.after} at={0.15} size={tall ? 96 : 104} stack />
+      <BeforeAfter before={def.before} after={def.after} at={0.15} size={tall ? 96 : 110} stack />
     </AbsoluteFill>
   ) : null;
-  const show = {opacity: introOut, transform: `translateY(${(1 - introOut) * 30}px)`};
+  const show = {opacity: introOut, transform: `translateY(${(1 - introOut) * 40}px)`};
   const pair = (size: number) => (
     <div style={{display: 'flex', flexDirection: 'column', gap: 6}}>
-      <span style={{fontFamily: FONT, fontSize: size * 0.8, color: C.muted, textDecoration: 'line-through', textDecorationColor: C.tx, textDecorationThickness: 3}}>{def.before}</span>
+      <span style={{fontFamily: FONT, fontSize: size * 0.8, color: C.ink3, textDecoration: 'line-through', textDecorationColor: C.tx, textDecorationThickness: 3}}>{def.before}</span>
       <span style={{fontFamily: FONT_B, fontSize: size, color: C.orange}}>→ {def.after}</span>
     </div>
   );
@@ -316,24 +330,23 @@ export const Feature: React.FC<{id: string; dur: number; index: number}> = ({id,
         {intro}
         <div style={{...show, position: 'absolute', inset: 0}}>
           <div style={{position: 'absolute', left: 48, top: 110, right: 48}}>
-            <Chip size={30}>
-              기능 {num} · {def.tag}
-            </Chip>
+            {tagChip(30)}
             <div style={{marginTop: 18}}>{pair(44)}</div>
-            <div style={{fontFamily: FONT_B, fontSize: 58, color: C.paper, lineHeight: 1.15, marginTop: 14, wordBreak: 'keep-all'}}>{def.title}</div>
+            <div style={{fontFamily: SERIF, fontSize: 62, color: C.ink, lineHeight: 1.15, marginTop: 14, wordBreak: 'keep-all'}}>{def.title}</div>
           </div>
-          <div style={{position: 'absolute', left: 24, top: 500, width: vw, height: vh, borderRadius: 18, overflow: 'hidden', border: `3px solid ${C.line}`, boxShadow: '0 30px 60px #000a', background: '#0E1013'}}>
+          <div style={{position: 'absolute', left: 24, top: 500, width: vw, height: vh, borderRadius: 32, overflow: 'hidden', border: `8px solid ${C.paper}`, boxShadow: '0 24px 50px rgba(80,40,60,.18)', background: C.lcd}}>
             <Sequence from={Math.round(vstart * fps)} layout="none">
-              <AppView id={id} def={def} vw={vw} vh={vh} tall dur={clipDur} />
+              <AppView id={id} def={def} vw={vw - 16} vh={vh - 16} tall dur={clipDur} />
             </Sequence>
           </div>
           <div style={{position: 'absolute', left: 48, top: 1335, right: 48, textAlign: 'center'}}>
-            <div style={{fontFamily: FONT_B, fontSize: 44, color: C.paper, lineHeight: 1.35, wordBreak: 'keep-all'}}>{def.sub}</div>
-            <div style={{fontFamily: FONT, fontSize: 28, color: C.muted, marginTop: 14}}>{def.note ?? '실제 앱 화면 녹화 · Pleos Connect Emulator'}</div>
+            <div style={{fontFamily: FONT_B, fontSize: 44, color: C.ink, lineHeight: 1.35, wordBreak: 'keep-all'}}>{def.sub}</div>
+            <div style={{fontFamily: FONT, fontSize: 28, color: C.ink2, marginTop: 14}}>{def.note ?? '실제 앱 화면 녹화 · Pleos Connect Emulator'}</div>
           </div>
-          <div style={{position: 'absolute', left: 540 - 128, top: 1600}}>
-            <Sprite mood={def.mood} scale={4} />
+          <div style={{position: 'absolute', left: 140, top: 1640}}>
+            <Sprite mood={def.mood} scale={3.4} />
           </div>
+          <div style={{position: 'absolute', left: 420, top: 1700}}>{lcd(40)}</div>
         </div>
         <Sequence from={Math.round(vstart * fps)} layout="none">
           {sfx}
@@ -352,14 +365,12 @@ export const Feature: React.FC<{id: string; dur: number; index: number}> = ({id,
       {intro}
       <div style={{...show, position: 'absolute', inset: 0}}>
         <div style={{position: 'absolute', left: 72, top: 96, width: 480}}>
-          <Chip size={24}>
-            기능 {num} · {def.tag}
-          </Chip>
-          <div style={{marginTop: 22}}>{pair(38)}</div>
-          <div style={{fontFamily: FONT_B, fontSize: 50, color: C.paper, lineHeight: 1.2, marginTop: 20, wordBreak: 'keep-all'}}>{def.title}</div>
-          <div style={{width: 64, height: 6, background: C.orange, margin: '22px 0 18px'}} />
-          <div style={{fontFamily: FONT, fontSize: 30, color: C.paper, lineHeight: 1.45, wordBreak: 'keep-all'}}>{def.sub}</div>
-          <div style={{fontFamily: FONT, fontSize: 21, color: C.muted, marginTop: 14, lineHeight: 1.4}}>{def.note ?? '실제 앱 화면 녹화 · Pleos Connect Emulator'}</div>
+          {tagChip(24)}
+          <div style={{marginTop: 22}}>{pair(36)}</div>
+          <div style={{fontFamily: SERIF, fontSize: 54, color: C.ink, lineHeight: 1.2, marginTop: 20, wordBreak: 'keep-all'}}>{def.title}</div>
+          <div style={{width: 64, height: 8, borderRadius: 4, background: C.orange, margin: '22px 0 18px'}} />
+          <div style={{fontFamily: FONT, fontSize: 30, color: C.ink, lineHeight: 1.45, wordBreak: 'keep-all'}}>{def.sub}</div>
+          <div style={{fontFamily: FONT, fontSize: 21, color: C.ink2, marginTop: 14, lineHeight: 1.4}}>{def.note ?? '실제 앱 화면 녹화 · Pleos Connect Emulator'}</div>
         </div>
         {phone ? (
           <div style={{position: 'absolute', left: 170, top: 640}}>
@@ -368,8 +379,9 @@ export const Feature: React.FC<{id: string; dur: number; index: number}> = ({id,
             </Sequence>
           </div>
         ) : (
-          <div style={{position: 'absolute', left: 72, bottom: 56}}>
-            <Sprite mood={def.mood} scale={3} />
+          <div style={{position: 'absolute', left: 72, bottom: 64, display: 'flex', alignItems: 'center', gap: 22}}>
+            <Sprite mood={def.mood} scale={2.8} />
+            {lcd(26)}
           </div>
         )}
         <Bezel x={620} y={Math.round((1080 - vh) / 2) + 20} w={vw} h={vh} tilt={-3 + Math.min(1, t / dur) * 1.5}>

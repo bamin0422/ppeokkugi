@@ -174,9 +174,9 @@ test('validateMessage: route 는 dest 좌표가 있어야 함', () => {
 // --- 깃발 색 ---
 
 test('flagColorFor: 호차 번호로 돌아가며 고름', () => {
-  assert.equal(flagColorFor(1), '#E88E7D');
-  assert.equal(flagColorFor(2), '#7FB3D5');
-  assert.equal(flagColorFor(6), '#E88E7D');
+  assert.equal(flagColorFor(1), '#FF5A4E');
+  assert.equal(flagColorFor(2), '#2B8CFF');
+  assert.equal(flagColorFor(7), '#FF5A4E');
 });
 
 // --- 도착 ---
