@@ -1,104 +1,240 @@
-"""뻐꾸기 캐릭터 v3 SVG 생성. 사용: python3 gen.py OUTDIR
+"""뻐꾸기 마스코트 v5(픽셀). 사용: python3 tools/gen.py [OUTDIR, 기본은 design/character]
 
-실제 뻐꾸기 삽화를 단순화한 옆모습이다. 단색 면만 쓴다(그라데이션·외곽선 없음).
-회청색 등, 크림색 배의 가로줄 3개, 노란 눈 테, 긴 꼬리가 뻐꾸기 표시다.
+32×32 1비트 그림을 무전기 LCD 창처럼 그린다. 짙은 LCD 바탕에 꺼진 칸은 흐린 점으로 남기고,
+켜진 칸은 호박색(경고 계열은 빨강)으로 채운다. 표정마다 4프레임이고 프레임 간격은 FRAME_MS다.
+
+만드는 파일
+- cuckoo_<표정>.svg / .png       첫 프레임(문서·덱·영상 대체용), PNG는 512px
+- frames/cuckoo_<표정>_<n>.svg/.png  프레임별(앱은 PNG, 영상은 SVG)
+- anim/<표정>.svg                 프레임을 CSS로 돌리는 움직이는 SVG(휴대폰 웹)
+- app_icon_background.png / app_icon_foreground.png  432px 적응형 아이콘
+- preview.gif / preview.png       전체 표정 미리보기
 """
-import sys, os
+import os, sys
+from PIL import Image, ImageDraw
 
-OUT = sys.argv[1]
-
-SLATE, DARK = "#5E7489", "#43566A"   # 머리·등 / 날개·꼬리
-CREAM, BAR = "#FFF3E0", "#5E7489"    # 배 / 배 가로줄
-BEAK, MOUTH = "#FF7A1A", "#C2452B"   # 부리(브랜드 주황) / 벌린 입 안
-INK, RING, FOOT = "#2A2230", "#FFBF1F", "#F0A21A"
-PERCH = "#A8876B"                    # 횃대(밝은·어두운 배경 모두에서 보이게)
-TX, RX = "#FF3D5A", "#2B8CFF"        # 송신 빨강 / 수신 파랑
-
-# 몸은 세워서 그린 뒤 TILT 만큼 기울인다(몸 중심 100,112). 머리·부리·눈은 기울이지 않는다.
-TILT = 46
-
-
-def bird(beak="shut", eye="dot", wing="down", tail=1.0, head=(0, 0), feet=True):
-    hx, hy = 137 + head[0], 80 + head[1]
-    tl = 62 * tail
-    up = "M117 86 C110 60 94 38 74 24 C71 34 72 43 76 51 C68 47 61 47 57 50 C61 60 67 68 75 74 C69 74 63 76 59 80 C69 92 85 101 99 105 Z"
-    folded = '<path d="M84 84 C70 100 70 134 84 166 C96 150 104 120 98 92 C96 84 90 80 84 84 Z" fill="%s"/>' % DARK
-    # 접은 날개는 몸과 함께 기울고, 든 날개(점호)·뒤로 편 날개(경고)는 어깨(109,92)에서 돈다
-    raised = {"down": "", "up": '<path d="%s" fill="%s"/>' % (up, DARK),
-              "flare": '<path d="%s" fill="%s" transform="rotate(-38 109 92)"/>' % (up, DARK)}[wing]
-    te = 140 + tl
-    body = (
-        '<g transform="rotate(%d 100 112)">' % TILT
-        + '<clipPath id="t"><path d="M88 136 L84 %.0f Q84 %.0f 96.5 %.0f Q109 %.0f 109 %.0f L105 136 Z"/></clipPath>' % (te - 10, te, te, te, te - 10)
-        + '<g clip-path="url(#t)"><rect x="80" y="130" width="34" height="%.0f" fill="%s"/><rect x="80" y="%.0f" width="34" height="12" fill="#C9D4DE"/></g>' % (tl + 12, DARK, te - 9)
-        + '<ellipse cx="100" cy="112" rx="29" ry="47" fill="%s"/>' % SLATE
-        + '<clipPath id="b"><ellipse cx="100" cy="112" rx="29" ry="47"/></clipPath>'
-        + '<g clip-path="url(#b)"><ellipse cx="118" cy="122" rx="24" ry="40" fill="%s"/>' % CREAM
-        + "".join('<path d="M106 %d H132" stroke="%s" stroke-width="3.6" stroke-linecap="round"/>' % (y, BAR) for y in (108, 121, 134))
-        + "</g>" + (folded if wing == "down" else "") + "</g>" + raised
-    )
-    legs = ""
-    if feet:
-        legs = ('<path d="M84 146 V160 M95 150 V160" stroke="%s" stroke-width="4" stroke-linecap="round"/>' % FOOT
-                + '<path d="M56 162 H124" stroke="%s" stroke-width="5" stroke-linecap="round"/>' % PERCH)
-    head_ = '<circle cx="%d" cy="%d" r="25" fill="%s"/>' % (hx, hy, SLATE)
-    bx, by = hx + 22, hy + 1
-    if beak == "shut":
-        beak_ = '<path d="M%d %d q16 -1 24 9 q-12 6 -24 6 Z" fill="%s"/>' % (bx, by - 7, BEAK)
-    else:  # 벌린 부리: 위·아래 부리 사이에 입 안
-        beak_ = ('<path d="M%d %d l12 0 l0 12 Z" fill="%s"/>' % (bx - 2, by - 4, MOUTH)
-                 + '<path d="M%d %d q17 -5 26 3 q-13 5 -26 7 Z" fill="%s"/>' % (bx, by - 10, BEAK)
-                 + '<path d="M%d %d q12 4 18 13 q-11 0 -19 -5 Z" fill="%s"/>' % (bx - 1, by + 4, BEAK))
-    ex, ey = hx + 8, hy - 6
-    eye_ = {
-        "dot": '<circle cx="%d" cy="%d" r="8" fill="%s"/><circle cx="%d" cy="%d" r="4.8" fill="%s"/><circle cx="%.1f" cy="%.1f" r="1.5" fill="#fff"/>' % (ex, ey, RING, ex, ey, INK, ex + 1.6, ey - 1.8),
-        "wide": '<circle cx="%d" cy="%d" r="9.500" fill="%s"/><circle cx="%d" cy="%d" r="6.500" fill="#fff"/><circle cx="%d" cy="%d" r="3.2" fill="%s"/>' % (ex, ey, RING, ex, ey, ex + 1, ey, INK),
-        "smile": '<path d="M%d %d q7 -9 14 0" fill="none" stroke="%s" stroke-width="4" stroke-linecap="round"/>' % (ex - 7, ey + 3, INK),
-        "shut": '<path d="M%d %d q7 7 14 0" fill="none" stroke="%s" stroke-width="4" stroke-linecap="round"/>' % (ex - 7, ey - 1, INK),
-    }[eye]
-    return body + legs + head_ + beak_ + eye_
+OUT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
+FRAME_MS = 320
+N = 32
+LCD, LIT, GHOST = (42, 34, 48), (255, 233, 163), (255, 233, 163, 14)
+RED = (255, 107, 127)
+# 새 그림(32×32, 켜진 칸 #). PixelLab Pro 1비트 후보 중 하나를 골라 옮긴 것
+BIRD = """
+.....................###........
+....................#####.......
+...................#######......
+..................####.##.##....
+..................####..#..##...
+.................#########......
+................#########.......
+..............###..######.......
+.............######.####........
+............#######.###.........
+...........########.###.........
+..........########.####.........
+.........########.####..........
+.........#######.#####..........
+.......########.#####...........
+......######...#####............
+............######..............
+.........###..#..#..............
+......#####...#...#.............
+.....#####.###.#.####...........
+....#####............######.....
+...#####..................##....
+..#####.....................##..
+..###...........................
+"""
+BIRD_TOP = 3                      # 위 문자열 첫 줄의 원래 y
+OX, OY = -2, 4                    # 원래 좌표 → 캔버스. 위 7줄과 오른쪽 4칸을 소품 자리로 비운다
+BASE = {(x, y + BIRD_TOP) for y, row in enumerate(BIRD.strip().splitlines()) for x, c in enumerate(row) if c == "#"}
+EYE = {(22, 6), (22, 7), (23, 7)}
+UPPER_BEAK = {(26, 6), (27, 6)}
+BODY_MAX_Y = 18                   # 이 줄까지가 몸(아래는 다리·가지)
+WING_UP = {6: (8, 9), 7: (8, 11), 8: (9, 13), 9: (10, 15), 10: (11, 16), 11: (12, 16)}  # 등에서 왼쪽 위로 든 날개
 
 
-def svg(inner, vb="0 0 200 200"):
-    w = vb.split()[2]
-    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="%s" width="%s" height="%s">%s</svg>\n' % (vb, w, vb.split()[3], inner)
+def bird(eye="open", beak="shut", bob=0, lean=0, wing="down"):
+    """켜진 칸 집합(캔버스 좌표)"""
+    on = set(BASE)
+    if eye != "open":
+        on |= EYE
+        on -= {"shut": {(21, 7), (22, 7), (23, 7)}, "smile": {(21, 7), (22, 6), (23, 7)},
+               "wide": {(22, 5), (23, 5), (22, 6), (23, 6), (22, 7), (23, 7)}}[eye]
+    if beak == "open":
+        on -= UPPER_BEAK
+        on |= {(26, 5), (27, 5), (28, 4)}
+    if wing == "up":
+        on |= {(x, y) for y, (a, b) in WING_UP.items() for x in range(a, b + 1)}
+    body = {(x + lean, y + bob) for x, y in on if y <= BODY_MAX_Y}
+    legs = {p for p in on if p[1] > BODY_MAX_Y}
+    return {(x + OX, y + OY) for x, y in body | legs if 0 <= x + OX < N and 0 <= y + OY < N}
 
 
-def placed(inner, dx=-6, dy=-12, s=1.0):
-    return '<g transform="translate(%d %d) scale(%s)">%s</g>' % (dx, dy, s, inner)
+def bars(n):
+    """왼쪽 위 무전 신호 막대 n개(0~4)"""
+    return {(1 + 2 * i, y) for i in range(n) for y in range(5 - i, 6)}
 
 
-def waves(x, y, color):
-    return "".join('<path d="M%d %d q%d %d 0 %d" fill="none" stroke="%s" stroke-width="4.500" stroke-linecap="round" opacity="%s"/>'
-                   % (x + i * 9, y - 8 - i * 6, 7 + i * 3, 8 + i * 6, 16 + i * 12, color, o) for i, o in enumerate((1, .7, .4)))
+def glyph(rows, x, y):
+    return {(x + i, y + j) for j, r in enumerate(rows) for i, c in enumerate(r) if c == "#"}
 
 
-POSES = {
-    # 기본
-    "cuckoo_base": placed(bird()),
-    # 무전 중: 벌린 부리 + 소리 물결
-    "cuckoo_talk": placed(bird(beak="open", eye="smile"), dx=-14) + waves(176, 72, TX),
-    # 경고: 날개 펼침 + 큰 눈 + 느낌표
-    "cuckoo_alert": placed(bird(beak="open", eye="wide", wing="flare")
-                           + '<path d="M124 60 l-5 -13 l11 8 l1 -14 l8 13 l7 -10 l1 14 Z" fill="%s"/>' % SLATE, dx=-4, dy=-4)
-                    + '<path d="M168 14 V40" stroke="%s" stroke-width="8" stroke-linecap="round"/><circle cx="168" cy="54" r="4.600" fill="%s"/>' % (TX, TX),
-    # 휴게소: 눈 감고 고개 숙임 + z
-    "cuckoo_rest": placed(bird(eye="shut", head=(-4, 6)), dy=-8)
-                   + '<path d="M160 34 h13 l-13 14 h13" fill="none" stroke="%s" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>' % RX
-                   + '<path d="M178 14 h9 l-9 10 h9" fill="none" stroke="%s" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" opacity=".6"/>' % RX,
-    # 점호: 날개 번쩍 + 웃는 눈 + 체크
-    "cuckoo_rollcall": placed(bird(eye="smile", wing="up"), dy=-6)
-                       + '<path d="M158 30 l8 9 l15 -18" fill="none" stroke="%s" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>' % RING,
-    # 키즈: 작은 새끼, 짧은 꼬리
-    "cuckoo_kids": placed(bird(tail=.5), dx=22, dy=24, s=.8),
+EXCL = glyph(["#", "#", "#", "#", ".", "#"], 0, 0)
+Z = glyph(["###", "..#", ".#.", "###"], 0, 0)
+CHECK = glyph(["....#", "...#.", "#.#..", ".#..."], 0, 0)
+Q = glyph([".##.", "#..#", "..#.", ".#..", "....", ".#.."], 0, 0)
+FLAG = [glyph(["#####", "#####", "###..", "#....", "#....", "#...."], 0, 0),
+        glyph(["####.", "#####", "#.###", "#....", "#....", "#...."], 0, 0)]
+CAM = glyph([".##...", "######", "#....#", "#.##.#", "#....#", "######"], 0, 0)
+SIREN = [glyph(["..#..", ".###.", ".###.", "#####"], 0, 0),
+         glyph(["#...#", "..#..", ".###.", ".###.", "#####"], 0, -1)]
+BOX = glyph(["#.###", ".....", "#.###", ".....", "#.###"], 0, 0)
+
+
+def mv(s, dx, dy):
+    return {(x + dx, y + dy) for x, y in s}
+
+
+def arcs(n, x, y, out=True):
+    s = set()
+    for i in range(n):
+        h = 2 + i
+        cx = x + 2 * i if out else x + 4 - 2 * i
+        s |= {(cx + (0 if abs(j) < h else -1) * (1 if out else -1), y + j) for j in range(-h, h + 1)}
+    return s
+
+
+CHICK = glyph(["..##..", ".####b", "##.###", ".####.", "..#.#."], 0, 0)
+B4 = bars(4)
+ANIMS = {
+    "base": [bird() | B4, bird() | B4, bird(eye="shut") | B4, bird(bob=1) | B4],
+    "talk": [bird(beak="open", eye="smile") | arcs(1, 28, 10) | bars(1), bird(eye="smile") | arcs(2, 28, 10) | bars(2),
+             bird(beak="open", eye="smile") | arcs(3, 28, 10) | bars(3), bird(eye="smile") | bars(4)],
+    "rx": [bird() | arcs(1, 27, 10, out=False) | bars(4), bird(bob=1) | arcs(2, 27, 10, out=False) | bars(3),
+           bird(bob=1) | arcs(3, 27, 10, out=False) | bars(2), bird(eye="wide") | bars(1)],
+    "alert": [bird(eye="wide", wing="up") | mv(EXCL, 29, 0) | B4, bird(eye="wide", beak="open") | B4,
+              bird(eye="wide", wing="up") | mv(EXCL, 29, 0) | B4, bird(eye="wide", beak="open") | B4],
+    "brake": [bird(eye="wide", lean=-1) | mv(EXCL, 28, 0) | mv(EXCL, 30, 0) | B4, bird(eye="wide", lean=-1) | B4,
+              bird(eye="wide", lean=-2, beak="open") | mv(EXCL, 28, 0) | mv(EXCL, 30, 0) | B4, bird(eye="wide", lean=-1) | B4],
+    "rain": [bird() | B4 | {(27, 0), (23, 3), (30, 4), (26, 5)}, bird() | B4 | {(27, 2), (23, 5), (30, 0), (26, 1)},
+             bird(eye="shut") | B4 | {(27, 4), (23, 1), (30, 2), (26, 3)}, bird() | B4 | {(27, 6), (23, 3), (30, 4), (26, 5)}],
+    "camera": [bird() | mv(CAM, 25, 0) | B4, bird(eye="wide") | mv(CAM, 25, 0) | B4 | {(24, 0), (31, 6), (23, 3)},
+               bird(eye="shut") | mv(CAM, 25, 0) | B4, bird() | mv(CAM, 25, 0) | B4],
+    "lost": [bird(lean=-1) | mv(Q, 27, 0) | bars(1), bird() | bars(0), bird(lean=-1) | mv(Q, 27, 0) | bars(1), bird(lean=1) | mv(Q, 27, 0) | bars(0)],
+    "vote": [bird(wing="up") | mv(BOX, 26, 0) | B4, bird() | mv(BOX, 26, 0) | {(27, 0)} | B4, bird(wing="up") | mv(BOX, 26, 0) | {(27, 0), (27, 2)} | B4,
+             bird(eye="smile") | mv(BOX, 26, 0) | {(27, 0), (27, 2), (27, 4)} | B4],
+    "arrive": [bird(eye="smile") | mv(FLAG[0], 26, 0) | B4, bird(eye="smile", bob=-1) | mv(FLAG[1], 26, 0) | B4,
+               bird(eye="smile") | mv(FLAG[0], 26, 0) | B4, bird(eye="smile", wing="up") | mv(FLAG[1], 26, 0) | B4],
+    "rest": [bird(eye="shut", bob=1) | mv(Z, 25, 4) | B4, bird(eye="shut", bob=1) | mv(Z, 26, 2) | B4,
+             bird(eye="shut", bob=1) | mv(Z, 27, 0) | B4, bird(eye="shut") | B4],
+    "rollcall": [bird(eye="smile", wing="up") | mv(CHECK, 26, 1) | B4, bird(eye="smile") | B4, bird(eye="smile", wing="up") | mv(CHECK, 26, 1) | B4,
+                 bird(eye="smile", bob=-1) | B4],
+    "kids": [bird(eye="smile") | mv(CHICK, 24, 21) | B4, bird(eye="smile") | mv(CHICK, 24, 19) | B4, bird() | mv(CHICK, 24, 21) | B4,
+             bird(eye="shut") | mv(CHICK, 25, 21) | B4],
+    "emergency": [bird(eye="wide", wing="up", beak="open") | mv(SIREN[1], 26, 1) | B4, bird(eye="wide") | mv(SIREN[0], 26, 1) | B4,
+                  bird(eye="wide", wing="up", beak="open") | mv(SIREN[1], 26, 1) | B4, bird(eye="wide") | mv(SIREN[0], 26, 1) | B4],
 }
+RED_SET = {"alert", "brake", "emergency", "lost"}
 
-for name, inner in POSES.items():
-    open(os.path.join(OUT, name + ".svg"), "w").write(svg(inner))
 
-# 적응형 아이콘: 108 캔버스, 가운데 66 안전 영역에 옆얼굴과 가슴 줄무늬
-fg = ('<clipPath id="safe"><circle cx="54" cy="54" r="33"/></clipPath><g clip-path="url(#safe)">'
-      '<g transform="translate(-44 -8) scale(.74)">%s</g></g>' % bird(feet=False))
-open(os.path.join(OUT, "app_icon_foreground.svg"), "w").write(svg(fg, "0 0 108 108"))
-open(os.path.join(OUT, "app_icon_background.svg"), "w").write(svg('<rect width="108" height="108" fill="#FFD9A8"/>', "0 0 108 108"))
-print("ok", len(POSES))
+def frame(px, s=16, red=False):
+    """s 배 확대한 LCD 칸. 꺼진 칸은 흐린 점으로 남겨 LCD 느낌을 낸다"""
+    W = N * s
+    im = Image.new("RGB", (W, W), LCD)
+    d = ImageDraw.Draw(im, "RGBA")  # RGB 바탕에 그려야 흐린 점이 섞인다
+    g = max(1, s // 8)
+    lit = RED if red else LIT
+    for y in range(N):
+        for x in range(N):
+            box = (x * s + g, y * s + g, (x + 1) * s - g - 1, (y + 1) * s - g - 1)
+            if (x, y) in px:  # 켜진 칸은 틈 없이 채워 덩어리로 보이게, 꺼진 칸만 점으로
+                d.rectangle((x * s, y * s, (x + 1) * s - 1, (y + 1) * s - 1), fill=lit)
+            else:
+                d.rectangle(box, fill=GHOST)
+    m = Image.new("L", (W, W), 0)
+    ImageDraw.Draw(m).rounded_rectangle((0, 0, W - 1, W - 1), radius=s * 2, fill=255)
+    im.putalpha(m)
+    return im
+
+
+def hexc(c):
+    return "#%02X%02X%02X" % c[:3]
+
+
+def svg_frame(px, red=False):
+    """한 프레임 SVG 조각: 꺼진 칸 점 무늬 위에 켜진 칸을 가로줄 단위로 묶어 그린다"""
+    lit = hexc(RED if red else LIT)
+    rects = []
+    for y in range(N):
+        x = 0
+        while x < N:
+            if (x, y) in px:
+                a = x
+                while x < N and (x, y) in px:
+                    x += 1
+                rects.append(f'<rect x="{a}" y="{y}" width="{x - a}" height="1"/>')
+            else:
+                x += 1
+    return f'<g fill="{lit}">{"".join(rects)}</g>'
+
+
+def svg_wrap(inner):
+    return ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="512" height="512" shape-rendering="crispEdges">'
+            '<defs><pattern id="d" width="1" height="1" patternUnits="userSpaceOnUse"><rect x=".125" y=".125" width=".75" height=".75" '
+            f'fill="{hexc(LIT)}" fill-opacity=".055"/></pattern><clipPath id="r"><rect width="32" height="32" rx="2"/></clipPath></defs>'
+            f'<g clip-path="url(#r)"><rect width="32" height="32" fill="{hexc(LCD)}"/><rect width="32" height="32" fill="url(#d)"/>{inner}</g></svg>\n')
+
+
+def svg_anim(frames, red=False):
+    n = len(frames); T = FRAME_MS * n
+    css = "".join(f".f{i}{{animation:a{i} {T}ms steps(1) infinite}}@keyframes a{i}{{0%{{opacity:0}}{100 * i / n:.3f}%{{opacity:1}}{100 * (i + 1) / n:.3f}%{{opacity:0}}}}"
+                  for i in range(n))
+    css = css.replace("0%{opacity:0}0.000%{opacity:1}", "0%{opacity:1}")
+    body = "".join(svg_frame(p, red).replace("<g ", f'<g class="f{i}" ', 1) for i, p in enumerate(frames))
+    return svg_wrap(f"<style>{css}</style>{body}")
+
+
+if __name__ == "__main__":
+    from PIL import ImageFont
+    os.makedirs(f"{OUT}/frames", exist_ok=True); os.makedirs(f"{OUT}/anim", exist_ok=True)
+    for k, fs in ANIMS.items():
+        red = k in RED_SET
+        for i, p in enumerate(fs):
+            frame(p, 16, red).save(f"{OUT}/frames/cuckoo_{k}_{i}.png")
+            open(f"{OUT}/frames/cuckoo_{k}_{i}.svg", "w").write(svg_wrap(svg_frame(p, red)))
+        frame(fs[0], 16, red).save(f"{OUT}/cuckoo_{k}.png")
+        open(f"{OUT}/cuckoo_{k}.svg", "w").write(svg_wrap(svg_frame(fs[0], red)))
+        open(f"{OUT}/anim/{k}.svg", "w").write(svg_anim(fs, red))
+
+    # 적응형 아이콘(432px = 108dp×4): 바탕은 LCD 점 무늬, 전경은 켜진 칸만. 새를 가운데 66dp 안전 영역에 넣는다
+    full = Image.new("RGB", (432, 432), LCD); d = ImageDraw.Draw(full, "RGBA")
+    for y in range(0, 432, 12):
+        for x in range(0, 432, 12):
+            d.rectangle((x + 2, y + 2, x + 9, y + 9), fill=GHOST)
+    full.save(f"{OUT}/app_icon_background.png")
+    px = ANIMS["base"][0]
+    xs = [x for x, _ in px]; ys = [y for _, y in px]
+    w, h = max(xs) - min(xs) + 1, max(ys) - min(ys) + 1
+    s = 216 // max(w, h)  # 대각선까지 지름 66dp(264px) 원 안에 들게
+    fg = Image.new("RGBA", (432, 432), (0, 0, 0, 0)); d = ImageDraw.Draw(fg)
+    ox, oy = (432 - w * s) // 2 - min(xs) * s, (432 - h * s) // 2 - min(ys) * s
+    for x, y in px:
+        d.rectangle((ox + x * s, oy + y * s, ox + (x + 1) * s - 1, oy + (y + 1) * s - 1), fill=LIT)
+    fg.save(f"{OUT}/app_icon_foreground.png")
+
+    FONT = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial.ttf", 16)
+    keys = list(ANIMS); cols = 7; cell = 32 * 6; pad = 12
+    rows = (len(keys) + cols - 1) // cols
+    sheet = []
+    for f in range(4):
+        S = Image.new("RGB", (cols * (cell + pad) + pad, rows * (cell + pad + 22) + pad), (255, 250, 246))
+        d = ImageDraw.Draw(S)
+        for i, k in enumerate(keys):
+            x, y = pad + (i % cols) * (cell + pad), pad + (i // cols) * (cell + pad + 22)
+            S.paste(frame(ANIMS[k][f], 6, k in RED_SET).convert("RGB"), (x, y))
+            d.text((x + 4, y + cell + 4), k, fill=(42, 34, 48), font=FONT)
+        sheet.append(S)
+    sheet[0].save(f"{OUT}/preview.gif", save_all=True, append_images=sheet[1:], duration=FRAME_MS, loop=0)
+    sheet[0].save(f"{OUT}/preview.png")
+    print("ok", len(ANIMS))

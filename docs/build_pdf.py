@@ -27,17 +27,17 @@ def fig(m):
 html = re.sub(r'<p><img alt="([^"]*)" src="\.\./([^"]+)" /></p>', fig, html)
 
 icon = (root / "design/character/cuckoo_base.svg").as_uri()
-serif = (root / "app/src/main/res/font/gowun_batang_bold.ttf").as_uri()
-css = f"""@font-face {{ font-family: "Gowun Batang"; src: url({serif}); font-weight: 700; }}
+serif = (root / "app/src/main/res/font/pretendard_extrabold.otf").as_uri()
+css = f"""@font-face {{ font-family: "PretendardXB"; src: url({serif}); font-weight: 700; }}
 @page {{ size: A4; margin: 18mm 17mm 18mm; }}
 html {{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }}
 body {{ font-family: Pretendard, sans-serif; color: #2a2230; font-size: 10.4pt; line-height: 1.72; margin: 0; word-break: keep-all; }}
 .cover {{ height: 255mm; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; page-break-after: always; }}
 .cover img {{ width: 58mm; height: 58mm; margin-bottom: 12mm; }}
-.cover .name {{ font-family: "Gowun Batang", serif; font-weight: 700; font-size: 44pt; letter-spacing: -.03em; }}
+.cover .name {{ font-family: "PretendardXB", Pretendard, sans-serif; font-weight: 700; font-size: 44pt; letter-spacing: -.03em; }}
 .cover .tag {{ display: inline-block; font-weight: 700; font-size: 15pt; color: #ffe9a3; background: #2a2230; border-radius: 99px; padding: 2.5mm 7mm; margin-top: 4mm; }}
 .cover .sub {{ font-size: 10.5pt; color: #6e6170; margin-top: 12mm; border-top: 1.5px solid #f1e6df; padding-top: 4mm; }}
-h2 {{ font-family: "Gowun Batang", serif; font-size: 16pt; font-weight: 700; letter-spacing: -.02em; margin: 9mm 0 3mm; padding-bottom: 1.8mm; border-bottom: 1.5px solid #f1e6df; break-after: avoid; }}
+h2 {{ font-family: "PretendardXB", Pretendard, sans-serif; font-size: 16pt; font-weight: 700; letter-spacing: -.02em; margin: 9mm 0 3mm; padding-bottom: 1.8mm; border-bottom: 1.5px solid #f1e6df; break-after: avoid; }}
 h2::before {{ content: ''; display: inline-block; width: 2.6mm; height: 2.6mm; border-radius: 50%; background: #ff7a1a; margin-right: 2.5mm; vertical-align: .4mm; }}
 h2:first-of-type {{ margin-top: 0; }}
 blockquote {{ margin: 3mm 0 4mm; padding: 4.5mm 6mm; background: #ff7a1a; color: #fff; border-radius: 5mm; font-size: 13pt; font-weight: 700; }}

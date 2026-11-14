@@ -73,10 +73,10 @@ object R_ {
 }
 
 /**
- * 제목·상표·PTT 는 고운바탕(세리프, KS X 1001 한글로 줄인 Bold), 나머지는 프리텐다드.
+ * 글꼴은 모두 프리텐다드. 제목·상표·PTT 는 ExtraBold([Display]), 나머지는 [Sans].
  * 라이선스 assets/licenses/OFL-*.txt. 운전석 본문은 24sp 아래로, 무전 카드 글은 36sp 아래로 내리지 않는다
  */
-val Serif = FontFamily(Font(R.font.gowun_batang_bold, FontWeight.Bold))
+val Display = FontFamily(Font(R.font.pretendard_extrabold, FontWeight.Bold))
 val Sans = FontFamily(
     Font(R.font.pretendard_regular, FontWeight.Normal),
     Font(R.font.pretendard_semibold, FontWeight.SemiBold),
@@ -85,9 +85,9 @@ val Sans = FontFamily(
 )
 
 object T {
-    val brand = TextStyle(fontFamily = Serif, fontWeight = FontWeight.Bold, fontSize = 40.sp, lineHeight = 44.sp, color = C.ink)
-    val pageTitle = TextStyle(fontFamily = Serif, fontWeight = FontWeight.Bold, fontSize = 36.sp, lineHeight = 46.sp, color = C.ink)
-    val sectionLabel = TextStyle(fontFamily = Serif, fontWeight = FontWeight.Bold, fontSize = 28.sp, lineHeight = 34.sp, color = C.ink)
+    val brand = TextStyle(fontFamily = Display, fontWeight = FontWeight.Bold, fontSize = 40.sp, lineHeight = 44.sp, color = C.ink)
+    val pageTitle = TextStyle(fontFamily = Display, fontWeight = FontWeight.Bold, fontSize = 36.sp, lineHeight = 46.sp, color = C.ink)
+    val sectionLabel = TextStyle(fontFamily = Display, fontWeight = FontWeight.Bold, fontSize = 28.sp, lineHeight = 34.sp, color = C.ink)
     val body = TextStyle(fontFamily = Sans, fontWeight = FontWeight.SemiBold, fontSize = 24.sp, lineHeight = 34.sp, color = C.ink)
     val note = TextStyle(fontFamily = Sans, fontWeight = FontWeight.Normal, fontSize = 20.sp, lineHeight = 28.sp, color = C.ink2)
     /** 무전 카드 본문(운전석 큰 카드). 줄은 어절 단위로 바꾼다(Android 13 이상) */

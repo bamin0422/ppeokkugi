@@ -89,7 +89,7 @@ curl -X POST "$B/gear?gear=Park"                # 기어 P
 | 점호 | ✅ | 기어가 처음 D가 되면 좌석별 착석과 벨트를 `roll`로 보냅니다. 벨트 신호가 없으면 `buckled: null`, 화면에는 "벨트 확인 불가"로 보입니다. 선두는 받은 점호를 읽습니다 |
 | 다시 붙기 | ✅ | `rejoin`을 받으면 경유지를 넣고 "선두를 따라가는 경로로 바꿨습니다"라고 읽습니다. 서버가 이탈 동안 계속 보내므로 1분에 한 번만 따릅니다 |
 | 화면 | ✅ | 입장, 운전석(일행 목록·깃발 색·최근 무전 3개·무전 버튼, 주행 중에는 입력과 스크롤 없음), 승객(채널·좌석·오디오 존·무전 기록·투표 카드), 상태(기존 디버그 로그) |
-| 마스코트 | ✅ | 아기 뻐꾸기 그림 6종(`design/character/cuckoo_*.svg`, 앱은 512px `drawable-nodpi/cuckoo_<표정>.png`). `ui/Cuckoo.kt`의 `CuckooView(mood)` 한 곳에서만 그리며, 없는 표정은 `Mood.fallback`의 그림을 씁니다. 승객·입장 화면은 천천히 들썩이고(LOOP), 운전석 카드는 새로 온 때 한 번 튀어나온 뒤 멈춥니다(ONCE). 런처 아이콘은 `ic_launcher_foreground`·`ic_launcher_background`입니다 |
+| 마스코트 | ✅ | 무전기 LCD 창 모양의 픽셀 뻐꾸기 14종, 표정마다 4프레임(`design/character/tools/gen.py`, 앱은 512px `drawable-nodpi/cuckoo_<표정>_<n>.png`를 320ms마다 바꿔 그림). `ui/Cuckoo.kt`의 `CuckooView(mood)` 한 곳에서만 그리며, 없는 표정은 `Mood.fallback`의 그림을 씁니다. 승객·입장 화면은 천천히 들썩이고(LOOP), 운전석 카드는 새로 온 때 한 번 튀어나온 뒤 멈춥니다(ONCE). 런처 아이콘은 `ic_launcher_foreground`·`ic_launcher_background`입니다 |
 
 ## P1 기능 (2026-11-01 구현)
 
@@ -113,7 +113,7 @@ curl -X POST "$B/gear?gear=Park"                # 기어 P
 | 앞·뒤와 실제 거리 | ✅ | 앞뒤는 선두가 대장 콜로 보낸 목적지까지 남은 거리로 봅니다(목적지가 없을 때만 호차 번호). 일행 목적지로 안내 중인 차는 내비 `onDrivingInfo`의 경로상 남은 거리를 `pos.remainM`으로 함께 보내고, 견주는 차가 모두 이 값을 보냈으면 서버는 직선 거리 대신 이 값을 씁니다. 서버가 `signal`을 받는 차마다 `gapM`(보낸 차와의 실제 거리)과 `ahead`를 붙여 보내므로 "6호차, 26km 뒤 급제동, 감속하세요"처럼 읽습니다. 거리는 1km 미만 100m 단위, 10km 미만 소수 한 자리("1.2km")입니다 |
 | 꼬리 콜 고침 | ✅ | 늘 "후미 2km 뒤"라고 하던 것을 실제 맨 앞·맨 뒤 차와 실제 거리로 바꿨습니다. 1호차가 맨 앞이면 "후미 3호차 3.3km 뒤, 천천히", 1호차가 처졌으면 "일행이 11km 앞서 있습니다, 맨 앞 2호차" |
 | 휴대폰 일행 지도 | ✅ | `phone.html`에 Leaflet 1.9.4(cdnjs)와 OSM 타일로 같은 지도(깃발 색 원, "나 · 2호차", 이슈 핀 5분)를 넣었습니다. `welcome.cars`에 먼저 들어온 차의 마지막 위치도 실었습니다 |
-| 마스코트 애니메이션 | ✅ | `CuckooView(mood, play)`: 입장·대기(시연 모드 봇 안내)·승객 화면은 계속 반복(LOOP), 운전석 최근 무전 카드는 새로 올 때 한 번(8초) 돌고 첫 프레임으로 멈춥니다(ONCE, 주행 중에도). 맨 위 카드 캐릭터는 150dp. 긴급 콜 전체 화면은 계속 반복합니다. 휴대폰 웹은 Worker 정적 자산(`server/public/cuckoo/*.webp`, 앱 `drawable-nodpi`의 사본)으로 헤더·카드·긴급 화면에 같은 그림을 띄웁니다 |
+| 마스코트 애니메이션 | ✅ | `CuckooView(mood, play)`: 입장·대기(시연 모드 봇 안내)·승객 화면은 계속 반복(LOOP), 운전석 최근 무전 카드는 새로 올 때 한 번(8초) 돌고 첫 프레임으로 멈춥니다(ONCE, 주행 중에도). 맨 위 카드 캐릭터는 150dp. 긴급 콜 전체 화면은 계속 반복합니다. 휴대폰 웹은 Worker 정적 자산(`server/public/cuckoo/<표정>.svg`, 같은 프레임을 CSS로 돌리는 움직이는 SVG)으로 헤더·카드·긴급 화면에 같은 그림을 띄웁니다 |
 | 앱 아이콘으로 돌아오기 | ✅ | 경유지가 들어가 내비가 앞으로 나온 뒤 아이콘을 누르면 액티비티가 새로 쌓여 방이 빈 화면이 뜨던 것을 `launchMode="singleTask"`로 막았습니다 |
 | 내비 뒤에서도 살아 있기 | ✅ | 경유지·대장 콜로 Pleos 내비가 앞으로 나오면 앱이 캐시 상태가 되어 시스템이 얼렸다가 바인더 호출이 오자 죽였습니다(`Sync transaction while in frozen state`). 방에 있는 동안 `RoomService`(포그라운드 서비스, 위치 유형)를 띄워 내비 뒤에서도 무전을 받고 위치를 보냅니다. 에뮬레이터에서 내비가 앞에 있는 채 70초 넘게 살아 있고 그동안 재접속까지 마치는 것을 확인했습니다 |
 | 긴 무전 줄이기 | ✅ | 40자를 넘으면 말버릇(음·어·저기·그러니까·좀 등 따로 떨어진 낱말)을 지우고, 그래도 길면 곳·숫자·길 상황·요청이 들어간 문장만 40자 안에서 골라 원래 순서로 잇습니다. 핵심이 없으면 첫 문장만, 한 문장뿐이면 말버릇만 지워 보냅니다(`Phrase.shorten`, LLM 없음) |
@@ -224,7 +224,7 @@ Pleos Connect Emulator 2.1.0, 사용자 10, 로컬 서버(`wrangler dev --port 8
 밝은 종이 바탕(#FFFAF6)에 흰 핀 카드(모서리 28dp, 1.5dp 옅은 테 #F1E6DF, 부드러운 그림자)를 붙이고, 무전기 느낌은 짙은 LCD 창(#2A2230, 글자 #FFE9A3), 주황 무전 버튼(#FF7A1A), 송신 빨강(#FF3D5A)·수신 파랑(#2B8CFF) 둥근 LED, 스피커 그릴 점으로 남깁니다. 호차 색은 #FF5A4E·#2B8CFF·#FFBF1F·#7B55FF·#FF3D8B·#14B8D4 여섯 가지이고 초록은 쓰지 않습니다.
 
 - **색 토큰**은 앱 `ui/Theme.kt`의 `object C`와 휴대폰 `server/src/phone.html`의 `:root` 두 곳에만 둡니다. 바탕·카드 위 글자와 LCD 위 글자는 WCAG AA(4.5:1) 이상이고, `ink3`은 시각 같은 덧붙임 글자에만 씁니다.
-- **글꼴**: 제목·상표·무전 버튼은 고운바탕 Bold(KS X 1001 한글로 줄인 파일), 나머지는 Pretendard(Regular·SemiBold·Bold·ExtraBold)입니다. 운전석 본문은 24sp, 무전 카드 글은 36sp 아래로 내리지 않습니다. 라이선스는 `app/src/main/assets/licenses/OFL-GowunBatang.txt`, `OFL-Pretendard.txt`. 휴대폰은 Google Fonts 고운바탕과 jsDelivr Pretendard를 씁니다.
+- **글꼴**: 모두 Pretendard(Regular·SemiBold·Bold·ExtraBold)입니다. 제목·상표·무전 버튼은 ExtraBold를 씁니다. 운전석 본문은 24sp, 무전 카드 글은 36sp 아래로 내리지 않습니다. 라이선스는 `app/src/main/assets/licenses/OFL-Pretendard.txt`. 휴대폰은 jsDelivr Pretendard를 씁니다.
 - **모양**(`ui/Radio.kt`): 핀 카드(`pin`), 스피커 그릴(`grille`), LCD 창(`Lcd`), 둥근 LED(`Led`, 깜빡임 가능), 신호 세기 막대, 수신 파형(`Waveform`), 표정 색으로 옅게 칠한 마스코트 칸(`SpeakerBox`), 누르면 살짝 작아지는 둥근 버튼(`SoftButton`).
 - **무전 버튼**: 듣는 동안 STT `onUpdatedRms` 값으로 미터를 채웁니다(`Voice.level`, 범위 0~10 가정).
 - **표정**(`Mood`): 그림은 기본·무전·경고·휴게·점호·키즈 6종이고, TX·RX·BRAKE·RAIN·CAMERA·LOST·VOTE·ARRIVE·EMERGENCY·WAIT는 `Mood.fallback`으로 이 중 하나를 씁니다. 휴대폰은 `server/public/cuckoo/<이름>.svg`를 씁니다.
@@ -247,7 +247,7 @@ Pleos Connect Emulator 2.1.0, 사용자 10, 로컬 서버(`wrangler dev --port 8
 
 - **에뮬레이터 과부하(2026-11-01)**: 512px 움직이는 WebP를 카드마다 디코드하던 때 시연 중 에뮬레이터 부하가 28까지 올라 `pm install`이 멈췄고(`adb reboot`으로 풀림), 경유지로 Pleos 내비가 앞으로 나올 때 앱이 두 번 ANR(입력 5초 무응답, 메인 스레드는 `activityTopResumedStateLost` 바인더 호출에서 대기)을 냈습니다. 같은 때 내비 앱도 ANR을 여러 번 냈습니다. 이후 마스코트를 64px 스프라이트 시트 한 장 그리기로 바꿨고, 재부팅한 에뮬레이터의 마지막 시연(투표·경유지 포함)에서는 ANR이 다시 나지 않았지만 부하 원인을 앱으로 좁히지는 못했습니다.
 - **마이크 미터**: 에뮬레이터에는 실제 마이크 입력이 없어 미터가 움직이는 것은 확인하지 못했습니다. RMS 범위(`Voice.RMS_MAX`)는 실차에서 맞춥니다. 휴대폰 미터도 헤드리스 Chrome에서는 마이크를 열 수 없어 확인하지 못했습니다.
-- **APK 크기**: 픽셀 디자인 때 제출용 APK는 67.5MB였습니다. 새 디자인은 Galmuri를 빼고 Pretendard 4개와 줄인 고운바탕 Bold를 넣었으며, 새 APK 크기는 아직 재지 않았습니다.
+- **APK 크기**: 픽셀 디자인 때 제출용 APK는 67.5MB였습니다. 새 디자인은 Galmuri를 빼고 Pretendard 4개를 넣었으며, 새 APK 크기는 아직 재지 않았습니다.
 - **화자 식별**: `AmbientAiApi.setRecognitionResultListener`가 "privileged 앱만 사용 가능" 오류를 냅니다. 일반 앱은 화자 id를 받을 수 없으므로 승객 화면에서 고른 좌석을 화자로 보냅니다.
 - **호출어 "무전"**: STT의 호출어 설정(`WakeUpWordConfig`)은 음성 모델 데이터가 필요하고 같은 privileged API에 있어 넣지 않았습니다. 지금은 무전 버튼만 씁니다.
 - **좌석별 스피커**: `setAudioZoneId`는 예외 없이 호출되지만(`audioInfo={"zoneId":2}`) 에뮬레이터 스피커가 하나라 실제로 좌석별로 나뉘는지는 확인하지 못했습니다. 그래서 채널 이름을 붙여 읽는 대안을 기본으로 켜 두었습니다.
@@ -286,7 +286,7 @@ app/src/main/java/com/ppeokkugi/
   MainActivity.kt
 app/src/test/java/com/ppeokkugi/domain/AutoCallTest.kt
 server/src/   index.js(Worker, / 휴대폰 화면), room.js(Durable Object), logic.js(판정·위치 알림), phone.html, data.js
-server/public/cuckoo/   휴대폰 화면 마스코트(앱 drawable-nodpi 사본, Worker 정적 자산)
+server/public/cuckoo/   휴대폰 화면 마스코트(design/character/anim 사본, 움직이는 SVG, Worker 정적 자산)
 server/scripts/bots.mjs   시연용 가상 차량 3대
 apk/팀명_뻐꾸기_release.apk   제출용 APK(debug 키 서명)
 ```

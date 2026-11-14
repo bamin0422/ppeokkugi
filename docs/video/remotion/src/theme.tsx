@@ -32,16 +32,15 @@ export const C = {
 export const CARS = ['#ff5a4e', '#2b8cff', '#ffbf1f', '#7b55ff', '#ff3d8b', '#14b8d4'];
 export const VEH_COLORS = CARS;
 
-/** 본문(Pretendard SemiBold) · 굵은 글자(Pretendard ExtraBold) · 제목(Gowun Batang Bold) */
+/** 본문(Pretendard SemiBold) · 굵은 글자와 제목(Pretendard ExtraBold) */
 export const FONT = 'PretendardSB';
 export const FONT_B = 'PretendardXB';
-export const SERIF = 'GowunBatangB';
+export const SERIF = FONT_B;
 
 const fontHandle = delayRender('fonts');
 Promise.all([
   new FontFace(FONT, `url(${staticFile('fonts/Pretendard-SemiBold.otf')})`).load(),
   new FontFace(FONT_B, `url(${staticFile('fonts/Pretendard-ExtraBold.otf')})`).load(),
-  new FontFace(SERIF, `url(${staticFile('fonts/GowunBatang-Bold.ttf')})`).load(),
 ]).then((faces) => {
   faces.forEach((f) => document.fonts.add(f));
   continueRender(fontHandle);
@@ -78,25 +77,21 @@ export const Sfx: React.FC<{name: string; at: number; volume?: number}> = ({name
   );
 };
 
-/** 예전 픽셀 스프라이트 이름 → 새 벡터 마스코트 6종 */
-const MOOD: Record<string, string> = {
-  brake: 'alert', emergency: 'alert', lost: 'alert', camera: 'alert',
-  rain: 'base', wait: 'base', arrive: 'base',
-  rx: 'talk', tx: 'talk', vote: 'rollcall',
-};
+/** 제 그림이 없는 표정 → 쓸 그림 */
+const MOOD: Record<string, string> = {tx: 'talk', wait: 'base'};
+/** design/character/tools/gen.py 의 FRAME_MS, 표정마다 프레임 수 */
+const FRAME_MS = 320;
+const FRAMES = 4;
 
-/** 마스코트(벡터). scale 1 = 64px. 숨 쉬듯 살짝 들썩인다 */
+/** 마스코트(무전기 LCD 창 모양 픽셀 그림). scale 1 = 64px. 영상 시간에 맞춰 프레임을 바꾼다 */
 export const Sprite: React.FC<{mood: string; scale: number; fps?: number; style?: React.CSSProperties}> = ({mood, scale, style}) => {
   const t = useT();
   const s = 64 * scale;
   const k = MOOD[mood] ?? mood;
-  const sq = Math.sin(t * (k === 'talk' ? 9 : 3.2));
+  const f = Math.floor((t * 1000) / FRAME_MS) % FRAMES;
   return (
     <div style={{width: s, height: s, ...style}}>
-      <Img
-        src={staticFile(`character/cuckoo_${k}.svg`)}
-        style={{width: s, height: s, display: 'block', transformOrigin: '50% 90%', transform: `scale(${1 + sq * 0.025}, ${1 - sq * 0.025})`}}
-      />
+      <Img src={staticFile(`character/cuckoo_${k}_${f}.svg`)} style={{width: s, height: s, display: 'block', imageRendering: 'pixelated'}} />
     </div>
   );
 };

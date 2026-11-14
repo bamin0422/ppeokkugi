@@ -14,10 +14,9 @@ export function reportHtml({ startedAt, rows, events }) {
   const ev = events.map(e => `<li><time>${hm(e.at)}</time><b>${e.car ? `${e.car}호차` : '일행'}</b>${esc(e.text)}</li>`).join('');
   return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>뻐꾸기 운행 보고서</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css"><style>
 :root{--bg:#fffaf6;--paper:#fff;--line:#f1e6df;--ink:#2a2230;--ink2:#6e6170;--ink3:#ab9ca8;--lcd:#2a2230;--lcd-ink:#ffe9a3;--tx:#ff3d5a;--tx-ink:#c21535;--brand:#ff7a1a;
---serif:"Gowun Batang","Nanum Myeongjo","AppleMyungjo",serif;--sans:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,sans-serif}
+--serif:"Pretendard Variable",Pretendard,-apple-system,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;--sans:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,sans-serif}
 body{font:500 15px/1.5 var(--sans);background:var(--bg);color:var(--ink);margin:0;padding:28px 16px}
 main{max-width:1100px;margin:auto}h1{font:700 28px/1.2 var(--serif);letter-spacing:-.03em;margin:0 0 10px}h1 em{color:var(--brand);font-style:normal}
 p.sub{display:inline-block;background:var(--lcd);color:var(--lcd-ink);border-radius:14px;padding:6px 14px;margin:0 0 22px;font-size:14px;font-weight:700}
