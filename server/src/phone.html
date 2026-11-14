@@ -5,177 +5,182 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="">
 <title>뻐꾸기 휴대폰 참여</title>
-<!-- 글꼴은 Pretendard 하나. 제목·브랜드·무전 버튼은 굵게(--serif 는 옛 이름으로 남은 제목용 변수). 못 불러오면 아래 대체 글꼴로 -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- 글꼴은 Pretendard 하나. 못 불러오면 시스템 글꼴로 -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
 <!-- 일행 지도. 못 불러와도 나머지 화면은 그대로 쓴다 -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
-  /* 색은 이 :root 에만 둔다. 따뜻한 종이 바탕 위 둥근 핀 카드, 무전기 단서는 어두운 LCD·LED·스피커 그릴·주황 PTT */
-  :root { --bg:#fffaf6; --paper:#fff; --line:#f1e6df; --ink:#2a2230; --ink2:#6e6170; --ink3:#ab9ca8;
-          --lcd:#2a2230; --lcd-ink:#ffe9a3; --lcd-dim:#a48f73; --grille:#4a3f50;
-          --tx:#ff3d5a; --tx-ink:#c21535; --rx:#2b8cff; --brand:#ff7a1a; --brand-hi:#ff9a4a;
-          --c1:#ff5a4e; --c2:#2b8cff; --c3:#ffbf1f; --c4:#7b55ff; --c5:#ff3d8b; --c6:#14b8d4;
-          --flag:var(--ink); --shadow:0 10px 26px rgba(80,40,60,.10);
-          --serif:"Pretendard Variable",Pretendard,-apple-system,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;
-          --sans:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,sans-serif; }
+  /* 색은 이 :root 에만 둔다. 밝은 회색 바탕 위 흰 카드, 회색 글자 단계, 주 색은 주황 */
+  :root { --bg:#F2F4F6; --surface:#FFFFFF;
+          --grey50:#F9FAFB; --grey200:#E5E8EB; --grey300:#D1D6DB; --grey400:#B0B8C1; --grey500:#8B95A1; --grey600:#6B7684; --grey700:#4E5968; --grey800:#333D4B;
+          --text:#191F28; --text2:var(--grey700); --text3:var(--grey600);
+          --primary:#FF6F0F; --primary-pressed:#E85F00; --primary-weak:#FFF1E6; --primary-ink:#D45500; --primary-text:#B04000;
+          --danger:#F04452; --danger-weak:#FFEEEE; --danger-ink:#D22030;
+          --info:#3182F6; --info-weak:#E8F3FF; --info-ink:#1B64DA;
+          --c1:#F04452; --c2:#3182F6; --c3:#FFB331; --c4:#7B55FF; --c5:#FF3D8B; --c6:#14B8D4;
+          --flag:var(--text);
+          /* 스크립트가 카드·호차 색에 쓰는 이름 */
+          --brand:var(--primary); --tx:var(--danger); --ink:var(--text);
+          --font:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif; }
   * { box-sizing: border-box; }
-  html, body { margin: 0; background: var(--bg); color: var(--ink); font: 500 16px/1.5 var(--sans); -webkit-font-smoothing: antialiased; }
-  body { padding: 0 16px calc(24px + env(safe-area-inset-bottom)); max-width: 560px; margin: 0 auto; overflow-x: hidden; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font: 500 16px/1.5 var(--font); -webkit-font-smoothing: antialiased; }
+  body { padding: 0 20px calc(24px + env(safe-area-inset-bottom)); max-width: 560px; margin: 0 auto; overflow-x: hidden; }
   button, input { font-family: inherit; }
 
-  /* 무전기 머리: 안테나(내 차 색), 마스코트, 이름, 오른쪽에 채널 LCD */
-  header { display: flex; align-items: center; gap: 10px; padding: 18px 0 14px; }
-  #flag { width: 6px; height: 26px; border-radius: 3px; background: var(--flag); display: none; transform: translateY(-8px); margin-right: -4px; flex: none; }
-  header .cuckoo { width: 38px; height: 38px; }
-  header h1 { font: 700 26px/1 var(--serif); letter-spacing: -.03em; margin: 0; white-space: nowrap; flex: none; }
-  #status { color: var(--ink2); font: 600 14px/1.3 var(--sans); margin-left: auto; text-align: right; display: flex; align-items: center; gap: 8px; min-width: 0; }
-  #status .lcd { padding: 7px 12px; border-radius: 14px; font: 800 15px/1 var(--sans); letter-spacing: .04em; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
-  #status .lcd small { font-size: 11px; font-weight: 700; letter-spacing: .12em; color: var(--lcd-dim); }
-  #status .lcd .me { font-size: 12px; font-weight: 700; color: var(--lcd-dim); letter-spacing: 0; }
-  #status svg { width: 19px; height: 14px; }
+  /* 머리: 내 차 색 막대, 마스코트, 이름, 오른쪽에 방 코드 칩 */
+  header { display: flex; align-items: center; gap: 10px; padding: 20px 0 16px; }
+  #flag { width: 6px; height: 24px; border-radius: 3px; background: var(--flag); display: none; margin-right: -2px; flex: none; }
+  header .cuckoo { width: 40px; height: 40px; padding: 4px; border-radius: 12px; background: var(--surface); }
+  header h1 { font: 800 24px/1 var(--font); letter-spacing: -.03em; margin: 0; white-space: nowrap; flex: none; }
+  #status { color: var(--text2); font: 600 14px/1.3 var(--font); margin-left: auto; text-align: right; display: flex; align-items: center; gap: 8px; min-width: 0; }
+  #status .lcd { padding: 7px 12px; border-radius: 10px; font: 700 15px/1 var(--font); letter-spacing: .04em; display: flex; align-items: center; gap: 7px; white-space: nowrap;
+    background: var(--surface); color: var(--text); }
+  #status .lcd small { font-size: 12px; font-weight: 600; letter-spacing: 0; color: var(--text3); }
+  #status .lcd .me { font-size: 13px; font-weight: 700; color: var(--primary-text); background: var(--primary-weak); border-radius: 6px; padding: 3px 6px; letter-spacing: 0; }
+  #status svg { width: 17px; height: 13px; color: var(--text2); }
   #status > span:last-child { white-space: nowrap; }
   header:has(.lcd) .cuckoo { display: none; }
 
-  .lcd { background: var(--lcd); color: var(--lcd-ink); box-shadow: inset 0 2px 0 rgba(255,255,255,.08), 0 6px 16px rgba(42,34,48,.18); }
-  .led { width: 10px; height: 10px; border-radius: 50%; background: var(--line); flex: none; }
-  .led.rx { background: var(--rx); box-shadow: 0 0 0 3px color-mix(in srgb, var(--rx) 22%, transparent), 0 0 10px var(--rx); }
-  .led.tx { background: var(--tx); box-shadow: 0 0 0 3px color-mix(in srgb, var(--tx) 25%, transparent), 0 0 10px var(--tx); animation: blink .84s infinite; }
-  @keyframes blink { 50% { opacity: .25; } }
-  /* 스피커 그릴: 작은 점 무늬 */
-  .grille { background: radial-gradient(circle, var(--line) 2.5px, transparent 3px) 0 0 / 10px 10px; }
+  .lcd { background: var(--grey50); color: var(--text); }
+  .led { width: 8px; height: 8px; border-radius: 50%; background: var(--grey300); flex: none; }
+  .led.rx { background: var(--info); }
+  .led.tx { background: var(--danger); animation: blink 1s infinite; }
+  @keyframes blink { 50% { opacity: .3; } }
+  .grille { display: none; }
 
-  /* 입장: 둥근 무전기 앞면 카드 */
-  .radio { background: var(--paper); border: 1.5px solid var(--line); border-radius: 32px; box-shadow: var(--shadow); padding: 16px 18px 20px; margin-top: 4px; }
-  .radio .slots { height: 156px; border-radius: 24px; background: #fff1e6; display: flex; align-items: center; justify-content: center; position: relative; margin-bottom: 18px; }
-  .radio .slots .cuckoo { width: 124px; height: 124px; }
-  .radio .slots::after { content: ""; position: absolute; right: 16px; bottom: 14px; width: 60px; height: 20px;
-    background: radial-gradient(circle, #f3d9c6 2.5px, transparent 3px) 0 0 / 10px 10px; }
-  label { display: block; font: 700 19px/1.4 var(--serif); margin: 0 0 10px 4px; }
-  .chan { display: flex; align-items: center; gap: 12px; padding: 12px 18px; border-radius: 20px; }
-  .chan b { font-size: 13px; font-weight: 700; letter-spacing: .14em; color: var(--lcd-dim); }
-  .chan input { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--lcd-ink); font: 800 28px/1.1 var(--sans);
-    letter-spacing: .14em; text-transform: uppercase; padding: 4px 0; }
-  .chan input::placeholder { color: var(--lcd-dim); opacity: .6; }
-  .chan:focus-within { outline: 3px solid color-mix(in srgb, var(--brand) 55%, transparent); outline-offset: 3px; }
+  /* 마스코트: 부드러운 사각 위에서 살짝 떠 있다 */
+  .cuckoo { object-fit: contain; flex: none; animation: bob 2.8s ease-in-out infinite; }
+  @keyframes bob { 50% { transform: translateY(-4px); } }
+
+  /* 입장 카드 */
+  .radio { background: var(--surface); border-radius: 24px; padding: 20px 20px 24px; margin-top: 4px; }
+  .radio .slots { height: 168px; border-radius: 20px; background: var(--primary-weak); display: flex; align-items: center; justify-content: center; margin-bottom: 24px; }
+  .radio .slots .cuckoo { width: 132px; height: 132px; }
+  label { display: block; font: 700 15px/1.4 var(--font); color: var(--text2); margin: 0 0 8px 2px; }
+  .chan { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-radius: 16px; background: var(--bg); margin-bottom: 20px; }
+  .chan b { font-size: 13px; font-weight: 700; color: var(--primary-text); background: var(--primary-weak); border-radius: 10px; padding: 5px 9px; }
+  .chan input { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--text); font: 700 26px/1.1 var(--font);
+    letter-spacing: .12em; text-transform: uppercase; padding: 4px 0; }
+  .chan input::placeholder { color: var(--grey400); }
+  .chan:focus-within { box-shadow: inset 0 0 0 2px var(--primary); }
   .chan input:focus { outline: 0; }
-  .check { display: flex; gap: 10px; align-items: flex-start; margin: 18px 4px; color: var(--ink2); font: 500 14px/1.55 var(--sans); }
-  .check input { width: 22px; height: 22px; flex: none; margin: 1px 0 0; accent-color: var(--brand); }
+  .check { display: flex; gap: 10px; align-items: flex-start; margin: 0 2px 20px; color: var(--text2); font: 500 14px/1.6 var(--font); }
+  .check input { width: 22px; height: 22px; flex: none; margin: 0; accent-color: var(--primary); }
 
-  button { font: 700 16px/1.2 var(--sans); border: 0; cursor: pointer; color: var(--ink); background: var(--paper); border-radius: 999px;
-    transition: transform .08s, box-shadow .15s, background .15s; }
-  button:active:not(:disabled) { transform: translateY(2px) scale(.99); }
-  button:focus-visible, a:focus-visible { outline: 3px solid color-mix(in srgb, var(--brand) 55%, transparent); outline-offset: 2px; }
+  button { font: 700 16px/1.2 var(--font); border: 0; cursor: pointer; color: var(--text); background: var(--surface); border-radius: 16px; transition: transform .1s, background .15s; }
+  button:active:not(:disabled) { transform: scale(.98); }
+  button:focus-visible, a:focus-visible { outline: 3px solid color-mix(in srgb, var(--primary) 45%, transparent); outline-offset: 2px; }
   button:disabled { cursor: default; }
-  .big { width: 100%; height: 60px; font: 700 21px/1 var(--serif); letter-spacing: .04em; color: #fff;
-    background: linear-gradient(180deg, var(--brand-hi), var(--brand)); box-shadow: inset 0 -4px 0 rgba(0,0,0,.12), 0 8px 20px color-mix(in srgb, var(--brand) 35%, transparent); }
-  .big:disabled { background: var(--line); color: var(--ink2); box-shadow: none; }
-  .ghost { display: block; width: 100%; margin-top: 12px; padding: 14px; text-align: center; text-decoration: none; font: 700 16px/1.2 var(--sans);
-    color: var(--ink); background: var(--paper); border: 1.5px solid var(--line); border-radius: 999px; }
-  .big.ghost { height: 56px; padding: 0; box-shadow: none; }
+  .big { width: 100%; height: 56px; font: 700 17px/1 var(--font); color: var(--text); background: var(--primary); }
+  .big:active:not(:disabled) { background: var(--primary-pressed); }
+  .big:disabled { background: var(--grey200); color: var(--grey500); }
+  .ghost { display: block; width: 100%; margin-top: 10px; padding: 16px; text-align: center; text-decoration: none; font: 700 16px/1.2 var(--font);
+    color: var(--text2); background: var(--grey50); border-radius: 16px; }
+  .big.ghost { height: 56px; padding: 0; color: var(--primary-text); background: var(--primary-weak); }
 
   /* 쉬어 가 투표 */
-  #vote { display: none; background: var(--paper); border: 2px solid var(--brand); border-radius: 28px; box-shadow: var(--shadow); padding: 16px; margin: 4px 0 16px; }
-  #vote label { display: flex; align-items: center; gap: 10px; margin: 0 0 12px 4px; }
-  #vote label .lcd { padding: 4px 12px; border-radius: 12px; font: 800 16px/1.3 var(--sans); }
-  #vote .opts { display: grid; gap: 10px; }
-  #vote button { display: flex; align-items: center; gap: 12px; padding: 10px 16px 10px 10px; font-size: 17px; text-align: left; border: 1.5px solid var(--line); background: var(--bg); }
-  #vote button b { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; flex: none; font: 800 17px/1 var(--sans); color: #fff; background: var(--c2); }
-  #vote button:nth-child(2) b { background: var(--c5); } #vote button:nth-child(3) b { background: var(--c4); }
-  #vote button.mine { background: var(--brand); border-color: var(--brand); color: #fff; }
-  #vote button.mine b { background: #fff; color: var(--brand); }
+  #vote { display: none; background: var(--surface); border-radius: 24px; padding: 20px; margin: 4px 0 12px; }
+  #vote label { display: flex; align-items: center; gap: 8px; margin: 0 0 14px 2px; font: 800 20px/1.3 var(--font); color: var(--text); }
+  #vote label .lcd { padding: 4px 10px; border-radius: 10px; font: 700 14px/1.3 var(--font); background: var(--primary-weak); color: var(--primary-text); }
+  #vote .opts { display: grid; gap: 8px; }
+  #vote button { display: flex; align-items: center; gap: 12px; padding: 12px 16px 12px 12px; font-size: 17px; text-align: left; background: var(--grey50); }
+  #vote button b { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; flex: none; font: 800 16px/1 var(--font); color: var(--text2); background: var(--grey200); }
+  #vote button.mine { background: var(--primary-weak); color: var(--primary-text); }
+  #vote button.mine b { background: var(--primary); color: var(--text); }
 
   /* 일행 지도 */
-  #map { height: 260px; border-radius: 28px; border: 1.5px solid var(--line); background: #fbf1e8; z-index: 0; overflow: hidden; }
-  #map .leaflet-tile-pane { filter: grayscale(1) sepia(.3) brightness(1.06) contrast(.9);  /* 초록 공원색까지 따뜻한 무채색으로 */ }
-  #map .leaflet-control-attribution { background: rgba(255,255,255,.8); color: var(--ink2); font: 500 10px var(--sans); border-radius: 10px 0 0 0; }
-  #map .leaflet-control-attribution a { color: var(--ink2); }
+  #map { height: 260px; border-radius: 24px; background: var(--grey200); z-index: 0; overflow: hidden; }
+  #map .leaflet-tile-pane { filter: grayscale(1) brightness(1.05) contrast(.92);  /* 초록 공원색까지 무채색으로 */ }
+  #map .leaflet-control-attribution { background: rgba(255,255,255,.85); color: var(--text3); font: 500 10px var(--font); border-radius: 8px 0 0 0; }
+  #map .leaflet-control-attribution a { color: var(--text3); }
   .car { display: flex; flex-direction: column; align-items: center; }
   .car b { width: 34px; height: 34px; border-radius: 50% 50% 50% 6px; transform: rotate(-45deg); display: grid; place-items: center;
-    border: 2.5px solid #fff; box-shadow: 0 6px 14px rgba(42,34,48,.25); font: 800 16px/1 var(--sans); }
+    border: 2.5px solid #fff; box-shadow: 0 4px 12px rgba(0,23,51,.18); font: 800 16px/1 var(--font); }
   .car b i { transform: rotate(45deg); font-style: normal; }
   .car.me b { width: 42px; height: 42px; font-size: 19px; }
-  .car span { margin-top: 9px; padding: 2px 9px; border-radius: 999px; font: 800 12px/1.4 var(--sans); white-space: nowrap; background: #fff; color: var(--ink); box-shadow: 0 3px 8px rgba(42,34,48,.14); }
-  .car.me span { background: var(--ink); color: #fff; }
-  .pin { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; border: 2.5px solid #fff; background: var(--ink2); color: #fff;
-    box-shadow: 0 4px 10px rgba(42,34,48,.25); font: 800 13px/1 var(--sans); }
-  .pin.brake_hard, .pin.airbag { background: var(--tx); } .pin.rain { background: var(--rx); }
-  .pin.turn_left, .pin.turn_right { background: var(--brand); } .pin.speed_limit, .pin.caution { background: var(--c3); color: var(--ink); }
+  .car span { margin-top: 9px; padding: 2px 9px; border-radius: 8px; font: 700 12px/1.4 var(--font); white-space: nowrap; background: #fff; color: var(--text); box-shadow: 0 2px 8px rgba(0,23,51,.12); }
+  .car.me span { background: var(--text); color: #fff; }
+  .pin { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; border: 2.5px solid #fff; background: var(--grey600); color: #fff;
+    box-shadow: 0 3px 10px rgba(0,23,51,.18); font: 800 13px/1 var(--font); }
+  .pin.brake_hard, .pin.airbag { background: var(--danger); } .pin.rain { background: var(--info); }
+  .pin.turn_left, .pin.turn_right { background: var(--primary); } .pin.speed_limit, .pin.caution { background: var(--c3); color: var(--text); }
 
-  /* PTT: 어두운 둥근 판, 스피커 그릴, 큰 주황 알약 버튼. 누르는 동안 빨간 TX 와 마이크 미터 */
-  #ptt { width: 100%; margin-top: 14px; display: flex; align-items: center; gap: 12px; padding: 12px 12px 12px 18px; border-radius: 32px;
-    background: var(--ink); color: #fff; user-select: none; -webkit-user-select: none; touch-action: none; box-shadow: 0 10px 24px rgba(42,34,48,.22); }
-  #ptt .grille { width: 30px; height: 50px; flex: none; background: radial-gradient(circle, var(--grille) 3px, transparent 3.5px) 0 0 / 10px 10px; }
-  #ptt .led { background: var(--grille); }
-  #ptt .tag { font: 600 13px/1.35 var(--sans); color: #cbbfcc; width: 3.6em; }
-  #ptt .word, #ptt .say { margin-left: auto; height: 76px; min-width: 150px; flex: 1; max-width: 220px; border-radius: 999px; display: grid; place-items: center;
-    font: 700 30px/1 var(--serif); letter-spacing: .12em; color: #fff; white-space: nowrap;
-    background: linear-gradient(180deg, var(--brand-hi), var(--brand)); box-shadow: inset 0 -5px 0 rgba(0,0,0,.15), 0 8px 20px rgba(255,122,26,.4); }
+  /* PTT: 화면 폭 주황 버튼. 누르는 동안 빨강 "송신 중"과 마이크 미터 */
+  #ptt { width: 100%; margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 10px; height: 88px; padding: 0 22px; border-radius: 24px;
+    background: var(--primary); color: var(--text); user-select: none; -webkit-user-select: none; touch-action: none; }
+  #ptt:active:not(:disabled) { background: var(--primary-pressed); }
+  #ptt .led { display: none; }
+  #ptt .tag { font: 600 15px/1.3 var(--font); color: var(--grey800); order: 2; }
+  #ptt .word { font: 800 28px/1 var(--font); letter-spacing: -.02em; white-space: nowrap; order: 1; }
   #ptt .say, #ptt .meter { display: none; }
-  #ptt.on .tag, #ptt.on .word, #ptt.on .grille { display: none; }
-  #ptt.on .say { display: grid; background: var(--tx); box-shadow: inset 0 -5px 0 rgba(0,0,0,.15), 0 8px 20px rgba(255,61,90,.45); }
-  #ptt.on .meter { display: flex; flex: 1; gap: 3px; height: 30px; align-items: center; }
-  .meter i { flex: 1; height: 40%; border-radius: 2px; background: var(--rx); opacity: .25; }
-  .meter i:nth-child(n+6) { height: 60%; } .meter i:nth-child(n+10) { height: 80%; background: var(--c3); } .meter i:nth-child(n+13) { height: 100%; background: var(--tx); }
+  #ptt.on { background: var(--danger); color: #fff; justify-content: flex-start; }
+  #ptt.on .tag, #ptt.on .word { display: none; }
+  #ptt.on .say { display: block; font: 800 26px/1 var(--font); white-space: nowrap; }
+  #ptt.on .led { display: block; width: 12px; height: 12px; background: #fff; }
+  #ptt.on .meter { display: flex; flex: 1; gap: 3px; height: 30px; align-items: center; margin-left: 8px; }
+  .meter i { flex: 1; height: 40%; border-radius: 2px; background: #fff; opacity: .3; }
+  .meter i:nth-child(n+6) { height: 60%; } .meter i:nth-child(n+10) { height: 80%; } .meter i:nth-child(n+13) { height: 100%; }
   .meter i.on { opacity: 1; }
+  #ptt:disabled { background: var(--grey200); height: 64px; }
   #ptt:disabled .tag { display: none; }
-  #ptt:disabled .word { font: 600 14px/1.3 var(--sans); letter-spacing: 0; white-space: normal; text-align: center; padding: 0 14px; max-width: none;
-    background: var(--grille); color: #e6dbe4; box-shadow: none; height: 60px; }
+  #ptt:disabled .word { font: 600 15px/1.3 var(--font); letter-spacing: 0; white-space: normal; text-align: center; color: var(--grey600); }
 
-  .row { display: flex; gap: 8px; margin-top: 12px; }
-  .row input { flex: 1; min-width: 0; font: 500 16px var(--sans); padding: 0 18px; height: 52px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--paper); color: var(--ink); }
-  .row input::placeholder { color: var(--ink3); }
-  .row input:focus { outline: 0; border-color: var(--brand); }
-  .row button { padding: 0 20px; height: 52px; flex: none; white-space: nowrap; background: var(--ink); color: #fff; }
-  h2 { font: 700 21px/1.3 var(--serif); letter-spacing: -.02em; margin: 26px 4px 12px; }
-  .note { color: var(--ink2); font: 500 14px/1.5 var(--sans); margin: 8px 4px 0; }
+  .row { display: flex; gap: 8px; margin-top: 10px; }
+  .row input { flex: 1; min-width: 0; font: 500 16px var(--font); padding: 0 18px; height: 54px; border-radius: 16px; border: 0; background: var(--surface); color: var(--text); }
+  .row input::placeholder { color: var(--grey500); }
+  .row input:focus { outline: 0; box-shadow: inset 0 0 0 2px var(--primary); }
+  .row button { padding: 0 20px; height: 54px; flex: none; white-space: nowrap; background: var(--primary-weak); color: var(--primary-text); }
+  h2 { font: 800 22px/1.3 var(--font); letter-spacing: -.02em; margin: 32px 2px 12px; }
+  .note { color: var(--text2); font: 500 14px/1.5 var(--font); margin: 8px 2px 0; }
   .note:empty { display: none; }
-  #leave { margin-top: 18px; color: var(--ink2); }
+  #leave { margin-top: 20px; }
 
-  /* 무전 카드: 둥근 핀. 왼쪽 물든 칸에 마스코트, 보낸 이 칩·작은 파형·시각, 오른쪽 아래 스피커 그릴 */
-  #cards { display: grid; gap: 12px; }
-  .card { --c: var(--brand); display: flex; position: relative; background: var(--paper); border: 1.5px solid var(--line); border-radius: 24px; overflow: hidden; box-shadow: var(--shadow); }
-  .card .face { width: 76px; flex: none; display: grid; place-items: center; background: color-mix(in srgb, var(--c) 13%, #fff); }
-  .cuckoo { object-fit: contain; flex: none; }
-  .card .cuckoo { width: 60px; height: 60px; }
-  .card .body { flex: 1; min-width: 0; padding: 12px 14px 22px; }
-  .card .rx { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 7px; font: 700 12px/1.2 var(--sans); color: var(--ink2); letter-spacing: .02em; }
+  /* 무전 카드: 흰 둥근 카드. 왼쪽 연한 사각에 마스코트, 위에 RX/TX·보낸 이·시각, 아래 큰 글 */
+  #cards { display: grid; gap: 10px; }
+  .card { --c: var(--primary); display: flex; gap: 14px; align-items: flex-start; background: var(--surface); border-radius: 24px; padding: 16px; }
+  .card .face { width: 56px; height: 56px; flex: none; display: grid; place-items: center; border-radius: 16px; background: color-mix(in srgb, var(--c) 12%, #fff); }
+  .card .cuckoo { width: 48px; height: 48px; }
+  .card .body { flex: 1; min-width: 0; }
+  .card .rx { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; font: 700 12px/1.2 var(--font); color: var(--text3); }
   .card .rx > * { white-space: nowrap; flex: none; }
-  .card .from { color: #fff; background: var(--c); border-radius: 999px; padding: 3px 10px; font-weight: 800; }
-  .card .from.dark { color: var(--ink); }
-  .card .wave { display: flex; align-items: center; gap: 2px; height: 16px; }
-  .card .wave i { width: 3px; border-radius: 2px; background: var(--c); opacity: .85; }
+  .card .rx > span:first-child { padding: 3px 7px; border-radius: 6px; background: var(--info-weak); color: var(--info-ink); }
+  .card .rx > span.tx { background: var(--primary-weak); color: var(--primary-text); }
+  /* 호차 이름: 차 색을 옅게 깐 칩에 어두운 글자, 앞에 차 색 점 */
+  .card .from { color: var(--text); background: color-mix(in srgb, var(--c) 14%, #fff); border-radius: 6px; padding: 3px 8px 3px 6px; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; }
+  .card .from::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--c); }
+  .card .wave { display: flex; align-items: center; gap: 2px; height: 14px; }
+  .card .wave i { width: 3px; border-radius: 2px; background: var(--c); opacity: .6; }
   .card.fresh .wave i { animation: crackle .14s 10; }
   @keyframes crackle { 50% { transform: scaleY(.3); } }
   .card.fresh { animation: pop .35s ease-out; }
   @keyframes pop { from { transform: translateY(-6px); opacity: .4; } }
-  .card time { margin-left: auto; color: var(--ink3); font-weight: 600; font-variant-numeric: tabular-nums; }
-  .card .text { font: 800 19px/1.35 var(--sans); letter-spacing: -.02em; margin-top: 7px; word-break: keep-all; overflow-wrap: anywhere; padding-right: 8px; }
-  .card .grille { position: absolute; right: 12px; bottom: 9px; width: 50px; height: 10px; }
-  .card.alert { border: 2.5px solid var(--tx); }
-  .card.alert .text { color: var(--tx-ink); }
-  .chip { display: inline-block; border-radius: 999px; padding: 3px 9px; font-weight: 800; color: #fff; background: var(--c4); }
-  .chip.kids { background: var(--c6); }
+  .card time { margin-left: auto; color: var(--text3); font-weight: 500; font-variant-numeric: tabular-nums; }
+  .card .text { font: 700 18px/1.45 var(--font); letter-spacing: -.02em; margin-top: 6px; word-break: keep-all; overflow-wrap: anywhere; }
+  .card.alert { background: var(--danger-weak); }
+  .card.alert .face { background: #fff; }
+  .card.alert .text { color: var(--danger-ink); }
+  .card.alert .from { background: #fff; }
+  .chip { display: inline-block; border-radius: 6px; padding: 3px 7px; font-weight: 700; color: #5B36E0; background: #F1ECFF; }
+  .chip.kids { color: #0A7080; background: #E3F8FB; }
 
-  /* 긴급: 빨간 화면 전체, 흰 카드에 내용 */
-  #sos { position: fixed; inset: 0; background: var(--tx); display: none; flex-direction: column; justify-content: center;
-    padding: 24px 20px calc(24px + env(safe-area-inset-bottom)); z-index: 1000; gap: 18px; color: #fff; }
-  #sos .head { display: flex; align-items: center; justify-content: center; gap: 12px; font: 700 34px/1 var(--serif); }
-  #sos .led { animation: blink .84s infinite; width: 16px; height: 16px; background: #fff; box-shadow: 0 0 0 5px rgba(255,255,255,.3), 0 0 16px #fff; }
-  #sos .lcd { background: var(--paper); color: var(--ink); border-radius: 28px; padding: 18px 20px; box-shadow: 0 16px 40px rgba(90,0,20,.3); }
-  #sos .lcd b { display: inline-block; font: 800 13px/1.3 var(--sans); letter-spacing: .06em; color: #fff; background: var(--tx); border-radius: 999px; padding: 4px 12px; margin-bottom: 10px; }
-  #sos p { font: 800 22px/1.4 var(--sans); letter-spacing: -.02em; margin: 0; color: var(--tx-ink); word-break: keep-all; }
-  #sos button { height: 64px; font: 700 22px/1 var(--serif); letter-spacing: .1em; background: var(--ink); color: #fff; box-shadow: 0 10px 24px rgba(42,34,48,.3); }
-  #sos .cuckoo { width: 132px; height: 132px; align-self: center; border-radius: 12px; box-shadow: 0 10px 30px rgba(90,0,20,.25); }
-  @media (prefers-reduced-motion: reduce) { .led.tx, .card.fresh, .card.fresh .wave i { animation: none; } }
+  /* 긴급: 붉은 바탕 위 흰 시트, 큰 빨간 제목, 아래 어두운 확인 버튼 */
+  #sos { position: fixed; inset: 0; background: var(--danger-weak); display: none; flex-direction: column; justify-content: flex-end;
+    padding: 24px 20px calc(20px + env(safe-area-inset-bottom)); z-index: 1000; gap: 12px; }
+  #sos .cuckoo { width: 120px; height: 120px; padding: 10px; align-self: center; border-radius: 28px; background: var(--surface); margin-bottom: auto; margin-top: auto; }
+  #sos .head { display: flex; align-items: center; gap: 10px; font: 800 32px/1.2 var(--font); letter-spacing: -.03em; color: var(--danger-ink); padding: 0 4px; }
+  #sos .led { width: 12px; height: 12px; background: var(--danger); animation: blink 1s infinite; }
+  #sos .lcd { background: var(--surface); color: var(--text); border-radius: 24px; padding: 20px; }
+  #sos .lcd b { display: inline-block; font: 700 13px/1.3 var(--font); color: var(--danger-ink); background: var(--danger-weak); border-radius: 8px; padding: 4px 10px; margin-bottom: 10px; }
+  #sos p { font: 700 20px/1.45 var(--font); letter-spacing: -.02em; margin: 0; color: var(--text); word-break: keep-all; }
+  #sos button { height: 56px; font: 700 17px/1 var(--font); background: var(--text); color: #fff; }
+  @media (prefers-reduced-motion: reduce) { .led.tx, #sos .led, .cuckoo, .card.fresh, .card.fresh .wave i { animation: none; } }
 </style>
 </head>
 <body>
 <header>
   <span id="flag"></span>
-  <img class="cuckoo" src="/cuckoo/base.svg" alt="">
+  <img class="cuckoo" src="/cuckoo/base.png" alt="">
   <h1>뻐꾸기</h1>
   <span id="status">휴대폰으로 함께 가기</span>
 </header>
@@ -196,7 +201,7 @@
     <div class="opts" id="opts"></div>
   </section>
   <div id="map"></div>
-  <button id="ptt"><span class="grille"></span><span class="led" id="pttLed"></span><span class="tag">누르고 말하기</span><span class="word">무전</span><span class="meter" id="meter"></span><span class="say">TX</span></button>
+  <button id="ptt"><span class="grille"></span><span class="led" id="pttLed"></span><span class="tag">누르고 말하기</span><span class="word">무전</span><span class="meter" id="meter"></span><span class="say">송신 중</span></button>
   <div class="note" id="heard"></div>
   <div class="row">
     <input id="text" type="text" placeholder="글로 보내기" maxlength="200">
@@ -360,10 +365,9 @@ function onMsg(m) {
   }
 }
 
-// 마스코트 그림: 여섯 장(SVG)에 상황을 나눠 싣는다(앱 Mood 와 같은 짝)
-// 표정마다 움직이는 픽셀 SVG(design/character/anim). 송신은 무전 중 그림, 대기는 기본 그림을 쓴다
-const MOOD_FILE = { tx: 'talk', wait: 'base' };
-function moodImg(img, m) { img.src = `/cuckoo/${MOOD_FILE[m] || m}.svg`; }
+// 마스코트 그림: 투명 PNG 여러 장에 상황을 나눠 싣는다(앱 Mood 와 같은 짝). 없는 표정은 가까운 그림으로
+const MOOD_FILE = { tx: 'talk', wait: 'base', brake: 'alert', emergency: 'alert', lost: 'alert', camera: 'alert', rain: 'base', rx: 'rx', vote: 'vote', arrive: 'arrive' };
+function moodImg(img, m) { img.src = `/cuckoo/${MOOD_FILE[m] || m}.png`; }
 document.querySelectorAll('img[data-mood]').forEach(i => moodImg(i, i.dataset.mood));
 // 호차 색 [바탕, 글자]: 1~6호차가 차례로 돌아간다. 3호차 노랑 위에는 어두운 글자
 const carColor = n => [`var(--c${(n - 1) % 6 + 1})`, (n - 1) % 6 === 2 ? 'var(--ink)' : '#fff'];
@@ -377,7 +381,7 @@ function card(from, text, alert = false, channel = 'all', mood = null) {
   const t = new Date().toTimeString().slice(0, 8);
   const chip = channel && channel !== 'all' ? `<span class="chip${channel === 'kids' ? ' kids' : ''}">${channel === 'kids' ? '키즈' : '어른'} 채널</span>` : '';
   const wave = Array.from({ length: 6 }, () => `<i style="height:${30 + Math.random() * 70}%"></i>`).join('');
-  c.innerHTML = `<div class="face"><img class="cuckoo" alt=""></div><div class="body"><div class="rx"><span>${mood === 'tx' ? 'TX' : 'RX'}</span><span class="from${!alert && n > 0 && carColor(n)[1] !== '#fff' ? ' dark' : ''}"></span>${chip}<span class="wave">${wave}</span><time>${t}</time></div><div class="text"></div></div><i class="grille"></i>`;
+  c.innerHTML = `<div class="face"><img class="cuckoo" alt=""></div><div class="body"><div class="rx"><span${mood === 'tx' ? ' class="tx"' : ''}>${mood === 'tx' ? 'TX' : 'RX'}</span><span class="from${!alert && n > 0 && carColor(n)[1] !== '#fff' ? ' dark' : ''}"></span>${chip}<span class="wave">${wave}</span><time>${t}</time></div><div class="text"></div></div><i class="grille"></i>`;
   moodImg(c.querySelector('img'), mood);
   c.querySelector('.from').textContent = from;   // 받은 글은 textContent 로만 넣는다
   c.querySelector('.text').textContent = text;
@@ -502,12 +506,12 @@ async function startMeter() {
 }
 function stopMeter() { meterStop?.(); meterStop = null; }
 
-// 머리의 채널 LCD: 방 코드, 신호 막대, 일행 수 칸
+// 머리의 방 코드 칩: 방 코드, 신호 막대, 일행 수 칸
 function showChannel() {
   const n = Object.keys(cars).filter(k => k !== me).length + 1;
   const on = ws?.readyState === 1;
   const bars = [0, 1, 2, 3].map(i => `<rect x="${i * 5.5}" y="${12 - i * 4}" width="4" height="${4 + i * 4}" fill="currentColor" opacity="${on ? 1 : (i < 1 ? 1 : .25)}"/>`).join('');
-  // 좁은 화면이라 일행 수 대신 우리 호차를 채널 LCD 안에 둔다(일행 수는 지도에서 보인다)
+  // 좁은 화면이라 일행 수 대신 우리 호차를 방 코드 칩 안에 둔다(일행 수는 지도에서 보인다)
   $('status').innerHTML = `<span class="led${on ? ' rx' : ''}"></span><span class="lcd"><small>CH</small>${code}<svg viewBox="0 0 22 16" aria-hidden="true">${bars}</svg><span class="me"></span></span>`;
   $('status').querySelector('.me').textContent = me || `${n}대`;
 }

@@ -12,7 +12,6 @@ import android.graphics.Path
 import android.graphics.RectF
 import android.graphics.drawable.BitmapDrawable
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -57,12 +56,12 @@ import java.io.File
 // 길품 GilpumMap 에서 가져와 일행 지도로 고쳤다
 
 /**
- * OSM 기본 타일의 채도를 빼고 대비를 줄인 뒤, 어두운 곳은 옅은 회갈색·밝은 곳은 따뜻한 종이색으로 맞춘 낮 지도.
+ * OSM 기본 타일의 채도를 빼고 대비를 줄인 뒤, 어두운 곳은 옅은 회색·밝은 곳은 거의 흰색으로 맞춘 낮 지도.
  * 테마 색만 바꾸면 지도도 따라간다. 그 위의 차·핀만 제 색을 갖는다
  */
-private val MAP_LAND = Color(0xFFFBF1E8)
+private val MAP_LAND = C.grey50
 private val DAY_TILES = run {
-    val lo = Color(0xFFCDBDBA); val hi = MAP_LAND // 지도 글자·선은 ink3 보다 옅게
+    val lo = C.grey300; val hi = MAP_LAND // 지도 글자·선은 ink3 보다 옅게
     ColorMatrixColorFilter(
         ColorMatrix().apply {
             setSaturation(0f)
@@ -99,7 +98,7 @@ fun GroupMap(s: RoomState, modifier: Modifier = Modifier) {
     val now = System.currentTimeMillis()
     val pins = s.pins.filter { now - it.at < StatusViewModel.PIN_TTL_MS }
     val shape = RoundedCornerShape(R_.card)
-    Box(modifier.clip(shape).background(MAP_LAND).border(R_.stroke, C.line, shape)) {
+    Box(modifier.clip(shape).background(MAP_LAND)) {
         if (LocalInspectionMode.current) {
             Text("지도", style = T.note, modifier = Modifier.align(Alignment.Center))
         } else {
@@ -191,7 +190,7 @@ private fun marker(m: MapView, lat: Double, lng: Double, icon: BitmapDrawable, t
 private fun sans(ctx: Context) = ResourcesCompat.getFont(ctx, R.font.pretendard_extrabold)
 
 /**
- * 물방울 핀: 한 귀퉁이만 덜 둥근 네모를 45도 돌려 뾰족한 끝이 아래로 오게 한다. 흰 테, 부드러운 그림자, 가운데 글자.
+ * 물방울 핀: 한 귀퉁이만 덜 둥근 네모를 45도 돌려 뾰족한 끝이 아래로 오게 한다. 흰 테, 옅은 그림자, 가운데 글자.
  * [top] 은 핀 머리 위 끝, 돌아온 값은 뾰족한 끝의 y
  */
 private fun drop(ctx: Context, cv: Canvas, cx: Float, top: Float, side: Float, fill: Color, label: String, textSize: Float): Float {
@@ -215,7 +214,7 @@ private fun drop(ctx: Context, cv: Canvas, cx: Float, top: Float, side: Float, f
     return cy + diag * 1.12f
 }
 
-private val SHADOW = Color(0x47502838)
+private val SHADOW = Color(0x33191F28)
 
 /** 차: 호차 색 물방울 핀에 번호(색 밝기에 따라 ink·흰색), 아래에 흰 알약 이름표. 우리 차는 핀이 크다 */
 private fun car(ctx: Context, num: Int, name: String, fill: Color, me: Boolean): Pair<BitmapDrawable, Float> {
@@ -261,7 +260,7 @@ private fun pin(ctx: Context, label: String, fill: Color): Pair<BitmapDrawable, 
 private fun Legend(pins: List<Pin>, modifier: Modifier) {
     // 종류가 많으면 다음 줄로 넘긴다
     FlowRow(
-        modifier.padding(end = 16.dp).pin(shape = RoundedCornerShape(24.dp), lift = 6.dp).padding(horizontal = 14.dp, vertical = 8.dp),
+        modifier.padding(end = 16.dp).card(shape = RoundedCornerShape(R_.md)).padding(horizontal = 14.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         pins.map { it.kind }.distinct().forEach { k ->

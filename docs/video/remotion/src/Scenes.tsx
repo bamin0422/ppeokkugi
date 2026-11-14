@@ -1,6 +1,6 @@
 import React from 'react';
 import {AbsoluteFill, useVideoConfig} from 'remotion';
-import {Backdrop, Brand, C, Chip, FONT, FONT_B, Grille, PinCard, Pop, ramp, SERIF, Sfx, Sprite, useSpring, useT, useTall, VEH_COLORS, WaveBars, Waves} from './theme';
+import {Backdrop, Brand, C, Chip, FONT, FONT_B, PinCard, Pop, ramp, SERIF, Sfx, Sprite, useSpring, useT, useTall, VEH_COLORS, WaveBars, Waves} from './theme';
 
 const ONE_LINER = '버튼 한 번, 일행 차·버스 동시 무전';
 const SUBTITLE = 'Pleos 차량용 단체 무전 앱';
@@ -31,15 +31,13 @@ export const Clock: React.FC<{dur: number}> = ({dur}) => {
           <path d="M30 160 L210 18 Q230 2 250 18 L430 160 Q440 170 426 170 L34 170 Q20 170 30 160 Z" fill={VEH_COLORS[0]} />
           <circle cx={230} cy={70} r={12} fill={C.paper} opacity={0.85} />
         </svg>
-        <div style={{position: 'absolute', left: 30 * S, top: 150 * S, width: 400 * S, height: 330 * S, background: C.paper, borderRadius: 34 * S, border: `${1.5 * S}px solid ${C.line}`, boxShadow: C.shadow}} />
+        <div style={{position: 'absolute', left: 30 * S, top: 150 * S, width: 400 * S, height: 330 * S, background: C.paper, borderRadius: 34 * S, boxShadow: C.shadow}} />
         {/* 문틀 */}
         <div style={{position: 'absolute', left: 150 * S, top: 175 * S, width: 160 * S, height: 130 * S, background: C.lcd, borderRadius: 22 * S}} />
-        {/* 시계판: 무전기 LCD */}
-        <div style={{position: 'absolute', left: 135 * S, top: 330 * S, width: 190 * S, height: 120 * S, background: C.lcd, borderRadius: 22 * S, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: FONT_B, fontSize: 50 * S, letterSpacing: '0.04em', color: C.lcdInk, boxShadow: '0 8px 20px rgba(42,34,48,.18)'}}>
+        {/* 시계판 */}
+        <div style={{position: 'absolute', left: 135 * S, top: 330 * S, width: 190 * S, height: 120 * S, background: C.lcd, borderRadius: 22 * S, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: FONT_B, fontSize: 50 * S, letterSpacing: '0.04em', color: C.lcdInk}}>
           {t < 1 ? '07:59' : '08:00'}
         </div>
-        <Grille w={70 * S} h={60 * S} dot={12 * S} style={{position: 'absolute', left: 50 * S, top: 360 * S}} />
-        <Grille w={70 * S} h={60 * S} dot={12 * S} style={{position: 'absolute', left: 340 * S, top: 360 * S}} />
         {/* 추 */}
         {[130, 310].map((x, i) => (
           <div key={i} style={{position: 'absolute', left: x * S, top: 480 * S, width: 6 * S, height: (60 + Math.sin(t * 3 + i) * 10) * S, background: C.ink3, borderRadius: 3 * S}}>
@@ -52,11 +50,11 @@ export const Clock: React.FC<{dur: number}> = ({dur}) => {
         </div>
         {/* 문짝 */}
         <div style={{position: 'absolute', left: 150 * S, top: 175 * S, width: 80 * S, height: 130 * S, background: wood, borderRadius: `${22 * S}px 0 0 ${22 * S}px`, transformOrigin: 'left center', transform: `perspective(600px) rotateY(${-100 * door * (1 - back)}deg)`}} />
-        <div style={{position: 'absolute', left: 230 * S, top: 175 * S, width: 80 * S, height: 130 * S, background: '#ff9447', borderRadius: `0 ${22 * S}px ${22 * S}px 0`, transformOrigin: 'right center', transform: `perspective(600px) rotateY(${100 * door * (1 - back)}deg)`}} />
+        <div style={{position: 'absolute', left: 230 * S, top: 175 * S, width: 80 * S, height: 130 * S, background: C.lcdDim, borderRadius: `0 ${22 * S}px ${22 * S}px 0`, transformOrigin: 'right center', transform: `perspective(600px) rotateY(${100 * door * (1 - back)}deg)`}} />
         {/* 말풍선 */}
         {[1.05, 1.95].map((at, i) => (
           <div key={i} style={{position: 'absolute', left: (i ? 360 : -150) * S, top: (i ? 40 : 60) * S, opacity: bubble(at), transform: `scale(${0.7 + 0.3 * bubble(at)}) rotate(${i ? 4 : -4}deg)`}}>
-            <Chip size={44 * S} color={C.paper} ink={C.ink} style={{fontFamily: SERIF, border: `2px solid ${C.line}`}}>
+            <Chip size={44 * S} color={C.paper} ink={C.ink} style={{fontFamily: SERIF, boxShadow: C.shadow}}>
               뻐꾹!
             </Chip>
           </div>
@@ -71,7 +69,7 @@ export const Clock: React.FC<{dur: number}> = ({dur}) => {
           <div style={{fontFamily: SERIF, fontSize: tall ? 60 : 60, color: C.ink, lineHeight: 1.3, marginTop: 30, wordBreak: 'keep-all'}}>
             뻐꾸기시계가 때맞춰
             <br />
-            <span style={{color: C.orange}}>"뻐꾹"</span> 하고 알리듯
+            <span style={{color: C.orangeText}}>"뻐꾹"</span> 하고 알리듯
           </div>
         </Pop>
         <Pop at={2.8 * k} blip={false}>
@@ -91,7 +89,7 @@ export const Clock: React.FC<{dur: number}> = ({dur}) => {
 export const Logo: React.FC<{outro?: boolean; dark?: boolean}> = ({outro, dark}) => {
   const tall = useTall();
   const ink = dark ? C.paper : C.ink;
-  const ink2 = dark ? '#e6d9df' : C.ink2;
+  const ink2 = dark ? '#D1D6DB' : C.ink2;
   const p = useSpring(0.1, 11, 130);
   const t = useT();
   return (
@@ -108,7 +106,7 @@ export const Logo: React.FC<{outro?: boolean; dark?: boolean}> = ({outro, dark})
         <Pop at={0.35} blip={false} style={{transformOrigin: 'center'}}>
           <div style={{display: 'flex', alignItems: 'baseline', gap: 28, marginTop: tall ? 20 : 4}}>
             <div style={{fontFamily: SERIF, fontSize: tall ? 180 : 160, color: ink, lineHeight: 1.05, letterSpacing: '-0.03em'}}>뻐꾸기</div>
-            <div style={{fontFamily: SERIF, fontSize: tall ? 52 : 46, color: dark ? '#cdbfc6' : C.ink3}}>Cuckoo</div>
+            <div style={{fontFamily: SERIF, fontSize: tall ? 52 : 46, color: dark ? '#B0B8C1' : C.ink3}}>Cuckoo</div>
           </div>
         </Pop>
         <Pop at={0.9} style={{transformOrigin: 'center'}}>
@@ -119,17 +117,15 @@ export const Logo: React.FC<{outro?: boolean; dark?: boolean}> = ({outro, dark})
               color: C.lcdInk,
               fontFamily: FONT_B,
               fontSize: tall ? 46 : 50,
-              letterSpacing: '0.02em',
               padding: tall ? '24px 36px' : '20px 44px',
-              borderRadius: 26,
-              boxShadow: '0 14px 30px rgba(42,34,48,.22)',
+              borderRadius: 24,
               display: 'flex',
               alignItems: 'center',
               gap: 24,
               whiteSpace: 'nowrap',
             }}
           >
-            <span style={{fontSize: '0.5em', color: C.lcdDim, letterSpacing: '0.14em'}}>CH</span>
+            <span style={{fontSize: '0.5em', color: C.lcdInk, opacity: 0.75, letterSpacing: '0.14em'}}>CH</span>
             {ONE_LINER}
             <WaveBars on={t > 1.0} color={C.lcdInk} h={tall ? 34 : 34} n={5} />
           </div>
@@ -175,7 +171,7 @@ export const Sdk: React.FC = () => {
         </Pop>
         <Pop at={0.15} blip={false}>
           <div style={{fontFamily: SERIF, fontSize: 76, color: C.ink, marginTop: 22}}>
-            차라서 <span style={{color: C.orange}}>가능한 것</span>
+            차라서 <span style={{color: C.orangeText}}>가능한 것</span>
           </div>
         </Pop>
       </div>
@@ -183,10 +179,9 @@ export const Sdk: React.FC = () => {
         {items.map(([res, sdk, fn, col], i) => (
           <PinCard key={i} at={0.4 + i * 0.22} tilt={i % 2 ? 2 : -2} pin={col as string} style={{overflow: 'visible'}}>
             <Sfx name="blip" at={0.4 + i * 0.22} volume={0.25} />
-            <div style={{height: 14, background: col as string, borderRadius: '28px 28px 0 0'}} />
             <div style={{padding: tall ? '22px 30px 28px' : '34px 30px', height: tall ? 'auto' : 420, display: 'flex', flexDirection: 'column', gap: 14, justifyContent: 'center'}}>
               <div style={{fontFamily: SERIF, fontSize: tall ? 50 : 48, color: C.ink}}>{res}</div>
-              <div style={{fontFamily: FONT, fontSize: tall ? 24 : 22, color: C.ink2, alignSelf: 'flex-start', background: C.bg, border: `1.5px solid ${C.line}`, borderRadius: 999, padding: '6px 14px'}}>{sdk}</div>
+              <div style={{fontFamily: FONT, fontSize: tall ? 24 : 22, color: C.ink2, alignSelf: 'flex-start', background: C.bg, borderRadius: 10, padding: '6px 14px'}}>{sdk}</div>
               {!tall ? <div style={{fontFamily: FONT_B, fontSize: 48, color: col as string, margin: '4px 0'}}>↓</div> : null}
               <div style={{fontFamily: FONT_B, fontSize: tall ? 38 : 36, color: col as string, lineHeight: 1.35, wordBreak: 'keep-all'}}>{fn}</div>
             </div>

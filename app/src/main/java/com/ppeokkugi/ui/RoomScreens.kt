@@ -2,7 +2,6 @@ package com.ppeokkugi.ui
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -41,9 +40,9 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -84,28 +83,26 @@ fun JoinScreen(vm: StatusViewModel, s: RoomState) {
         Panel(Modifier.weight(1f).fillMaxHeight(), Mood.WAIT) {
             Text("코드로 들어가기", style = T.pageTitle)
             Text(
-                if (s.driving) "주행 중에는 코드를 입력할 수 없습니다. 정차한 뒤 입력하십시오." else "받은 6자리 코드를 채널 창에 입력하십시오.",
-                style = T.note.copy(fontSize = 22.sp, color = if (s.driving) C.warnInk else C.ink2), textAlign = TextAlign.Center,
+                if (s.driving) "주행 중에는 코드를 입력할 수 없습니다. 정차한 뒤 입력하십시오." else "받은 6자리 채널 코드를 입력하십시오.",
+                style = T.note.copy(fontSize = 22.sp, color = if (s.driving) C.accentInk else C.ink2), textAlign = TextAlign.Center,
             )
             Spacer(Modifier.height(R_.sm))
-            // 채널 창: 코드를 LCD 에 바로 친다
-            Lcd(Modifier.fillMaxWidth().height(96.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("CH", style = T.lcd.copy(fontSize = 24.sp, color = C.lcdDim, letterSpacing = 3.sp))
-                    Spacer(Modifier.width(R_.md))
-                    val style = T.lcd.copy(fontSize = 48.sp, lineHeight = 56.sp, letterSpacing = 8.sp)
-                    Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
-                        if (code.isEmpty()) Text("ABC234", style = style.copy(color = C.lcdDim))
-                        BasicTextField(
-                            value = code,
-                            onValueChange = { code = it.uppercase().filter { c -> c.isLetterOrDigit() }.take(8) },
-                            enabled = !s.driving,
-                            singleLine = true,
-                            textStyle = style,
-                            cursorBrush = SolidColor(C.lcdInk),
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
+            // 코드 입력 칸: 회색 둥근 면에 바로 친다
+            Row(Modifier.fillMaxWidth().height(96.dp).card(C.grey100, RoundedCornerShape(R_.md)).padding(horizontal = 28.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("CH", style = T.num.copy(fontSize = 24.sp, color = C.grey500, letterSpacing = 2.sp))
+                Spacer(Modifier.width(R_.md))
+                val style = T.num.copy(fontSize = 44.sp, lineHeight = 52.sp, letterSpacing = 6.sp)
+                Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+                    if (code.isEmpty()) Text("ABC234", style = style.copy(color = C.grey400))
+                    BasicTextField(
+                        value = code,
+                        onValueChange = { code = it.uppercase().filter { c -> c.isLetterOrDigit() }.take(8) },
+                        enabled = !s.driving,
+                        singleLine = true,
+                        textStyle = style,
+                        cursorBrush = SolidColor(C.accent),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                 }
             }
             Spacer(Modifier.height(R_.sm))
@@ -148,11 +145,11 @@ fun DriverScreen(vm: StatusViewModel, s: RoomState) {
 /** 시연 모드에서 봇이 들어오기 전까지 PC에서 칠 명령을 보인다 */
 @Composable
 private fun DemoHint(code: String?) {
-    Row(Modifier.fillMaxWidth().pin(border = C.accent, borderWidth = 2.dp).padding(R_.md), verticalAlignment = Alignment.CenterVertically) {
-        SpeakerBox(Modifier.size(120.dp), C.tint(Mood.WAIT)) { CuckooView(Mood.WAIT, Modifier.size(104.dp)) }
+    Row(Modifier.fillMaxWidth().card(C.accentWeak).padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
+        SpeakerBox(Modifier.size(120.dp), C.paper) { CuckooView(Mood.WAIT, Modifier.size(104.dp)) }
         Spacer(Modifier.width(R_.md))
         Column {
-            Text("시연 모드 · 봇을 기다립니다", style = T.sectionLabel.copy(fontSize = 24.sp))
+            Text("시연 모드 · 봇을 기다립니다", style = T.body.copy(fontWeight = FontWeight.Bold, color = C.accentInk))
             Text("PC에서 실행하십시오", style = T.note)
             Text("node server/scripts/bots.mjs ${code ?: ""}", style = T.body.copy(fontWeight = FontWeight.Bold))
             Text("봇이 들어오면 데모 주행이 시작됩니다", style = T.note)
@@ -163,18 +160,18 @@ private fun DemoHint(code: String?) {
 @Composable
 private fun CarRow(c: CarInfo, me: CarInfo?, roll: String?) {
     val dist = if (!c.me && me?.lat != null && c.lat != null) Locator.haversineM(me.lat, me.lng!!, c.lat, c.lng!!) else null
-    Row(Modifier.fillMaxWidth().pin(shape = RoundedCornerShape(22.dp), lift = 0.dp).padding(horizontal = 18.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().card().padding(horizontal = 20.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
         val flag = C.car(c.num)
         // 호차 색 둥근 칸에 번호
-        Box(Modifier.size(48.dp).background(flag, RoundedCornerShape(16.dp)), contentAlignment = Alignment.Center) {
-            Text("${c.num}", style = T.lcd.copy(fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, color = onFlag(flag)))
+        Box(Modifier.size(48.dp).background(flag, RoundedCornerShape(14.dp)), contentAlignment = Alignment.Center) {
+            Text("${c.num}", style = T.num.copy(fontSize = 26.sp, color = onFlag(flag)))
         }
         Spacer(Modifier.width(R_.md))
         Column(Modifier.weight(1f)) {
-            Text(c.label + if (c.me) " · 우리 차" else "", style = T.body.copy(fontSize = 26.sp, fontWeight = FontWeight.ExtraBold), maxLines = 1)
+            Text(c.label + if (c.me) " · 우리 차" else "", style = T.body.copy(fontSize = 26.sp, fontWeight = FontWeight.Bold), maxLines = 1)
             Text(listOfNotNull(c.nickname.takeIf { it.isNotBlank() && !c.me }, roll).joinToString(" · ").ifBlank { "점호 전" }, style = T.note, maxLines = 1)
         }
-        Text(dist?.let { com.ppeokkugi.domain.Phrase.distance(it) } ?: if (c.me) "" else "—", style = T.lcd.copy(fontSize = 26.sp, fontWeight = FontWeight.ExtraBold, color = C.ink))
+        Text(dist?.let { com.ppeokkugi.domain.Phrase.distance(it) } ?: if (c.me) "" else "—", style = T.num.copy(fontSize = 26.sp))
     }
 }
 
@@ -183,8 +180,8 @@ private fun senderColor(r: Radio): Color =
     Regex("^(\\d+)호차").find(r.from)?.groupValues?.get(1)?.toInt()?.let(C::car) ?: if (r.mood == Mood.TX) C.accent else C.rx
 
 /**
- * 무전 카드: 핀 카드. 왼쪽에 표정 색 칸의 마스코트, 오른쪽에 "RX [보낸 쪽] 파형 시각" 과 글, 오른쪽 아래 스피커 그릴.
- * 막 온 카드는 파형이 잡음처럼 흔들린다. 급제동·긴급은 송신 빨강 굵은 테와 빨간 글자
+ * 무전 카드: 흰 카드. 왼쪽에 표정 색 칸의 마스코트, 오른쪽에 "RX [보낸 쪽] 파형 시각" 과 글.
+ * 막 온 카드는 파형이 파랗게 흔들린다. 급제동·긴급은 옅은 빨강 카드에 빨간 글자
  */
 @Composable
 fun RadioCard(r: Radio, big: Boolean, play: Play = Play.LOOP, face: Dp = if (big) 118.dp else 64.dp) {
@@ -192,36 +189,42 @@ fun RadioCard(r: Radio, big: Boolean, play: Play = Play.LOOP, face: Dp = if (big
     // 승객 목록을 넘겨 다시 그릴 때는 흔들지 않는다
     val fresh = remember(r.id) { System.currentTimeMillis() - r.at < 3_000 }
     val chip = senderColor(r)
-    Box(Modifier.fillMaxWidth().pin(border = if (alert) C.tx else C.line, borderWidth = if (alert) 3.dp else R_.stroke, lift = if (big) 12.dp else 4.dp)) {
-        // 스피커 그릴은 글 뒤에 깐다(긴 글이 덮어도 읽힌다)
-        Box(Modifier.align(Alignment.BottomEnd).padding(end = 22.dp, bottom = 14.dp).size(72.dp, 22.dp).grille(step = 12.dp, dot = 3.dp))
-        Row(Modifier.height(IntrinsicSize.Min)) {
-            Box(Modifier.width(face + if (big) 32.dp else 20.dp).fillMaxHeight().background(C.tint(r.mood)), contentAlignment = Alignment.Center) {
-                CuckooView(r.mood, Modifier.size(face).padding(vertical = 6.dp), play)
-            }
-            Column(Modifier.weight(1f).padding(horizontal = if (big) 28.dp else 18.dp, vertical = if (big) 20.dp else 12.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    // 내가 보낸 무전은 TX, 받은 무전은 RX
-                    Text(if (r.mood == Mood.TX) "TX" else "RX", style = T.lcd.copy(fontSize = 20.sp, color = C.ink2, letterSpacing = 1.sp))
-                    Spacer(Modifier.width(12.dp))
-                    Text(r.from, style = T.lcd.copy(fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = onFlag(chip)), maxLines = 1,
-                        modifier = Modifier.background(chip, Pill).padding(horizontal = 14.dp, vertical = 3.dp))
-                    if (r.channel != "all") {
-                        Spacer(Modifier.width(8.dp))
-                        Chip(CHANNELS.first { it.first == r.channel }.second + " 채널", r.channel == "kids")
-                    }
-                    Spacer(Modifier.width(12.dp))
-                    Waveform(r.id.toInt(), live = fresh, color = chip, modifier = Modifier.size(if (big) 64.dp else 44.dp, 26.dp))
-                    Spacer(Modifier.weight(1f))
-                    Text(TIME.format(Date(r.at)), style = T.lcd.copy(fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = C.ink3))
+    val pad = if (big) 24.dp else 16.dp
+    Row(Modifier.fillMaxWidth().card(if (alert) C.txWeak else C.paper).padding(pad), verticalAlignment = Alignment.CenterVertically) {
+        SpeakerBox(Modifier.size(face + if (big) 16.dp else 8.dp), if (alert) C.paper else C.tint(r.mood)) {
+            CuckooView(r.mood, Modifier.size(face), play)
+        }
+        Column(Modifier.weight(1f).padding(start = if (big) 24.dp else 16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // 내가 보낸 무전은 TX(주황), 받은 무전은 RX(파랑), 경고는 빨강
+                val tx = r.mood == Mood.TX
+                when {
+                    alert -> Tag(if (tx) "TX" else "RX", C.paper, C.tx)
+                    tx -> Tag("TX", C.accentWeak, C.accentInk)
+                    else -> Tag("RX", C.rxWeak, C.rx)
                 }
-                Spacer(Modifier.height(if (big) 8.dp else 4.dp))
-                Text(
-                    r.text,
-                    style = if (big) T.cardText.copy(color = if (alert) C.txInk else C.ink) else T.body.copy(fontWeight = FontWeight.Bold, color = if (alert) C.txInk else C.ink),
-                    maxLines = if (big) 2 else 4,
-                )
+                Spacer(Modifier.width(10.dp))
+                // 보낸 쪽 칩: 호차 색을 옅게 깐 바탕에 짙은 글자, 앞에 호차 색 점
+                Row(Modifier.background(lerp(chip, C.paper, 0.85f), RoundedCornerShape(R_.sm)).padding(horizontal = 12.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Dot(chip, size = 10.dp)
+                    Spacer(Modifier.width(8.dp))
+                    Text(r.from, style = T.num.copy(fontSize = 20.sp, lineHeight = 24.sp), maxLines = 1)
+                }
+                if (r.channel != "all") {
+                    Spacer(Modifier.width(8.dp))
+                    Chip(CHANNELS.first { it.first == r.channel }.second + " 채널", r.channel == "kids")
+                }
+                Spacer(Modifier.width(12.dp))
+                Waveform(r.id.toInt(), live = fresh, color = if (fresh) C.rx else C.grey300, modifier = Modifier.size(if (big) 64.dp else 44.dp, 26.dp))
+                Spacer(Modifier.weight(1f))
+                Text(TIME.format(Date(r.at)), style = T.num.copy(fontSize = 20.sp, fontWeight = FontWeight.SemiBold, color = C.ink3))
             }
+            Spacer(Modifier.height(if (big) 8.dp else 4.dp))
+            Text(
+                r.text,
+                style = if (big) T.cardText.copy(color = if (alert) C.tx else C.ink) else T.body.copy(fontWeight = FontWeight.Bold, color = if (alert) C.tx else C.ink),
+                maxLines = if (big) 2 else 4,
+            )
         }
     }
 }
@@ -235,7 +238,8 @@ private fun VoteCards(v: VoteUi, onVote: (Int) -> Unit, play: Play) {
         Spacer(Modifier.width(R_.md))
         Text("쉬어 가 · 번호를 누르거나 \"1번\"이라고 말하십시오", style = T.sectionLabel, modifier = Modifier.weight(1f))
         Spacer(Modifier.width(R_.md))
-        Lcd { Text("${((v.deadline - now) / 1000).coerceAtLeast(0)}초", style = T.lcd.copy(fontSize = 36.sp, lineHeight = 40.sp)) }
+        Text("${((v.deadline - now) / 1000).coerceAtLeast(0)}초", style = T.num.copy(fontSize = 36.sp, lineHeight = 44.sp, color = C.accentInk),
+            modifier = Modifier.background(C.accentWeak, RoundedCornerShape(R_.md)).padding(horizontal = 22.dp, vertical = 10.dp))
     }
     Row(horizontalArrangement = Arrangement.spacedBy(R_.md)) {
         v.candidates.forEachIndexed { i, c ->
@@ -243,14 +247,14 @@ private fun VoteCards(v: VoteUi, onVote: (Int) -> Unit, play: Play) {
             val open = v.myChoice == null || mine
             SoftButton(
                 onClick = { onVote(i) }, enabled = open,
-                fill = if (mine) C.accent else C.paper, border = if (mine) C.accent else C.line,
+                fill = if (mine) C.accent else C.paper, pressed = if (mine) C.accentPressed else C.grey200,
                 shape = RoundedCornerShape(R_.card),
                 modifier = Modifier.weight(1f).height(200.dp),
             ) {
                 Column(Modifier.fillMaxSize().padding(horizontal = R_.lg, vertical = 20.dp)) {
                     val tag = C.cars[i % C.cars.size]
-                    Box(Modifier.size(64.dp).background(if (mine) C.paper else if (open) tag else C.ink3, RoundedCornerShape(20.dp)), contentAlignment = Alignment.Center) {
-                        Text("${i + 1}", style = T.lcd.copy(fontSize = 40.sp, lineHeight = 44.sp, fontWeight = FontWeight.ExtraBold, color = if (mine) C.ink else onFlag(tag)))
+                    Box(Modifier.size(64.dp).background(if (mine) C.paper else if (open) tag else C.grey300, RoundedCornerShape(R_.md)), contentAlignment = Alignment.Center) {
+                        Text("${i + 1}", style = T.num.copy(fontSize = 40.sp, lineHeight = 44.sp, fontWeight = FontWeight.ExtraBold, color = if (mine) C.accentInk else onFlag(tag)))
                     }
                     Spacer(Modifier.height(10.dp))
                     Text(c.name, style = T.cardText.copy(fontSize = 34.sp, lineHeight = 42.sp, color = if (open) C.ink else C.ink2), maxLines = 2)
@@ -261,60 +265,48 @@ private fun VoteCards(v: VoteUi, onVote: (Int) -> Unit, play: Play) {
 }
 
 /**
- * 큰 무전 버튼: 짙은 무전기 판에 그릴 점과 주황 PTT. 판 전체가 눌린다.
- * 듣는 동안 송신 빨강 테·LED 와 "TX", 실제 마이크 크기 미터를 켠다
+ * 큰 무전 버튼: 폭을 다 쓰는 주황 버튼(짙은 글자). 누르면 짙은 주황.
+ * 듣는 동안 옅은 빨강 바탕에 "송신 중", 깜빡이는 빨간 점, 실제 마이크 크기 막대를 켠다
  */
 @Composable
-private fun TalkButton(s: RoomState, vm: StatusViewModel, ptt: Dp = 420.dp) {
+private fun TalkButton(s: RoomState, vm: StatusViewModel) {
     val level by vm.voice.level.collectAsState()
     val press = remember { MutableInteractionSource() }
     val down by press.collectIsPressedAsState()
     Row(
-        Modifier.fillMaxWidth().height(144.dp)
-            .pin(C.ink, if (s.listening) C.tx else C.ink, RoundedCornerShape(36.dp), lift = 14.dp, borderWidth = 3.dp)
+        Modifier.fillMaxWidth().height(144.dp).scale(if (down) 0.98f else 1f)
+            .card(if (s.listening) C.txWeak else if (down) C.accentPressed else C.accent, RoundedCornerShape(R_.md))
             .clickable(interactionSource = press, indication = null, role = Role.Button, onClick = vm::talk)
-            .padding(start = 32.dp, end = 17.dp),
+            .padding(horizontal = 32.dp),
         verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
     ) {
-        Led(if (s.listening) C.tx else C.rx, on = true, size = 18.dp, blink = s.listening)
-        Spacer(Modifier.width(R_.lg))
         if (s.listening) {
             CuckooView(Mood.TX, Modifier.size(104.dp))
             Spacer(Modifier.width(R_.md))
-            Text("TX", style = T.lcd.copy(fontSize = 44.sp, lineHeight = 48.sp, fontWeight = FontWeight.ExtraBold, color = Color.White),
-                modifier = Modifier.background(C.tx, RoundedCornerShape(18.dp)).padding(horizontal = 18.dp, vertical = 6.dp))
+            Dot(C.tx, size = 16.dp, blink = true)
+            Spacer(Modifier.width(12.dp))
+            Text("송신 중", style = T.pageTitle.copy(fontSize = 44.sp, lineHeight = 52.sp, color = C.tx))
             Spacer(Modifier.width(R_.lg))
-            Column(Modifier.weight(1f).padding(end = 15.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 LevelMeter(level, Modifier.fillMaxWidth().height(24.dp))
-                Text("듣는 중… ${s.heard}".take(30), style = T.body.copy(color = Color.White), maxLines = 1)
+                Text("듣는 중… ${s.heard}".take(30), style = T.body, maxLines = 1)
             }
         } else {
-            Box(Modifier.weight(1f).height(72.dp).grille(C.grille, step = 16.dp, dot = 4.dp))
+            Text("무전", style = T.brand.copy(fontSize = 56.sp, lineHeight = 64.sp, letterSpacing = 4.sp, color = C.ink))
             Spacer(Modifier.width(R_.lg))
-            Text("누르고 말하기", style = T.body.copy(fontSize = 22.sp, color = C.onDark), maxLines = 1)
-            Spacer(Modifier.width(R_.lg))
-            // 주황 PTT: 위쪽이 밝고 아래 안쪽 그림자가 진 고무 버튼
-            Box(
-                Modifier.height(110.dp).width(ptt).scale(if (down) 0.97f else 1f)
-                    .pin(C.accent, C.accent, Pill, lift = if (down) 0.dp else 10.dp, borderWidth = 0.dp)
-                    .background(Brush.verticalGradient(listOf(C.accentHi, C.accent)))
-                    .padding(bottom = 4.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text("무전", style = T.brand.copy(fontSize = 52.sp, lineHeight = 60.sp, letterSpacing = 6.sp, color = C.ink))
-            }
+            Text("누르고 말하기", style = T.body.copy(fontWeight = FontWeight.Bold, color = C.ink), maxLines = 1)
         }
     }
 }
 
-/** 마이크 크기 미터 16칸: 파랑·주황·빨강 */
+/** 마이크 크기 막대 16칸(주황) */
 @Composable
 private fun LevelMeter(level: Float, modifier: Modifier) {
     Canvas(modifier) {
         val n = 16; val w = size.width / n; val bw = w - 6.dp.toPx()
         for (i in 0 until n) {
-            val c = when { i >= 13 -> C.tx; i >= 10 -> C.accent; else -> C.rx }
-            drawRoundRect(if (i < level * n) c else c.copy(alpha = 0.22f), Offset(i * w, 0f), Size(bw, size.height), CornerRadius(bw / 2))
+            drawRoundRect(if (i < level * n) C.accent else C.accent.copy(alpha = 0.2f), Offset(i * w, 0f), Size(bw, size.height), CornerRadius(bw / 2))
         }
     }
 }
@@ -340,7 +332,7 @@ fun PassengerScreen(vm: StatusViewModel, s: RoomState, seats: Seats) {
             Spacer(Modifier.weight(1f))
             var text by remember { mutableStateOf("") }
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.weight(1f).height(80.dp).pin(shape = Pill, lift = 0.dp, border = C.line, borderWidth = 2.dp).padding(horizontal = 28.dp), contentAlignment = Alignment.CenterStart) {
+                Box(Modifier.weight(1f).height(80.dp).card(shape = RoundedCornerShape(R_.md)).padding(horizontal = 28.dp), contentAlignment = Alignment.CenterStart) {
                     if (text.isEmpty()) Text("글로 보내기", style = T.body.copy(color = C.ink2, fontWeight = FontWeight.Normal))
                     BasicTextField(
                         value = text, onValueChange = { text = it }, singleLine = true, textStyle = T.body,
@@ -348,11 +340,11 @@ fun PassengerScreen(vm: StatusViewModel, s: RoomState, seats: Seats) {
                     )
                 }
                 Spacer(Modifier.width(R_.sm))
-                SoftButton(onClick = { vm.onHeard(text); text = "" }, enabled = text.isNotBlank(), fill = C.ink, border = C.ink, modifier = Modifier.width(150.dp).height(80.dp)) {
-                    Text("보내기", style = T.button.copy(color = if (text.isNotBlank()) Color.White else C.ink2))
+                SoftButton(onClick = { vm.onHeard(text); text = "" }, enabled = text.isNotBlank(), fill = C.accent, pressed = C.accentPressed, modifier = Modifier.width(150.dp).height(80.dp)) {
+                    Text("보내기", style = T.button.copy(color = if (text.isNotBlank()) C.ink else C.ink2))
                 }
             }
-            TalkButton(s, vm, ptt = 300.dp)
+            TalkButton(s, vm)
         }
         Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             s.vote?.let { VoteCards(it, vm::vote, Play.LOOP) }
@@ -360,11 +352,9 @@ fun PassengerScreen(vm: StatusViewModel, s: RoomState, seats: Seats) {
             GroupMap(s, Modifier.fillMaxWidth().height(if (s.vote != null) 300.dp else 460.dp))
             if (s.rolls.isNotEmpty()) {
                 Text("점호", style = T.sectionLabel)
-                Row(Modifier.fillMaxWidth().pin(lift = 4.dp).height(IntrinsicSize.Min), verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.width(96.dp).fillMaxHeight().background(C.tint(Mood.ROLLCALL)), contentAlignment = Alignment.Center) {
-                        CuckooView(Mood.ROLLCALL, Modifier.size(72.dp))
-                    }
-                    Column(Modifier.padding(horizontal = R_.lg, vertical = R_.md)) { s.rolls.toSortedMap().values.forEach { Text(it, style = T.body) } }
+                Row(Modifier.fillMaxWidth().card().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    SpeakerBox(Modifier.size(88.dp), C.tint(Mood.ROLLCALL)) { CuckooView(Mood.ROLLCALL, Modifier.size(72.dp)) }
+                    Column(Modifier.padding(horizontal = R_.lg)) { s.rolls.toSortedMap().values.forEach { Text(it, style = T.body) } }
                 }
             }
             Text("무전 기록", style = T.sectionLabel)
@@ -389,18 +379,18 @@ private fun ZoneRow(label: String, zone: Int, onChange: (Int) -> Unit) {
     }
 }
 
-/** 둥근 마디 탭: 흰 알약 안에서 고른 칸만 짙게 칠한다 */
+/** 마디 탭: 옅은 회색 판 안에서 고른 칸만 흰색으로 띄운다 */
 @Composable
 fun Segmented(options: List<Pair<String, String>>, selected: String, padH: Dp = 22.dp, onSelect: (String) -> Unit) {
-    Row(Modifier.pin(shape = Pill, lift = 0.dp).padding(6.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+    Row(Modifier.card(C.grey200, RoundedCornerShape(R_.md)).padding(6.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         options.forEach { (id, name) ->
             val on = id == selected
             Box(
-                Modifier.height(64.dp).background(if (on) C.ink else Color.Transparent, Pill)
+                Modifier.height(64.dp).background(if (on) C.paper else Color.Transparent, RoundedCornerShape(12.dp))
                     .clickable(role = Role.Tab) { onSelect(id) }.padding(horizontal = padH),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(name, style = T.button.copy(color = if (on) Color.White else C.ink2))
+                Text(name, style = T.button.copy(color = if (on) C.ink else C.grey700, fontWeight = if (on) FontWeight.Bold else FontWeight.SemiBold))
             }
         }
     }
@@ -408,28 +398,26 @@ fun Segmented(options: List<Pair<String, String>>, selected: String, padH: Dp = 
 
 @Composable
 private fun Chip(text: String, kids: Boolean) {
-    val bg = if (kids) C.car(6) else C.accent
-    Text(text, style = T.note.copy(fontWeight = FontWeight.Bold, color = onFlag(bg)), modifier = Modifier.background(bg, Pill).padding(horizontal = 12.dp, vertical = 2.dp))
+    if (kids) Tag(text, C.purpleWeak, C.purple) else Tag(text, C.accentWeak, C.accentInk)
 }
 
 @Composable
 private fun SubButton(text: String, enabled: Boolean = true, onClick: () -> Unit) {
-    SoftButton(onClick = onClick, enabled = enabled, border = C.line, modifier = Modifier.fillMaxWidth().height(84.dp)) {
-        Text(text, style = T.button.copy(color = if (enabled) C.ink else C.ink2))
+    SoftButton(onClick = onClick, enabled = enabled, fill = C.accentWeak, pressed = C.accent.copy(alpha = 0.2f), modifier = Modifier.fillMaxWidth().height(84.dp)) {
+        Text(text, style = T.button.copy(color = if (enabled) C.accentInk else C.ink3))
     }
 }
 
-/** 입장 패널: 무전기 앞면 같은 큰 핀 카드. 맨 위에 표정 칸과 스피커 그릴 */
+/** 입장 패널: 큰 흰 카드. 맨 위에 표정 칸 */
 @Composable
 private fun Panel(modifier: Modifier, mood: Mood, content: @Composable ColumnScope.() -> Unit) {
     Column(modifier) {
         Column(
-            Modifier.weight(1f).fillMaxWidth().pin(shape = RoundedCornerShape(36.dp), lift = 16.dp).padding(32.dp),
+            Modifier.weight(1f).fillMaxWidth().card().padding(32.dp),
             verticalArrangement = Arrangement.spacedBy(R_.sm), horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             SpeakerBox(Modifier.fillMaxWidth().height(170.dp), C.tint(mood)) {
                 CuckooView(mood, Modifier.size(150.dp))
-                Box(Modifier.align(Alignment.BottomEnd).padding(18.dp).size(84.dp, 36.dp).grille(C.paper.copy(alpha = 0.8f), 12.dp, 3.dp))
             }
             Spacer(Modifier.height(6.dp))
             content()
@@ -439,22 +427,21 @@ private fun Panel(modifier: Modifier, mood: Mood, content: @Composable ColumnSco
 
 @Composable
 private fun BigButton(text: String, enabled: Boolean = true, onClick: () -> Unit) {
-    SoftButton(onClick = onClick, enabled = enabled, fill = C.accent, border = C.accent, modifier = Modifier.fillMaxWidth().height(100.dp)) {
-        Text(text, style = T.button.copy(fontSize = 32.sp, lineHeight = 36.sp, fontWeight = FontWeight.ExtraBold, color = if (enabled) C.ink else C.ink2))
+    SoftButton(onClick = onClick, enabled = enabled, fill = C.accent, pressed = C.accentPressed, modifier = Modifier.fillMaxWidth().height(100.dp)) {
+        Text(text, style = T.button.copy(fontSize = 32.sp, lineHeight = 36.sp, color = if (enabled) C.ink else C.ink3))
     }
 }
 
-/** 켬/끔 스위치: 켜지면 주황 알약에 손잡이가 오른쪽 */
+/** 켬/끔 스위치: 켜지면 주황 판에 흰 손잡이가 오른쪽 */
 @Composable
 private fun Toggle(on: Boolean, onChange: (Boolean) -> Unit) {
     Box(
-        Modifier.size(168.dp, 76.dp).background(if (on) C.accent else C.line, Pill)
-            .border(R_.stroke, if (on) C.accent else C.ink3.copy(alpha = 0.5f), Pill)
+        Modifier.size(168.dp, 76.dp).background(if (on) C.accent else C.grey300, Pill)
             .clickable(role = Role.Switch) { onChange(!on) }.padding(8.dp),
         contentAlignment = if (on) Alignment.CenterEnd else Alignment.CenterStart,
     ) {
-        Box(Modifier.size(92.dp, 60.dp).pin(C.paper, C.paper, Pill, lift = 4.dp), contentAlignment = Alignment.Center) {
-            Text(if (on) "켜짐" else "꺼짐", style = T.button.copy(fontSize = 20.sp, color = if (on) C.ink else C.ink2))
+        Box(Modifier.size(92.dp, 60.dp).card(C.paper, Pill), contentAlignment = Alignment.Center) {
+            Text(if (on) "켜짐" else "꺼짐", style = T.button.copy(fontSize = 20.sp, color = if (on) C.accentInk else C.ink2))
         }
     }
 }

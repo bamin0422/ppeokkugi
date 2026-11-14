@@ -12,24 +12,26 @@ import {
   useVideoConfig,
 } from 'remotion';
 
-/** 앱 시안(driver.html :root)과 같은 색. 초록은 쓰지 않는다. */
+/** 화면 색: 회색 바탕·흰 카드·주황 주 색. 초록은 쓰지 않는다. lcd 계열은 옅은 주황 꼬리표 */
 export const C = {
-  bg: '#fffaf6',
-  paper: '#ffffff',
-  line: '#f1e6df',
-  ink: '#2a2230',
-  ink2: '#6e6170',
-  ink3: '#ab9ca8',
-  lcd: '#2a2230',
-  lcdInk: '#ffe9a3',
-  lcdDim: '#a48f73',
-  tx: '#ff3d5a',
-  rx: '#2b8cff',
-  orange: '#ff7a1a',
-  shadow: '0 14px 34px rgba(80,40,60,.12)',
+  bg: '#F2F4F6',
+  paper: '#FFFFFF',
+  line: '#E5E8EB',
+  ink: '#191F28',
+  ink2: '#4E5968',
+  ink3: '#8B95A1',
+  lcd: '#FFF1E6',
+  lcdInk: '#B04000',
+  lcdDim: '#FF9A52',
+  tx: '#F04452',
+  rx: '#3182F6',
+  orange: '#FF6F0F',
+  /** 큰 주황 글자(흰·회색 위 대비 3:1 이상). 채움에는 orange */
+  orangeText: '#E85F00',
+  shadow: '0 8px 24px rgba(0,29,58,.06)',
 };
 /** 차량 색: 1호차부터 차례로 */
-export const CARS = ['#ff5a4e', '#2b8cff', '#ffbf1f', '#7b55ff', '#ff3d8b', '#14b8d4'];
+export const CARS = ['#F04452', '#3182F6', '#FFB331', '#7B55FF', '#FF3D8B', '#14B8D4'];
 export const VEH_COLORS = CARS;
 
 /** 본문(Pretendard SemiBold) · 굵은 글자와 제목(Pretendard ExtraBold) */
@@ -78,20 +80,20 @@ export const Sfx: React.FC<{name: string; at: number; volume?: number}> = ({name
 };
 
 /** 제 그림이 없는 표정 → 쓸 그림 */
-const MOOD: Record<string, string> = {tx: 'talk', wait: 'base'};
-/** design/character/tools/gen.py 의 FRAME_MS, 표정마다 프레임 수 */
-const FRAME_MS = 320;
-const FRAMES = 4;
+const MOOD: Record<string, string> = {tx: 'talk', wait: 'base', brake: 'alert', camera: 'alert', lost: 'alert', emergency: 'alert', rain: 'base'};
 
-/** 마스코트(무전기 LCD 창 모양 픽셀 그림). scale 1 = 64px. 영상 시간에 맞춰 프레임을 바꾼다 */
+/** 마스코트(투명 PNG). scale 1 = 64px. 영상 시간에 맞춰 살짝 들썩인다 */
 export const Sprite: React.FC<{mood: string; scale: number; fps?: number; style?: React.CSSProperties}> = ({mood, scale, style}) => {
   const t = useT();
   const s = 64 * scale;
   const k = MOOD[mood] ?? mood;
-  const f = Math.floor((t * 1000) / FRAME_MS) % FRAMES;
+  const bob = Math.sin(t * Math.PI * 1.6);
   return (
     <div style={{width: s, height: s, ...style}}>
-      <Img src={staticFile(`character/cuckoo_${k}_${f}.svg`)} style={{width: s, height: s, display: 'block', imageRendering: 'pixelated'}} />
+      <Img
+        src={staticFile(`character/cuckoo_${k}.png`)}
+        style={{width: s, height: s, display: 'block', objectFit: 'contain', transformOrigin: '50% 100%', transform: `translateY(${bob * s * 0.025}px) scale(${1 + bob * 0.015}, ${1 - bob * 0.015})`}}
+      />
     </div>
   );
 };
@@ -110,7 +112,7 @@ export const Waves: React.FC<{at: number; color?: string; size?: number; count?:
   );
 };
 
-/** 알약 꼬리표. 기본은 무전기 LCD(먹색 바탕 + 노란 글자) */
+/** 꼬리표. 기본은 옅은 주황 바탕 + 진한 주황 글자. 주황 바탕 위 글자는 대비 때문에 늘 먹색 */
 export const Chip: React.FC<{children: React.ReactNode; size?: number; color?: string; ink?: string; style?: React.CSSProperties}> = ({
   children,
   size = 26,
@@ -122,13 +124,11 @@ export const Chip: React.FC<{children: React.ReactNode; size?: number; color?: s
     style={{
       display: 'inline-block',
       background: color,
-      color: ink,
+      color: color === C.orange ? C.ink : ink,
       fontFamily: FONT_B,
       fontSize: size,
-      letterSpacing: '0.02em',
-      padding: `${size * 0.3}px ${size * 0.75}px`,
-      borderRadius: 999,
-      boxShadow: '0 6px 16px rgba(42,34,48,.14)',
+      padding: `${size * 0.3}px ${size * 0.7}px`,
+      borderRadius: Math.max(10, size * 0.4),
       whiteSpace: 'nowrap',
       ...style,
     }}
@@ -150,7 +150,7 @@ export const WaveBars: React.FC<{on: boolean; color?: string; h?: number; n?: nu
   );
 };
 
-/** 수신·송신 표시등 */
+/** 수신·송신 점 */
 export const Led: React.FC<{color: string; on?: boolean; size?: number}> = ({color, on = true, size = 14}) => (
   <span
     style={{
@@ -159,14 +159,8 @@ export const Led: React.FC<{color: string; on?: boolean; size?: number}> = ({col
       height: size,
       borderRadius: '50%',
       background: on ? color : C.line,
-      boxShadow: on ? `0 0 0 ${size * 0.3}px ${color}33, 0 0 ${size}px ${color}` : undefined,
     }}
   />
-);
-
-/** 스피커 그릴 점 무늬 */
-export const Grille: React.FC<{w: number; h: number; color?: string; dot?: number; style?: React.CSSProperties}> = ({w, h, color = C.line, dot = 12, style}) => (
-  <div style={{width: w, height: h, background: `radial-gradient(circle, ${color} ${dot * 0.26}px, transparent ${dot * 0.3}px) 0 0/${dot}px ${dot}px`, ...style}} />
 );
 
 /** 자막 등장: 아래에서 튀어 오르며 나타남 + 톡 */
@@ -186,7 +180,7 @@ export const Pop: React.FC<{at: number; children: React.ReactNode; blip?: boolea
   );
 };
 
-/** 핀 카드: 위에서 떨어져 꽂힌다(살짝 기울었다 바로잡힘) */
+/** 카드: 위에서 내려앉는다(살짝 기울었다 바로잡힘). pin 은 예전 호출 호환용으로만 받는다 */
 export const PinCard: React.FC<{at: number; children: React.ReactNode; style?: React.CSSProperties; tilt?: number; pin?: string}> = ({
   at,
   children,
@@ -200,51 +194,25 @@ export const PinCard: React.FC<{at: number; children: React.ReactNode; style?: R
       style={{
         position: 'relative',
         background: C.paper,
-        border: `1.5px solid ${C.line}`,
-        borderRadius: 28,
+        borderRadius: 24,
         boxShadow: C.shadow,
         opacity: Math.min(1, p * 1.5),
         transform: `translateY(${(1 - p) * -70}px) rotate(${(1 - p) * tilt * 3}deg)`,
         ...style,
       }}
     >
-      {pin ? (
-        <span style={{position: 'absolute', left: '50%', top: -9, width: 18, height: 18, marginLeft: -9, borderRadius: '50%', background: pin, boxShadow: '0 3px 6px rgba(42,34,48,.25)'}} />
-      ) : null}
       {children}
     </div>
   );
 };
 
-/** 배경: 따뜻한 종이 + 여러 색 번짐 + 스피커 그릴 */
-export const Backdrop: React.FC<{glow?: {x: string; y: string}; children?: React.ReactNode}> = ({glow = {x: '62%', y: '50%'}, children}) => {
-  const t = useT();
-  const {width, height} = useVideoConfig();
-  const blob = (x: number, y: number, r: number, col: string, ph: number) => (
-    <div
-      style={{
-        position: 'absolute',
-        left: x + Math.sin(t * 0.5 + ph) * 30 - r,
-        top: y + Math.cos(t * 0.4 + ph) * 24 - r,
-        width: r * 2,
-        height: r * 2,
-        borderRadius: '50%',
-        background: `radial-gradient(circle, ${col}2e, ${col}00 70%)`,
-      }}
-    />
-  );
-  return (
-    <div style={{position: 'absolute', inset: 0, background: C.bg, overflow: 'hidden'}}>
-      <div style={{position: 'absolute', inset: 0, background: `radial-gradient(ellipse 50% 55% at ${glow.x} ${glow.y}, #ffe6d4aa, transparent 70%)`}} />
-      {blob(width * 0.08, height * 0.12, width * 0.22, CARS[4], 0)}
-      {blob(width * 0.95, height * 0.2, width * 0.2, CARS[2], 1.3)}
-      {blob(width * 0.9, height * 0.92, width * 0.24, CARS[1], 2.1)}
-      {blob(width * 0.05, height * 0.9, width * 0.18, CARS[3], 3.4)}
-      <Grille w={168} h={84} style={{position: 'absolute', right: 44, bottom: 40, opacity: 0.9}} />
-      {children}
-    </div>
-  );
-};
+/** 배경: 옅은 회색 바탕 + 흰 빛 한 점 */
+export const Backdrop: React.FC<{glow?: {x: string; y: string}; children?: React.ReactNode}> = ({glow = {x: '62%', y: '50%'}, children}) => (
+  <div style={{position: 'absolute', inset: 0, background: C.bg, overflow: 'hidden'}}>
+    <div style={{position: 'absolute', inset: 0, background: `radial-gradient(ellipse 50% 55% at ${glow.x} ${glow.y}, #ffffffcc, transparent 70%)`}} />
+    {children}
+  </div>
+);
 
 /** 영상 머리글: 화면 위쪽 작은 브랜드 표시 */
 export const Brand: React.FC<{tall?: boolean}> = ({tall}) => (
@@ -261,7 +229,7 @@ export const Brand: React.FC<{tall?: boolean}> = ({tall}) => (
       color: C.ink2,
     }}
   >
-    <Led color={C.rx} size={tall ? 14 : 12} />
+    <Led color={C.orange} size={tall ? 14 : 12} />
     <span style={{fontFamily: SERIF, fontSize: tall ? 34 : 28, color: C.ink}}>뻐꾸기</span>
     <span>Pleos 차량용 단체 무전</span>
   </div>
@@ -291,7 +259,7 @@ export const BeforeAfter: React.FC<{
     <span
       style={{
         display: 'inline-block',
-        color: C.ink,
+        color: C.orangeText,
         fontFamily: SERIF,
         fontSize: size,
         lineHeight: 1.2,
@@ -299,7 +267,6 @@ export const BeforeAfter: React.FC<{
         transform: `scale(${0.6 + 0.4 * ap})`,
         transformOrigin: align === 'left' ? 'left center' : 'center',
         whiteSpace: 'nowrap',
-        backgroundImage: `linear-gradient(transparent 62%, ${C.orange}55 62%, ${C.orange}55 92%, transparent 92%)`,
       }}
     >
       {after}
@@ -309,7 +276,7 @@ export const BeforeAfter: React.FC<{
     <div style={{display: 'flex', flexDirection: stack ? 'column' : 'row', alignItems: stack ? (align === 'left' ? 'flex-start' : 'center') : 'center', justifyContent: align === 'left' ? 'flex-start' : 'center', gap: stack ? size * 0.15 : size * 0.4}}>
       {blip ? <Sfx name="blip" at={at + 0.65} volume={0.3} /> : null}
       {b}
-      <span style={{fontFamily: FONT_B, fontSize: size * 0.6, color: C.orange, opacity: ap, lineHeight: 1}}>{stack ? '↓' : '→'}</span>
+      <span style={{fontFamily: FONT_B, fontSize: size * 0.6, color: C.orangeText, opacity: ap, lineHeight: 1}}>{stack ? '↓' : '→'}</span>
       {a}
     </div>
   );

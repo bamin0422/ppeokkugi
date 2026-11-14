@@ -36,8 +36,8 @@ data class SdkState(
 )
 
 /**
- * 카드에 띄울 마스코트 표정. 그림은 drawable-nodpi/cuckoo_<이름>_<n>.png 프레임(design/character/tools/gen.py 가 그린
- * 32×32 픽셀 LCD 그림, 512px). 제 그림이 없는 표정은 [fallback] 의 그림을 쓴다(ui/Cuckoo.kt)
+ * 카드에 띄울 마스코트 표정. 그림은 drawable-nodpi/cuckoo_<이름>_0.png(design/character 의 3D 뻐꾸기, 512px 투명 PNG).
+ * 제 그림이 없는 표정은 [fallback] 의 그림을 쓴다(ui/Cuckoo.kt)
  */
 enum class Mood {
     BASE, TALK, ALERT, REST, ROLLCALL, KIDS,
@@ -45,11 +45,12 @@ enum class Mood {
 
     val fallback: Mood get() = when (this) {
         TX -> TALK
-        WAIT -> BASE
+        WAIT, RAIN -> BASE
+        BRAKE, CAMERA, LOST, EMERGENCY -> ALERT
         else -> this
     }
 
-    /** 붉은 LCD·송신 빨강 테로 띄울 표정 */
+    /** 옅은 빨강 경고 카드와 빨간 글자로 띄울 표정 */
     val alert: Boolean get() = this == ALERT || this == BRAKE || this == EMERGENCY || this == LOST
 }
 

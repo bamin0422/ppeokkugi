@@ -15,21 +15,22 @@ export function reportHtml({ startedAt, rows, events }) {
   return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>뻐꾸기 운행 보고서</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css"><style>
-:root{--bg:#fffaf6;--paper:#fff;--line:#f1e6df;--ink:#2a2230;--ink2:#6e6170;--ink3:#ab9ca8;--lcd:#2a2230;--lcd-ink:#ffe9a3;--tx:#ff3d5a;--tx-ink:#c21535;--brand:#ff7a1a;
---serif:"Pretendard Variable",Pretendard,-apple-system,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;--sans:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,sans-serif}
-body{font:500 15px/1.5 var(--sans);background:var(--bg);color:var(--ink);margin:0;padding:28px 16px}
-main{max-width:1100px;margin:auto}h1{font:700 28px/1.2 var(--serif);letter-spacing:-.03em;margin:0 0 10px}h1 em{color:var(--brand);font-style:normal}
-p.sub{display:inline-block;background:var(--lcd);color:var(--lcd-ink);border-radius:14px;padding:6px 14px;margin:0 0 22px;font-size:14px;font-weight:700}
-h2{font:700 20px/1.3 var(--serif);margin:28px 4px 10px}
-.wrap,ol{background:var(--paper);border:1.5px solid var(--line);border-radius:24px;box-shadow:0 10px 26px rgba(80,40,60,.08)}
-.wrap{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:14px;white-space:nowrap}
-th,td{padding:12px 14px;border-bottom:1.5px solid var(--line);text-align:right}th:first-child,td:first-child{text-align:left}
-tr:last-child td{border-bottom:0}th{color:var(--ink2);font-weight:700}td:first-child{font-weight:800}td small{color:var(--ink2);font-weight:500}
-td.hit{color:var(--tx-ink);font-weight:800}
-ol{list-style:none;padding:6px 18px;margin:0;font-size:14px}li{padding:10px 0;border-bottom:1.5px solid var(--line)}li:last-child{border-bottom:0}
-time{color:var(--ink2);margin-right:12px;font-variant-numeric:tabular-nums;font-weight:700}li b{margin-right:8px}
-.note{color:var(--ink2);font-size:12px;margin:20px 4px 0}
-@media print{body{background:#fff}.wrap,ol{box-shadow:none}p.sub{background:none;color:var(--ink);padding:0}}
+:root{--bg:#F2F4F6;--surface:#FFFFFF;--grey50:#F9FAFB;--grey200:#E5E8EB;--text:#191F28;--text2:#4E5968;--text3:#6B7684;
+--primary:#FF6F0F;--primary-weak:#FFF1E6;--primary-text:#B04000;--danger:#F04452;--danger-weak:#FFEEEE;--danger-ink:#D22030;
+--font:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif}
+body{font:500 15px/1.5 var(--font);background:var(--bg);color:var(--text);margin:0;padding:40px 20px;-webkit-font-smoothing:antialiased}
+main{max-width:1100px;margin:auto}h1{font:800 30px/1.25 var(--font);letter-spacing:-.03em;margin:0 0 12px}h1 em{color:var(--primary-text);font-style:normal}
+p.sub{display:inline-block;background:var(--primary-weak);color:var(--primary-text);border-radius:10px;padding:6px 12px;margin:0 0 12px;font-size:14px;font-weight:700}
+h2{font:800 20px/1.3 var(--font);letter-spacing:-.02em;margin:32px 2px 12px}
+.wrap,ol{background:var(--surface);border-radius:24px}
+.wrap{overflow-x:auto;padding:8px 12px}table{border-collapse:collapse;width:100%;font-size:14px;white-space:nowrap;font-variant-numeric:tabular-nums}
+th,td{padding:13px 12px;border-bottom:1px solid var(--grey200);text-align:right}th:first-child,td:first-child{text-align:left}
+tr:last-child td{border-bottom:0}th{color:var(--text3);font-weight:600;font-size:13px}td:first-child{font-weight:700}td small{color:var(--text3);font-weight:500;margin-left:4px}
+td.hit{color:var(--danger-ink);font-weight:800}
+ol{list-style:none;padding:8px 24px;margin:0;font-size:15px}li{padding:12px 0;border-bottom:1px solid var(--grey200)}li:last-child{border-bottom:0}
+time{color:var(--text3);margin-right:14px;font-variant-numeric:tabular-nums;font-weight:600}li b{margin-right:8px;font-weight:700}
+.note{color:var(--text3);font-size:13px;margin:20px 2px 0}
+@media print{body{background:#fff;padding:0}.wrap,ol{border:1px solid var(--grey200)}}
 </style></head><body><main>
 <h1>차량별 <em>운행 보고서</em></h1>
 <p class="sub">${day(startedAt)} · 차량 ${rows.length}대 · 운수사 관제</p>

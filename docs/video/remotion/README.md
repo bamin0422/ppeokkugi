@@ -23,7 +23,7 @@ scripts/sheet.sh ../뻐꾸기_소개영상.mp4 wide out/sheet_wide.png   # 장�
 - 연출 이미지: 정지 이미지를 장면 길이 동안 천천히 밀거나 당긴다(`src/Broll.tsx`의 `PUSH`, 샷의 `out`). 가로는 1.16배 확대해 오른쪽 아래 생성 표시를 화면 밖으로 밀고, 세로는 가운데만 잘라 쓴다. 화면 오른쪽 위에 "AI 생성 연출 이미지"라고 적는다. 운전석 장면(`cockpit.jpg`)은 생성 이미지의 가운데 화면에 실제 앱 화면을 합성한 것이다.
 - 필요: Node 18+, Python 3 + numpy·scipy, ffmpeg
 - 화면 스타일: 앱 시안(밝은 종이 바탕, 둥근 핀 카드, 무전기 LCD·PTT·RX/TX 표시등)과 같은 색을 `src/theme.tsx`의 `C`, `CARS`에 둔다. 실사 위 자막은 아래쪽만 어둡게 깔고 같은 글꼴을 쓴다. 초록은 쓰지 않는다.
-- 글꼴: `fonts/`(Pretendard SemiBold·ExtraBold, OFL). 마스코트: `../../../design/character/frames/cuckoo_<표정>_<n>.svg`(픽셀 프레임, `Sprite`가 320ms마다 바꿈). prep.py가 둘 다 `public/`으로 복사한다.
+- 글꼴: `fonts/`(Pretendard SemiBold·ExtraBold, OFL). 마스코트: `../../../design/character/cuckoo_<표정>.png`(3D 그림, `Sprite`가 천천히 들썩이게 그림). prep.py가 둘 다 `public/`으로 복사한다.
 
 ## 다시 녹화한 뒤 다시 자르기
 

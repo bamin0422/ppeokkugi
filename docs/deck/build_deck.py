@@ -77,8 +77,9 @@ def assets():
             im.save(A / f"{name}.png")
     Image.open(OLD_SCR / f"{NAVI[0]}.png").convert("RGB").crop(NAVI[1]).save(A / "navi-eta.png")
     for c in CHARS:
-        shutil.copy(CHAR / f"cuckoo_{c}.svg", A / f"cuckoo_{c}.svg")
-    shutil.copy(ROOT / "app/src/main/res/font/pretendard_extrabold.otf", A / "pretendard_extrabold.otf")
+        shutil.copy(CHAR / f"cuckoo_{c}.png", A / f"cuckoo_{c}.png")
+    for w in ("regular", "semibold", "bold", "extrabold"):
+        shutil.copy(ROOT / f"app/src/main/res/font/pretendard_{w}.otf", A / f"pretendard_{w}.otf")
     js = REPORT % (ROOT / "server/src/report.js").as_uri()
     html = subprocess.run(["node", "--input-type=module", "-e", js], capture_output=True, text=True, check=True).stdout
     shoot(html, A / "control-report.png", 1100, 830)

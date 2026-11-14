@@ -12,7 +12,7 @@ import {C, Chip, FONT, FONT_B, Pop, ramp, SERIF, Sfx, useT, useTall} from './the
  */
 const WIDE_ZOOM = 1.16;
 const PUSH = 0.09;
-const DARK = '20,16,24';
+const DARK = '25,31,40';
 
 export type Shot = {src: string; out?: boolean};
 
@@ -23,7 +23,7 @@ const Take: React.FC<{shot: Shot; len: number}> = ({shot, len}) => {
   const p = Math.min(1, t / len);
   const k = shot.out ? 1 - p : p;
   return (
-    <AbsoluteFill style={{overflow: 'hidden', background: C.lcd}}>
+    <AbsoluteFill style={{overflow: 'hidden', background: C.ink}}>
       <Img
         src={staticFile(`broll/${shot.src}.jpg`)}
         style={{
@@ -45,7 +45,7 @@ export const Footage: React.FC<{shots: Shot[]; dur: number; dim?: number; mark?:
   const tall = useTall();
   const seg = Math.ceil((dur * fps) / shots.length);
   return (
-    <AbsoluteFill style={{background: C.lcd}}>
+    <AbsoluteFill style={{background: C.ink}}>
       {shots.map((s, i) => (
         <Sequence key={i} from={i * seg} durationInFrames={i === shots.length - 1 ? undefined : seg}>
           <Take shot={s} len={seg / fps} />
@@ -85,15 +85,15 @@ export const Caption: React.FC<{chip?: React.ReactNode; chipColor?: string; titl
       </Pop>
       {sub ? (
         <Pop at={at + 0.6} blip={false} style={{transformOrigin: tall ? 'center' : 'left center'}}>
-          <div style={{fontFamily: FONT, fontSize: tall ? 36 : 34, color: '#f3e9e3', marginTop: 18, lineHeight: 1.5, wordBreak: 'keep-all'}}>{sub}</div>
+          <div style={{fontFamily: FONT, fontSize: tall ? 36 : 34, color: '#E5E8EB', marginTop: 18, lineHeight: 1.5, wordBreak: 'keep-all'}}>{sub}</div>
         </Pop>
       ) : null}
-      {foot ? <div style={{fontFamily: FONT, fontSize: tall ? 24 : 21, color: '#cdbfc6', marginTop: 20, lineHeight: 1.45, wordBreak: 'keep-all'}}>{foot}</div> : null}
+      {foot ? <div style={{fontFamily: FONT, fontSize: tall ? 24 : 21, color: '#B0B8C1', marginTop: 20, lineHeight: 1.45, wordBreak: 'keep-all'}}>{foot}</div> : null}
     </div>
   );
 };
 
-const orange = (s: string) => <span style={{color: '#ffa25e'}}>{s}</span>;
+const orange = (s: string) => <span style={{color: '#FF8A3D'}}>{s}</span>;
 
 /* ---------- 여는 장면: 함께 달리는 차 네 대 ---------- */
 export const Convoy: React.FC<{dur: number}> = ({dur}) => (
@@ -180,20 +180,20 @@ export const UseCase: React.FC<{dur: number}> = ({dur}) => {
           <Pop at={at + 0.4} blip={false}>
             <div style={{marginTop: 12}}>
               {lines.map((l) => (
-                <div key={l} style={{fontFamily: FONT, fontSize: 30, color: '#f3e9e3', lineHeight: 1.6, display: 'flex', alignItems: 'center', gap: 14}}>
+                <div key={l} style={{fontFamily: FONT, fontSize: 30, color: '#E5E8EB', lineHeight: 1.6, display: 'flex', alignItems: 'center', gap: 14}}>
                   <span style={{width: 10, height: 10, borderRadius: 5, background: col, flexShrink: 0}} />
                   {l}
                 </div>
               ))}
             </div>
-            {foot ? <div style={{fontFamily: FONT, fontSize: 21, color: '#cdbfc6', marginTop: 12}}>{foot}</div> : null}
+            {foot ? <div style={{fontFamily: FONT, fontSize: 21, color: '#B0B8C1', marginTop: 12}}>{foot}</div> : null}
           </Pop>
         </div>
       </Footage>
     </div>
   );
   return (
-    <AbsoluteFill style={{display: 'flex', flexDirection: tall ? 'column' : 'row', gap: 6, background: C.lcd}}>
+    <AbsoluteFill style={{display: 'flex', flexDirection: tall ? 'column' : 'row', gap: 6, background: C.ink}}>
       {half('kids_backseat', 0.3, '구현 · 시연 완료', C.rx, '가족 귀성길', ['친척 차 4대 동시 무전', '급제동·처짐·도착 자동 무전', '키즈 채널 · 휴게소 투표'])}
       {half('bus_convoy', 1.0, '적용 예시', C.orange, '수학여행 단체 버스', ['인솔 교사가 전 버스에 동시 무전', '앞 버스 급제동 · 뒤 버스 처짐 안내', '같은 휴게소 경유지 등록'], '버스의 Pleos 탑재 여부는 확인 전입니다.')}
     </AbsoluteFill>

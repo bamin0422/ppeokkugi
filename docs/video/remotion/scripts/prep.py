@@ -3,7 +3,7 @@
 나레이션 길이에 맞춘 장면 시간표(src/timeline.json) 계산.
 
 사용: python3 scripts/prep.py            (docs/video/remotion 에서)
-원본: ../src/raw (take6·take7 녹화, gitignore), public/audio/vo/*.mp3(나레이션), public/audio/bgm_flow_1.wav(BGM)
+원본: ../src/raw (take8·take9 녹화, gitignore), public/audio/vo/*.mp3(나레이션), public/audio/bgm_flow_v5.wav(BGM)
 결과: public/ (gitignore), src/speech.json, src/timeline.json
 """
 import json
@@ -35,8 +35,8 @@ def rec_start(take, seg):
     return [e["t"] for e in t if e["what"] == "rec start"][seg - 1] / 1000
 
 
-SRCS = {"A1": ("take6/emu-1.webm", ("take6", 1)), "A2": ("take6/emu-2.webm", ("take6", 2)),
-        "B": ("take7/emu-1.webm", ("take7", 1))}
+SRCS = {"A1": ("take8/emu-1.webm", ("take8", 1)), "A2": ("take8/emu-2.webm", ("take8", 2)),
+        "B": ("take9/emu-1.webm", ("take9", 1))}
 
 
 def aligned_audio(f):
@@ -49,7 +49,7 @@ def aligned_audio(f):
 
 def phone_video(out):
     """휴대폰 웹 CDP 스크린캐스트(가변 간격 jpg) → 30fps. 반환: 첫 프레임 epoch 초"""
-    d = RAW / "take6/phone"
+    d = RAW / "take8/phone"
     rows = [l.split() for l in (d / "frames.txt").read_text().splitlines() if l.strip()]
     lst = []
     for (n, t), (_, t2) in zip(rows, rows[1:] + [(rows[-1][0], str(int(rows[-1][1]) + 100))]):
@@ -129,12 +129,12 @@ def clips():
 
 
 def assets():
-    """마스코트 픽셀 프레임 SVG(design/character/frames), 글꼴(remotion/fonts), 관제 보고서 화면"""
+    """마스코트 투명 PNG(design/character/cuckoo_*.png), 글꼴(remotion/fonts), 관제 보고서 화면"""
     for d in ("character", "fonts", "shots"):
         (PUB / d).mkdir(parents=True, exist_ok=True)
-    for p in (PUB / "character").glob("cuckoo_*.svg"):
+    for p in (PUB / "character").glob("cuckoo_*"):
         p.unlink()
-    for p in (ROOT / "design/character/frames").glob("cuckoo_*.svg"):
+    for p in (ROOT / "design/character").glob("cuckoo_*.png"):
         shutil.copy(p, PUB / "character" / p.name)
     for p in (HERE / "fonts").iterdir():
         if p.suffix in (".ttf", ".otf"):

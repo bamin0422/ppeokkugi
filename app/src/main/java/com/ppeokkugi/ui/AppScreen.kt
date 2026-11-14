@@ -1,11 +1,6 @@
 package com.ppeokkugi.ui
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -33,14 +27,11 @@ import com.ppeokkugi.Emergency
 import com.ppeokkugi.Mood
 import com.ppeokkugi.StatusViewModel
 import androidx.compose.foundation.layout.height
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.text.font.FontWeight
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -72,34 +63,25 @@ fun AppScreen(vm: StatusViewModel) {
             Logo()
             Spacer(Modifier.width(R_.lg))
             if (s.code != null) {
-                val (bars, word) = when (s.link) {
-                    Link.ON -> 4 to "연결"
-                    Link.CONNECTING -> 2 to "연결 중"
-                    Link.OFF -> 0 to "끊김"
+                val (dot, word) = when (s.link) {
+                    Link.ON -> C.accent to "연결"
+                    Link.CONNECTING -> C.grey400 to "연결 중"
+                    Link.OFF -> C.tx to "끊김"
                 }
-                // 방 코드는 채널 읽힘으로, 연결은 신호 막대, 일행 수는 대수로
-                Lcd {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("CH", style = T.lcd.copy(fontSize = 18.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 2.sp, color = C.lcdDim))
-                        Spacer(Modifier.width(14.dp))
-                        Text("${s.code}", style = T.lcd.copy(fontSize = 30.sp, lineHeight = 34.sp, letterSpacing = 1.5.sp))
-                        Spacer(Modifier.width(18.dp))
-                        SignalBars(bars, C.lcdInk)
-                        Spacer(Modifier.width(14.dp))
-                        Text("${s.cars.size}대", style = T.lcd.copy(fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = C.lcdDim))
-                    }
-                }
+                // 방 코드·일행 수는 옅은 주황 칩, 연결은 점과 회색 글자
+                Text("CH ${s.code} · ${s.cars.size}대", style = T.num.copy(fontSize = 26.sp, lineHeight = 32.sp, letterSpacing = 0.5.sp, color = C.accentInk),
+                    modifier = Modifier.background(C.accentWeak, RoundedCornerShape(R_.sm)).padding(horizontal = 18.dp, vertical = 10.dp))
                 Spacer(Modifier.width(R_.lg))
-                Led(C.rx, on = s.link == Link.ON)
-                Spacer(Modifier.width(12.dp))
-                Text(word + (s.me?.let { " · ${it}호차" + if (it == 1) " (선두)" else "" } ?: ""), style = T.body.copy(fontWeight = FontWeight.Bold, color = C.ink2))
+                Dot(dot)
+                Spacer(Modifier.width(10.dp))
+                Text(word + (s.me?.let { " · ${it}호차" + if (it == 1) " (선두)" else "" } ?: ""), style = T.body.copy(color = C.ink2))
                 Spacer(Modifier.width(R_.md))
-                Text("나가기", style = T.button.copy(fontSize = 20.sp, color = C.ink2),
-                    modifier = Modifier.pin(shape = Pill, lift = 0.dp).clickable { vm.leaveRoom() }.padding(horizontal = 18.dp, vertical = 10.dp))
+                Text("나가기", style = T.button.copy(fontSize = 20.sp, color = C.grey700),
+                    modifier = Modifier.card(C.paper, RoundedCornerShape(R_.sm)).clickable { vm.leaveRoom() }.padding(horizontal = 18.dp, vertical = 10.dp))
             }
             if (s.driving) {
                 Spacer(Modifier.width(R_.md))
-                Text("주행 중", style = T.body.copy(fontWeight = FontWeight.Bold, color = C.warnInk))
+                Tag("주행 중", C.accentWeak, C.accentInk)
             }
             Spacer(Modifier.weight(1f))
             Segmented(TABS.mapIndexed { i, n -> "$i" to n }, "$tab", padH = 30.dp) { tab = it.toInt() }
@@ -117,7 +99,7 @@ fun AppScreen(vm: StatusViewModel) {
     }
 }
 
-/** 로고: 마스코트 + 세리프 "뻐꾸기" */
+/** 로고: 마스코트 + "뻐꾸기" */
 @Composable
 private fun Logo() {
     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -127,31 +109,31 @@ private fun Logo() {
     }
 }
 
-/** 긴급 콜: 다른 화면을 모두 덮는 짙은 빨강 화면. 송신 LED 가 깜빡인다. 확인을 눌러야 닫힌다 */
+/** 긴급 콜: 다른 화면을 모두 덮는 빨강 화면. 흰 점이 깜빡인다. 확인을 눌러야 닫힌다 */
 @Composable
 private fun EmergencyAlert(e: Emergency, onOk: () -> Unit) {
-    Box(Modifier.fillMaxSize().background(C.sos).clickable(enabled = false) {}.padding(64.dp), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxSize().background(C.tx).clickable(enabled = false) {}.padding(64.dp), contentAlignment = Alignment.Center) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(56.dp)) {
             // 긴급 콜은 주행 중에도 계속 들썩인다
-            SpeakerBox(Modifier.size(300.dp), C.tint(Mood.EMERGENCY)) { CuckooView(Mood.EMERGENCY, Modifier.size(256.dp)) }
+            SpeakerBox(Modifier.size(300.dp), C.paper) { CuckooView(Mood.EMERGENCY, Modifier.size(256.dp)) }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(R_.lg)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Led(C.tx, on = true, size = 32.dp, blink = true)
+                    Dot(Color.White, size = 28.dp, blink = true)
                     Spacer(Modifier.width(28.dp))
                     Text("긴급 콜", style = T.brand.copy(fontSize = 76.sp, lineHeight = 84.sp, color = Color.White))
                 }
                 Column(
-                    Modifier.fillMaxWidth().pin(C.paper, C.tx, RoundedCornerShape(36.dp), lift = 0.dp, borderWidth = 4.dp).padding(horizontal = 40.dp, vertical = 32.dp),
+                    Modifier.fillMaxWidth().card().padding(horizontal = 40.dp, vertical = 32.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Text("EMERGENCY · ${e.from} 에어백", style = T.lcd.copy(fontSize = 36.sp, lineHeight = 44.sp, fontWeight = FontWeight.ExtraBold, color = Color.White),
-                        modifier = Modifier.background(C.txInk, Pill).padding(horizontal = 22.dp, vertical = 6.dp))
+                    Text("EMERGENCY · ${e.from} 에어백", style = T.num.copy(fontSize = 32.sp, lineHeight = 40.sp, color = C.tx),
+                        modifier = Modifier.background(C.txWeak, RoundedCornerShape(R_.sm)).padding(horizontal = 18.dp, vertical = 6.dp))
                     Text(e.text, style = T.cardText.copy(fontSize = 48.sp, lineHeight = 60.sp))
-                    e.lat?.let { Text("${"%.4f".format(it)}, ${"%.4f".format(e.lng)} · ${TIME.format(Date(e.at))}", style = T.lcd.copy(fontSize = 28.sp, color = C.ink2)) }
+                    e.lat?.let { Text("${"%.4f".format(it)}, ${"%.4f".format(e.lng)} · ${TIME.format(Date(e.at))}", style = T.num.copy(fontSize = 28.sp, color = C.ink2)) }
                 }
-                Text("안전한 곳에 차를 세우고 연락하십시오.", style = T.body.copy(fontSize = 28.sp, lineHeight = 36.sp, color = C.sosInk))
-                SoftButton(onClick = onOk, fill = C.paper, border = C.paper, modifier = Modifier.width(360.dp).height(100.dp)) {
-                    Text("확인", style = T.button.copy(fontSize = 36.sp, lineHeight = 40.sp, fontWeight = FontWeight.ExtraBold, color = C.txInk))
+                Text("안전한 곳에 차를 세우고 연락하십시오.", style = T.body.copy(fontSize = 28.sp, lineHeight = 36.sp, color = Color.White))
+                SoftButton(onClick = onOk, fill = C.paper, pressed = C.grey200, modifier = Modifier.width(360.dp).height(100.dp)) {
+                    Text("확인", style = T.button.copy(fontSize = 36.sp, lineHeight = 40.sp, color = C.tx))
                 }
             }
         }

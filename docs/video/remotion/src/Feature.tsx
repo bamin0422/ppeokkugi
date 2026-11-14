@@ -176,7 +176,7 @@ const AppView: React.FC<{id: string; def: FeatureDef; vw: number; vh: number; ta
   const edge = 0.3;
 
   return (
-    <div style={{position: 'absolute', width: vw, height: vh, overflow: 'hidden', background: C.lcd}}>
+    <div style={{position: 'absolute', width: vw, height: vh, overflow: 'hidden', background: C.ink}}>
       <div style={{position: 'absolute', left: 0, top: 0, width: APP_W, height: APP_H, transformOrigin: '0 0', transform: `translate(${tx}px, ${ty}px) scale(${s})`}}>
         <OffthreadVideo
           src={staticFile(`clips/${id}.mp4`)}
@@ -210,7 +210,7 @@ const AppView: React.FC<{id: string; def: FeatureDef; vw: number; vh: number; ta
   );
 };
 
-/** 차량 디스플레이: 흰 테두리 카드 + 부드러운 그림자 */
+/** 차량 디스플레이: 흰 카드 + 옅은 그림자 */
 const Bezel: React.FC<{x: number; y: number; w: number; h: number; children: React.ReactNode; tilt?: number}> = ({x, y, w, h, children, tilt = 0}) => (
   <div
     style={{
@@ -221,8 +221,7 @@ const Bezel: React.FC<{x: number; y: number; w: number; h: number; children: Rea
       height: h + 36,
       borderRadius: 40,
       background: C.paper,
-      border: `1.5px solid ${C.line}`,
-      boxShadow: '0 30px 60px rgba(80,40,60,.18)',
+      boxShadow: '0 16px 40px rgba(0,29,58,.10)',
       transform: `perspective(2600px) rotateY(${tilt}deg)`,
     }}
   >
@@ -242,9 +241,8 @@ const Phone: React.FC<{src: string; h: number; at: number; dur: number}> = ({src
         height: h + 24,
         borderRadius: 40,
         background: C.paper,
-        border: `1.5px solid ${C.line}`,
         padding: 12,
-        boxShadow: '0 24px 50px rgba(80,40,60,.18)',
+        boxShadow: '0 16px 40px rgba(0,29,58,.10)',
         opacity: p,
         transform: `translateY(${(1 - p) * 60}px)`,
       }}
@@ -266,7 +264,7 @@ export const Feature: React.FC<{id: string; dur: number; index: number; hold: nu
   const clipDur = dur - vstart;
   // 첫머리 큰 전·후 자막 → 사라지고 화면 등장
   const introOut = lead ? ramp01(t, lead - 0.35, lead) : 1;
-  // 무전기 LCD: 앱 음성이 나오는 동안 RX 파형이 출렁인다 (speech.json 기준)
+  // TX·RX 꼬리표: 앱 음성이 나오는 동안 RX 파형이 출렁인다 (speech.json 기준)
   const ct = t - vstart;
   const talking = sp.some(([a, b]) => ct >= a && ct < b && b > mute && a < muteAfter);
   const sending = def.radio.some((r) => ct >= r - 0.05 && ct < r + 0.6);
@@ -304,15 +302,15 @@ export const Feature: React.FC<{id: string; dur: number; index: number; hold: nu
   const num = String(index).padStart(2, '0');
   const tagChip = (size: number) => (
     <Chip size={size}>
-      <span style={{color: C.lcdDim, marginRight: size * 0.4}}>CH {num}</span>
+      <span style={{color: C.lcdInk, opacity: 0.75, marginRight: size * 0.4}}>CH {num}</span>
       {def.tag}
     </Chip>
   );
   const lcd = (size: number) => (
-    <div style={{display: 'inline-flex', alignItems: 'center', gap: size * 0.6, background: C.lcd, color: C.lcdInk, borderRadius: 999, padding: `${size * 0.4}px ${size * 0.9}px`, fontFamily: FONT_B, fontSize: size, letterSpacing: '0.06em', boxShadow: '0 8px 20px rgba(42,34,48,.18)'}}>
+    <div style={{display: 'inline-flex', alignItems: 'center', gap: size * 0.6, background: sending ? '#FFEEEE' : '#E8F3FF', color: sending ? C.tx : C.rx, borderRadius: Math.max(10, size * 0.45), padding: `${size * 0.4}px ${size * 0.9}px`, fontFamily: FONT_B, fontSize: size, letterSpacing: '0.04em'}}>
       <Led color={sending ? C.tx : C.rx} on={sending || talking} size={size * 0.55} />
       <span style={{width: size * 1.6}}>{sending ? 'TX' : 'RX'}</span>
-      <WaveBars on={talking || sending} color={sending ? '#ff8a9b' : C.lcdInk} h={size * 1.2} n={9} />
+      <WaveBars on={talking || sending} color={sending ? C.tx : C.rx} h={size * 1.2} n={9} />
     </div>
   );
   const intro = lead ? (
@@ -327,7 +325,7 @@ export const Feature: React.FC<{id: string; dur: number; index: number; hold: nu
   const pair = (size: number) => (
     <div style={{display: 'flex', flexDirection: 'column', gap: 6}}>
       <span style={{fontFamily: FONT, fontSize: size * 0.8, color: C.ink3, textDecoration: 'line-through', textDecorationColor: C.tx, textDecorationThickness: 3}}>{def.before}</span>
-      <span style={{fontFamily: FONT_B, fontSize: size, color: C.orange}}>→ {def.after}</span>
+      <span style={{fontFamily: FONT_B, fontSize: size, color: C.orangeText}}>→ {def.after}</span>
     </div>
   );
 
@@ -345,7 +343,7 @@ export const Feature: React.FC<{id: string; dur: number; index: number; hold: nu
             <div style={{marginTop: 18}}>{pair(44)}</div>
             <div style={{fontFamily: SERIF, fontSize: 62, color: C.ink, lineHeight: 1.15, marginTop: 14, wordBreak: 'keep-all'}}>{def.title}</div>
           </div>
-          <div style={{position: 'absolute', left: 24, top: 500, width: vw, height: vh, borderRadius: 32, overflow: 'hidden', border: `8px solid ${C.paper}`, boxShadow: '0 24px 50px rgba(80,40,60,.18)', background: C.lcd}}>
+          <div style={{position: 'absolute', left: 24, top: 500, width: vw, height: vh, borderRadius: 32, overflow: 'hidden', border: `8px solid ${C.paper}`, boxShadow: '0 16px 40px rgba(0,29,58,.10)', background: C.ink}}>
             {appClip(<AppView id={id} def={def} vw={vw - 16} vh={vh - 16} tall dur={clipDur} />, <AppView id={id} def={def} vw={vw - 16} vh={vh - 16} tall dur={clipDur} still />)}
           </div>
           <div style={{position: 'absolute', left: 48, top: 1335, right: 48, textAlign: 'center'}}>

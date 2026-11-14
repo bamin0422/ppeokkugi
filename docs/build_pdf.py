@@ -26,39 +26,41 @@ def fig(m):
     return f'<figure class="{cls}"><img src="{path.as_uri()}"><figcaption>{m[1]}</figcaption></figure>'
 html = re.sub(r'<p><img alt="([^"]*)" src="\.\./([^"]+)" /></p>', fig, html)
 
-icon = (root / "design/character/cuckoo_base.svg").as_uri()
-serif = (root / "app/src/main/res/font/pretendard_extrabold.otf").as_uri()
-css = f"""@font-face {{ font-family: "PretendardXB"; src: url({serif}); font-weight: 700; }}
-@page {{ size: A4; margin: 18mm 17mm 18mm; }}
-html {{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }}
-body {{ font-family: Pretendard, sans-serif; color: #2a2230; font-size: 10.4pt; line-height: 1.72; margin: 0; word-break: keep-all; }}
-.cover {{ height: 255mm; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; page-break-after: always; }}
-.cover img {{ width: 58mm; height: 58mm; margin-bottom: 12mm; }}
-.cover .name {{ font-family: "PretendardXB", Pretendard, sans-serif; font-weight: 700; font-size: 44pt; letter-spacing: -.03em; }}
-.cover .tag {{ display: inline-block; font-weight: 700; font-size: 15pt; color: #ffe9a3; background: #2a2230; border-radius: 99px; padding: 2.5mm 7mm; margin-top: 4mm; }}
-.cover .sub {{ font-size: 10.5pt; color: #6e6170; margin-top: 12mm; border-top: 1.5px solid #f1e6df; padding-top: 4mm; }}
-h2 {{ font-family: "PretendardXB", Pretendard, sans-serif; font-size: 16pt; font-weight: 700; letter-spacing: -.02em; margin: 9mm 0 3mm; padding-bottom: 1.8mm; border-bottom: 1.5px solid #f1e6df; break-after: avoid; }}
-h2::before {{ content: ''; display: inline-block; width: 2.6mm; height: 2.6mm; border-radius: 50%; background: #ff7a1a; margin-right: 2.5mm; vertical-align: .4mm; }}
-h2:first-of-type {{ margin-top: 0; }}
-blockquote {{ margin: 3mm 0 4mm; padding: 4.5mm 6mm; background: #ff7a1a; color: #fff; border-radius: 5mm; font-size: 13pt; font-weight: 700; }}
-blockquote p {{ margin: 0; }}
-table {{ width: 100%; border-collapse: separate; border-spacing: 0; margin: 3mm 0 4mm; font-size: 9.2pt; line-height: 1.5; break-inside: auto;
-  border: 1.5px solid #f1e6df; border-radius: 4mm; overflow: hidden; }}
-tr {{ break-inside: avoid; }}
-th {{ font-weight: 700; background: #2a2230; color: #ffe9a3; text-align: left; padding: 2mm 2.5mm; }}
-td {{ border-top: 1px solid #f1e6df; padding: 2mm 2.5mm; vertical-align: top; }}
-tr:nth-child(even) td {{ background: #fffaf6; }}
-td:first-child {{ white-space: nowrap; font-weight: 600; }}
-code {{ font-family: "SF Mono", Menlo, monospace; font-size: 8.6pt; background: #fbefe6; padding: .3mm 1mm; border-radius: 1mm; }}
-pre {{ background: #2a2230; color: #ffe9a3; padding: 4mm; font-size: 8.6pt; line-height: 1.45; border-radius: 4mm; }}
-pre code {{ background: none; color: inherit; padding: 0; }}
-figure {{ margin: 2mm 0 4mm; break-inside: avoid; display: inline-block; vertical-align: top; }}
-figure.half {{ width: 48.5%; }} figure.half:nth-of-type(odd) {{ margin-right: 2%; }}
-figure.wide {{ width: 100%; }}
-figure.tall {{ width: 38%; margin: 2mm 31% 4mm; }}
-figure img {{ width: 100%; border: 1px solid #f1e6df; border-radius: 3mm; box-shadow: 0 2mm 5mm rgba(80,40,60,.08); }}
-figcaption {{ font-size: 8.8pt; color: #6e6170; text-align: center; margin-top: 1.2mm; }}
-ul, ol {{ padding-left: 5.5mm; }} li {{ margin: 1mm 0; }} li::marker {{ color: #ff7a1a; }}
+icon = (root / "design/character/cuckoo_base.png").as_uri()
+fonts = "".join(f'@font-face {{ font-family: "PPK"; src: url({(root / f"app/src/main/res/font/pretendard_{n}.otf").as_uri()}); font-weight: {w}; }}\n'
+                for n, w in (("regular", 400), ("semibold", 600), ("bold", 700), ("extrabold", 800)))
+# 흰 면, 굵은 제목, 테두리 없는 회색 카드, 회색 글자 단계, 주 색은 주황
+css = fonts + """@page { size: A4; margin: 18mm 17mm 18mm; }
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { font-family: "PPK", sans-serif; color: #333D4B; font-size: 10.4pt; line-height: 1.72; margin: 0; word-break: keep-all; }
+strong, b { color: #191F28; font-weight: 700; }
+.cover { height: 255mm; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; page-break-after: always; }
+.cover img { width: 58mm; height: 58mm; object-fit: contain; margin-bottom: 10mm; }
+.cover .name { font-weight: 800; font-size: 48pt; letter-spacing: -.04em; color: #191F28; }
+.cover .tag { display: inline-block; font-weight: 700; font-size: 14pt; color: #B04000; background: #FFF1E6; border-radius: 2.6mm; padding: 2mm 5mm; margin-top: 4mm; }
+.cover .sub { font-size: 10.5pt; color: #6B7684; margin-top: 12mm; }
+h2 { font-weight: 800; font-size: 18pt; letter-spacing: -.03em; color: #191F28; margin: 11mm 0 3.5mm; break-after: avoid; }
+h2:first-of-type { margin-top: 0; }
+h3 { font-weight: 700; font-size: 12pt; color: #191F28; margin: 6mm 0 2mm; break-after: avoid; }
+blockquote { margin: 3mm 0 4mm; padding: 5mm 6mm; background: #FFF1E6; color: #B04000; border-radius: 6.4mm; font-size: 13pt; font-weight: 700; }
+blockquote p { margin: 0; }
+table { width: 100%; border-collapse: separate; border-spacing: 0; margin: 3mm 0 4mm; font-size: 9.2pt; line-height: 1.5; break-inside: auto;
+  background: #F9FAFB; border-radius: 6.4mm; overflow: hidden; }
+tr { break-inside: avoid; }
+th { font-weight: 600; color: #8B95A1; background: #F2F4F6; text-align: left; padding: 2.4mm 3mm; }
+td { border-top: 1px solid #F2F4F6; padding: 2.2mm 3mm; vertical-align: top; }
+td:first-child { white-space: nowrap; font-weight: 700; color: #191F28; }
+code { font-family: "SF Mono", Menlo, monospace; font-size: 8.6pt; background: #F2F4F6; color: #4E5968; padding: .3mm 1mm; border-radius: 1mm; }
+pre { background: #F2F4F6; color: #333D4B; padding: 4mm; font-size: 8.6pt; line-height: 1.45; border-radius: 4mm; }
+pre code { background: none; color: inherit; padding: 0; }
+figure { margin: 2mm 0 4mm; break-inside: avoid; display: inline-block; vertical-align: top; }
+figure.half { width: 48.5%; } figure.half:nth-of-type(odd) { margin-right: 2%; }
+figure.wide { width: 100%; }
+figure.tall { width: 38%; margin: 2mm 31% 4mm; }
+figure img { width: 100%; border-radius: 4mm; background: #F2F4F6; }
+figcaption { font-size: 8.8pt; color: #8B95A1; text-align: center; margin-top: 1.2mm; }
+ul, ol { padding-left: 5.5mm; } li { margin: 1mm 0; } li::marker { color: #E85F00; }
+a { color: #B04000; }
 """
 doc = f"""<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>{name} 서비스 소개서</title><style>{css}</style></head><body>
 <section class="cover"><img src="{icon}"><div class="name">{name.strip()}</div><div class="tag">{tagline.strip()}</div><div class="sub">{sub.strip()}</div></section>

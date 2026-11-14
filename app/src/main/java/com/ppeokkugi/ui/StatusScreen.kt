@@ -12,10 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -23,7 +19,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.text.font.FontWeight
 import com.ppeokkugi.SdkState
 import com.ppeokkugi.StatusViewModel
 
@@ -45,7 +40,7 @@ fun StatusScreen(vm: StatusViewModel) {
         SdkStateRow(sdk)
         Spacer(Modifier.height(R_.md))
 
-        SoftButton(onClick = { vm.runDemo() }, enabled = !demoRunning, fill = C.accent, border = C.accent, modifier = Modifier.fillMaxWidth().height(84.dp)) {
+        SoftButton(onClick = { vm.runDemo() }, enabled = !demoRunning, fill = C.accent, pressed = C.accentPressed, modifier = Modifier.fillMaxWidth().height(84.dp)) {
             Text(if (demoRunning) "데모 주행 중…" else "데모 주행", style = T.button.copy(color = if (demoRunning) C.ink2 else C.ink))
         }
 
@@ -66,7 +61,7 @@ fun StatusScreen(vm: StatusViewModel) {
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
-                .pin(lift = 0.dp),
+                .card(),
             contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
@@ -98,9 +93,6 @@ private fun SdkStateRow(sdk: SdkState) {
 
 @Composable
 private fun SdkChip(label: String, ready: Boolean) {
-    Text(
-        label,
-        style = T.note.copy(fontWeight = FontWeight.Bold, color = if (ready) C.ink else C.ink2),
-        modifier = Modifier.pin(if (ready) C.rx else C.paper, if (ready) C.rx else C.line, Pill, lift = 0.dp).padding(horizontal = 18.dp, vertical = 6.dp),
-    )
+    // 준비됨은 옅은 주황, 아직은 흰 바탕 회색 글자
+    Tag(label, if (ready) C.accentWeak else C.paper, if (ready) C.accentInk else C.ink2)
 }

@@ -31,7 +31,7 @@ export const Purpose: React.FC<{dur: number}> = ({dur}) => {
           <div style={{fontFamily: SERIF, fontSize: tall ? 88 : 100, color: C.ink, lineHeight: 1.25, marginTop: tall ? 50 : 40, letterSpacing: '-0.02em'}}>
             {PURPOSE[0]}
             <br />
-            <span style={{color: C.orange}}>{PURPOSE[1]}</span>
+            <span style={{color: C.orangeText}}>{PURPOSE[1]}</span>
           </div>
         </Pop>
         <Pop at={0.9 * k} blip={false} style={{transformOrigin: 'center'}}>
@@ -46,7 +46,7 @@ export const Purpose: React.FC<{dur: number}> = ({dur}) => {
         ].map(([src, label], i) => {
           const p = ramp(t, 0.5 * k + i * 0.25, 0.9 * k + i * 0.25);
           return (
-            <div key={src} style={{position: 'relative', width: tileW, height: (tileW * 9) / 16, borderRadius: 28, overflow: 'hidden', border: `6px solid ${C.paper}`, boxShadow: C.shadow, opacity: p, transform: `translateY(${(1 - p) * 40}px)`}}>
+            <div key={src} style={{position: 'relative', width: tileW, height: (tileW * 9) / 16, borderRadius: 24, overflow: 'hidden', boxShadow: C.shadow, opacity: p, transform: `translateY(${(1 - p) * 40}px)`}}>
               <Footage shots={[{src}]} dur={dur} mark={false} />
               <div style={{position: 'absolute', left: 20, bottom: 18}}>
                 <Chip size={tall ? 24 : 22} color={i ? C.orange : C.rx} ink={C.paper}>
@@ -89,8 +89,7 @@ export const Changes: React.FC<{dur: number}> = ({dur}) => {
               fontFamily: FONT_B,
               fontSize: tall ? 50 : 54,
               padding: tall ? '26px 40px' : '24px 54px',
-              borderRadius: 30,
-              boxShadow: '0 16px 36px rgba(42,34,48,.24)',
+              borderRadius: 24,
               textAlign: 'center',
               lineHeight: 1.3,
               display: 'flex',
@@ -98,7 +97,7 @@ export const Changes: React.FC<{dur: number}> = ({dur}) => {
               gap: 28,
             }}
           >
-            <Led color={C.rx} size={16} />
+            <Led color={C.orange} size={16} />
             <span>
               {tall ? (
                 <>
@@ -123,15 +122,16 @@ const Row: React.FC<{before: string; after: string; at: number; color: string}> 
   const strike = ramp(t, at + 0.25, at + 0.5);
   const ap = useSpring(at + 0.5, 11, 170);
   return (
-    <div style={{display: 'grid', gridTemplateColumns: '1fr 90px 1fr', alignItems: 'center', height: 108, background: C.paper, border: `1.5px solid ${C.line}`, borderLeft: `12px solid ${color}`, borderRadius: 28, boxShadow: C.shadow, opacity: Math.min(1, p * 1.4), transform: `translateX(${(1 - p) * -60}px) rotate(${(1 - p) * -2}deg)`}}>
+    <div style={{display: 'grid', gridTemplateColumns: '1fr 90px 1fr', alignItems: 'center', height: 108, position: 'relative', background: C.paper, borderRadius: 24, boxShadow: C.shadow, opacity: Math.min(1, p * 1.4), transform: `translateX(${(1 - p) * -60}px) rotate(${(1 - p) * -2}deg)`}}>
       <Sfx name="blip" at={at + 0.5} volume={0.28} />
+      <i style={{position: 'absolute', left: 36, top: 44, width: 20, height: 20, borderRadius: 10, background: color}} />
       <div style={{textAlign: 'right', paddingRight: 10}}>
         <span style={{position: 'relative', fontFamily: FONT, fontSize: 38, color: C.ink3, whiteSpace: 'nowrap'}}>
           {before}
           <span style={{position: 'absolute', left: -4, top: '54%', height: 4, borderRadius: 2, width: `calc(${strike * 100}% + 8px)`, background: C.tx}} />
         </span>
       </div>
-      <div style={{textAlign: 'center', fontFamily: FONT_B, fontSize: 40, color: C.orange, opacity: ap}}>→</div>
+      <div style={{textAlign: 'center', fontFamily: FONT_B, fontSize: 40, color: C.orangeText, opacity: ap}}>→</div>
       <div style={{fontFamily: SERIF, fontSize: 50, color: C.ink, opacity: ap, transform: `scale(${0.7 + 0.3 * ap})`, transformOrigin: 'left center', whiteSpace: 'nowrap'}}>{after}</div>
     </div>
   );
@@ -157,7 +157,7 @@ export const Report: React.FC<{dur: number}> = ({dur}) => {
         </Pop>
         <Pop at={0.2} blip={false}>
           <div style={{fontFamily: SERIF, fontSize: tall ? 62 : 58, color: C.ink, marginTop: 22, lineHeight: 1.2, wordBreak: 'keep-all'}}>
-            운행 종료 <span style={{color: C.orange}}>→</span> 차량별 운행 보고서
+            운행 종료 <span style={{color: C.orangeText}}>→</span> 차량별 운행 보고서
           </div>
         </Pop>
       </div>
@@ -170,11 +170,10 @@ export const Report: React.FC<{dur: number}> = ({dur}) => {
           opacity: shot,
           transform: `translateY(${(1 - shot) * -80}px) rotate(${(1 - shot) * -3}deg) scale(${zoom})`,
           transformOrigin: 'left top',
-          border: `1.5px solid ${C.line}`,
-          borderRadius: 28,
+          borderRadius: 24,
           overflow: 'hidden',
           background: C.paper,
-          boxShadow: '0 24px 50px rgba(80,40,60,.16)',
+          boxShadow: C.shadow,
         }}
       >
         <div style={{height: 44, background: C.paper, borderBottom: `1.5px solid ${C.line}`, display: 'flex', alignItems: 'center', gap: 10, padding: '0 20px', fontFamily: FONT, fontSize: 18, color: C.ink2}}>
