@@ -10,7 +10,8 @@ const APP_H = 1210;
 const FULL: Rect = [0, 0, APP_W, APP_H];
 
 // 새 앱 배치(2026-11-14 녹화) 기준. 화면 좌표에서 (853, 90)을 뺀 값
-const CARDS: Rect = [640, 120, 1040, 640];
+// 카드 가운데(1154)에 맞춘다. 천천히 다가가도 강조 테두리 좌우가 잘리지 않는다
+const CARDS: Rect = [614, 120, 1080, 640];
 // 카드는 클립 프레임에서 잰 값(흰·옅은 빨강 카드의 가장자리)
 const CARD1: Rect = [654, 163, 1000, 182];
 const CARD2: Rect = [654, 364, 1000, 186];
@@ -20,8 +21,9 @@ const PTT: Rect = [652, 1043, 1002, 142];
 const VOTE_OPTS: Rect = [654, 254, 1000, 200];
 const VOTE_2: Rect = [994, 254, 320, 200];
 const CAR_LIST: Rect = [20, 700, 615, 360];
-const NAV_LIST: Rect = [5, 5, 595, 800];
-const NAV_ROUTE: Rect = [800, 20, 480, 1060];
+// 내비 화면에서 잰 값: 경로 목록 패널(안내 시작 버튼 포함), 경로 선과 도착 핀·시간 표시
+const NAV_LIST: Rect = [26, 36, 578, 841];
+const NAV_ROUTE: Rect = [870, 40, 510, 1130];
 
 export type FeatureDef = {
   tag: string;
@@ -58,7 +60,7 @@ export const FEATURES: Record<string, FeatureDef> = {
     note: '에뮬레이터는 마이크 입력 없음 · 송신 표시만',
     mood: 'tx',
     cam: [[0.3, [600, 150, 1082, 1060]]],
-    camTall: [[0.0, TALL0], [0.5, [650, 560, 1020, 640]]],
+    camTall: [[0.0, TALL0], [0.5, [614, 560, 1080, 640]]],
     ring: [[1.0, PTT]],
     radio: [1.0],
   },
@@ -71,8 +73,8 @@ export const FEATURES: Record<string, FeatureDef> = {
     note: '왼쪽: Pleos 미탑재 일행의 휴대폰 웹',
     mood: 'rx',
     cam: [[0.2, CARDS]],
-    camTall: [[0.0, TALL0], [0.4, [650, 120, 1020, 640]]],
-    ring: [[0.7, CARD1], [3.6, null]],
+    camTall: [[0.0, TALL0], [0.4, CARDS]],
+    ring: [[0.7, CARD1], [3.5, null]],   // 0.70초 카드 등장, 3.83초 목록 바뀜
     radio: [0.7],
   },
   brake: {
@@ -83,8 +85,8 @@ export const FEATURES: Record<string, FeatureDef> = {
     sub: '앞차 급제동, 거리 포함 음성·카드·지도 핀 전달',
     mood: 'brake',
     cam: [[0.2, [0, 100, APP_W, 650]], [2.3, CARDS]],
-    camTall: [[0.0, TALL0], [0.4, [650, 120, 1020, 640]]],
-    ring: [[0.7, CARD1], [3.1, CARD2], [6.6, null]],
+    camTall: [[0.0, TALL0], [0.4, CARDS]],
+    ring: [[0.7, CARD1], [3.2, CARD2], [6.2, null]],   // 3.33초 새 카드가 밀어 내림, 6.47초 목록 바뀜
     radio: [0.7],
     alert: 0.75,
   },
@@ -95,9 +97,9 @@ export const FEATURES: Record<string, FeatureDef> = {
     title: '휴게소 투표',
     sub: '후보 3곳 · 번호 누르기나 "1번" 음성 투표',
     mood: 'vote',
-    cam: [[0.2, [600, 100, 1082, 560]]],
-    camTall: [[0.0, TALL0], [0.4, [650, 110, 1020, 560]]],
-    ring: [[0.4, VOTE_OPTS], [6.2, VOTE_2], [7.6, null]],   // 장면이 겹쳐 사라지기 전에 2번에 자리 잡는다
+    cam: [[0.2, [614, 100, 1080, 560]]],
+    camTall: [[0.0, TALL0], [0.4, [614, 110, 1080, 560]]],
+    ring: [[1.0, VOTE_OPTS], [6.2, VOTE_2], [7.4, null]],   // 0.93초 투표 창 등장, 7.73초 목록 바뀜
     radio: [0.2],
   },
   waypoint: {
@@ -108,7 +110,7 @@ export const FEATURES: Record<string, FeatureDef> = {
     sub: '투표 결과 휴게소, 전 차량 내비에 자동 반영',
     note: '앱 → 차량 순정 내비 (NaviHelper)',
     mood: 'arrive',
-    cam: [[0.2, CARDS], [0.7, [0, 0, 1300, 1100]], [3.0, FULL]],   // 내비로 바뀌기 전에 미리 넓혀 빈 지도를 비추지 않는다
+    cam: [[0.2, CARDS], [0.7, [0, 0, 1300, 1100]], [2.3, FULL]],   // 내비로 바뀌기 전에 미리 넓혀 빈 지도를 비추지 않는다
     camTall: [[0.0, [640, 100, 1042, 800]], [0.7, [0, 0, 1000, 1210]]],
     ring: [[0.2, CARD1], [0.8, null], [1.8, NAV_LIST], [2.8, NAV_ROUTE], [3.7, null]],
     radio: [0.0],
@@ -121,7 +123,7 @@ export const FEATURES: Record<string, FeatureDef> = {
     sub: '차량 간 거리 표시, 휴게소 도착 보고, 전원 도착 시 깃발 색 깜빡임',
     mood: 'arrive',
     cam: [[0.1, [0, 520, 900, 560]], [1.8, CARDS]],
-    camTall: [[0.0, [0, 480, 1000, 760]], [1.8, [650, 120, 1020, 640]]],
+    camTall: [[0.0, [0, 480, 1000, 760]], [1.8, CARDS]],
     ring: [[0.2, CAR_LIST], [1.7, null], [2.2, CARD2_TALL]],
     radio: [2.0],
   },
@@ -146,12 +148,12 @@ const camTransform = (r: Rect, vw: number, vh: number) => {
 const lerp = (a: number, b: number, p: number) => a + (b - a) * p;
 const lerpRect = (a: Rect, b: Rect, p: number): Rect => [0, 1, 2, 3].map((i) => lerp(a[i], b[i], p)) as Rect;
 
-const useKeyed = <T,>(keys: [number, T][], start: T, mix: (a: T, b: T, p: number) => T, damping = 22) => {
+const useKeyed = <T,>(keys: [number, T][], start: T, mix: (a: T, b: T, p: number) => T, damping = 22, move = 1.1) => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
   let cur = start;
   for (const [at, v] of keys) {
-    const p = spring({frame: frame - Math.round(at * fps), fps, config: {damping, stiffness: 60, mass: 1}, durationInFrames: Math.round(1.1 * fps)});
+    const p = spring({frame: frame - Math.round(at * fps), fps, config: {damping, stiffness: 60, mass: 1}, durationInFrames: Math.round(move * fps)});
     cur = mix(cur, v, p);
   }
   return cur;
@@ -170,8 +172,8 @@ const AppView: React.FC<{id: string; def: FeatureDef; vw: number; vh: number; ta
 
   // 강조 테두리
   const firstRing = def.ring[0];
-  const ringRect = useKeyed<Rect | null>(def.ring, null, (a, b, p) => (b === null ? (p > 0.5 ? null : a) : a === null ? b : lerpRect(a, b, p)), 18);
-  const ringIn = t >= firstRing[0] ? spring({frame: Math.round((t - firstRing[0]) * fps), fps, config: {damping: 10, stiffness: 140}}) : 0;
+  const ringRect = useKeyed<Rect | null>(def.ring, null, (a, b, p) => (b === null ? (p > 0.5 ? null : a) : a === null ? b : lerpRect(a, b, p)), 18, 0.45);   // 카드는 한 프레임에 바뀌므로 테두리도 빨리 옮긴다
+  const ringIn = t >= firstRing[0] ? spring({frame: Math.round((t - firstRing[0]) * fps), fps, config: {damping: 10, stiffness: 140, overshootClamping: true}}) : 0;   // 튕기면 테두리가 카드 안쪽으로 줄어 글자를 가린다
   const pulse = 0.5 + 0.5 * Math.sin(t * 7);
   const {mute = 0, muteAfter = 99} = clipCfg(id);
   const edge = 0.3;
@@ -202,7 +204,7 @@ const AppView: React.FC<{id: string; def: FeatureDef; vw: number; vh: number; ta
               borderRadius: 24,
               boxShadow: `0 0 0 ${(6 + pulse * 10) / Math.max(1, s)}px ${C.orange}40`,
               opacity: ringIn,
-              transform: `scale(${1.25 - 0.25 * ringIn})`,
+              transform: `scale(${1.1 - 0.1 * ringIn})`,
             }}
           />
         ) : null}
