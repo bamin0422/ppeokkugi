@@ -14,6 +14,8 @@ export const Clock: React.FC<{dur: number}> = ({dur}) => {
   const door = useSpring(0.5 * k, 12, 140);
   const out = useSpring(0.65 * k, 9, 120);
   const back = ramp(t, 5.0, 5.6);
+  // 새가 문보다 커서 문이 닫혀 있으면 다리·날개가 삐져나온다. 문이 열린 만큼만 보인다.
+  const shown = Math.min(1, Math.max(0, door * 3 - 0.2)) * (1 - ramp(t, 4.95, 5.2));
   const S = tall ? 1.4 : 1;
   const cx = tall ? width / 2 : 560;
   const cy = tall ? 720 : 520;
@@ -45,7 +47,7 @@ export const Clock: React.FC<{dur: number}> = ({dur}) => {
           </div>
         ))}
         {/* 마스코트 튀어나옴 */}
-        <div style={{position: 'absolute', left: 230 * S - 96, top: 175 * S - 50 + (1 - out * (1 - back)) * 70, opacity: out > 0.02 ? 1 : 0, transform: `scale(${0.6 + 0.4 * out})`}}>
+        <div style={{position: 'absolute', left: 230 * S - 96, top: 175 * S - 50 + (1 - out * (1 - back)) * 70, opacity: out > 0.02 ? shown : 0, transform: `scale(${0.6 + 0.4 * out})`}}>
           <Sprite mood={t > 0.9 && t < 5.0 ? 'talk' : 'base'} scale={3} />
         </div>
         {/* 문짝 */}
