@@ -13,8 +13,8 @@ type Item = {id: string; from: number; dur: number; vo: string | null; hold: num
 const FPS = cfg.fps;
 const T = Math.round(cfg.transition * FPS);
 const VO_DELAY = Math.round(cfg.voDelay * FPS);
-const BGM = 'audio/bgm_flow_v5.wav';
-const BGM_BASE = 0.14; // 처음부터 끝까지 같은 크기로 깐다(목소리에 맞춰 줄였다 키우면 출렁여 들린다)
+const BGM = 'audio/bgm_flow_v6.wav';
+const BGM_BASE = 0.12; // 처음부터 끝까지 같은 크기로 깐다(목소리에 맞춰 줄였다 키우면 출렁여 들린다)
 
 const items = (kind: 'wide' | 'short'): Item[] => {
   let fi = 0;

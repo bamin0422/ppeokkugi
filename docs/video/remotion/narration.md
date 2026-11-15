@@ -1,6 +1,6 @@
 # 소개 영상 나레이션 대본 (일레븐랩스)
 
-장면 id는 `src/scenes.json`의 `wide` 목록과 맞춘다. 한 줄 = 음성 파일 하나(`public/audio/vo/<id>.mp3`). 생성한 원본은 `vo_orig/`에 두고, 영상에는 원본 속도 그대로 음량만 -8.5dB 낮춘 파일을 쓴다(앱 음성 안내와 크기를 맞추기 위해). 목소리는 ElevenLabs "Jisoo"(Eleven v4), 문장 앞에 `[urgent]` 태그(n05·n17은 `[excited]`)를 붙여 긴박한 안내 톤으로 만들었다.
+장면 id는 `src/scenes.json`의 `wide` 목록과 맞춘다. 한 줄 = 음성 파일 하나(`public/audio/vo/<id>.mp3`). 생성한 원본은 `vo_orig/`에 두고, 영상에는 음높이를 그대로 둔 채 10% 빠르게 하고(ffmpeg `atempo=1.10`) 음량을 8dB 낮춘 파일을 쓴다(앱 음성 안내와 크기를 맞추기 위해). 목소리는 ElevenLabs "Jisoo"(Eleven v4)이고, 감정 태그 없이 아래 문장을 그대로 넣어 또렷한 안내 톤으로 만들었다.
 
 | id | 장면 | 나레이션 |
 |---|---|---|

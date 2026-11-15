@@ -17,7 +17,7 @@ scripts/sheet.sh ../뻐꾸기_소개영상.mp4 wide out/sheet_wide.png   # 장�
 - 미리보기: `npx remotion studio`
 - 사람이 손대는 곳은 `src/scenes.json` 하나다. `wide`·`short`는 `[장면, 기본 길이(초), 나레이션 id]` 목록이고, `clips`는 녹화 안 구간과 클립 소리 설정(`lead`, `mute`, `muteAfter`)이다.
 - `src/timeline.json`은 prep.py가 계산한다. 장면 길이 = max(기본 길이, 0.4초 + 나레이션 + `voPad`)이고, 다음 장면에 나레이션이 없으면 이번 나레이션이 다음 장면으로 넘어가도 된다(급제동 실사 → 급제동 시연). 시연 장면은 앱 음성이 나레이션과 겹치지 않도록 클립 첫 프레임을 멈춰 두는 시간(`hold`)을 넣는다. 겹치면 prep.py가 멈춘다. 나레이션만 바꿨을 때는 `python3 scripts/prep.py --audio-only`로 충분하다.
-- 소재: 나레이션 `public/audio/vo/n01~n17.mp3`(대본 `narration.md`), BGM `public/audio/bgm_flow_1.wav`, 연출 이미지 `public/broll/*.jpg`(1376×768). `public/`은 git에 올리지 않으므로 이 소재는 따로 보관한다.
+- 소재: 나레이션 `public/audio/vo/n01~n17.mp3`(대본 `narration.md`), BGM `public/audio/bgm_flow_v6.wav`, 연출 이미지 `public/broll/*.jpg`(1376×768). `public/`은 git에 올리지 않으므로 이 소재는 따로 보관한다.
 - 앱 음성: 녹화 속 TTS는 -28dB 안팎으로 작다. 고정 증폭 대신 클립마다 피크 -7dBFS로 정규화한다(`PEAK`).
 - BGM: 처음부터 끝까지 같은 크기로 깐다(`src/Root.tsx`의 `BGM_BASE`). 말이 나올 때만 낮추면 음악이 출렁여 들려서 낮추지 않는다. 처음 1초 페이드 인, 끝 2.5초 페이드 아웃.
 - 연출 이미지: 정지 이미지를 장면 길이 동안 천천히 밀거나 당긴다(`src/Broll.tsx`의 `PUSH`, 샷의 `out`). 가로는 1.16배 확대해 오른쪽 아래 생성 표시를 화면 밖으로 밀고, 세로는 가운데만 잘라 쓴다. 화면 오른쪽 위에 "AI 생성 연출 이미지"라고 적는다. 운전석 장면(`cockpit.jpg`)은 생성 이미지의 가운데 화면에 실제 앱 화면을 합성한 것이다.

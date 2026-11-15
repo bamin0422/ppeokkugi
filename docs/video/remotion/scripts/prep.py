@@ -3,7 +3,7 @@
 나레이션 길이에 맞춘 장면 시간표(src/timeline.json) 계산.
 
 사용: python3 scripts/prep.py            (docs/video/remotion 에서)
-원본: ../src/raw (take8·take9 녹화, gitignore), public/audio/vo/*.mp3(나레이션), public/audio/bgm_flow_v5.wav(BGM)
+원본: ../src/raw (take8·take9 녹화, gitignore), public/audio/vo/*.mp3(나레이션), public/audio/bgm_flow_v6.wav(BGM)
 결과: public/ (gitignore), src/speech.json, src/timeline.json
 """
 import json

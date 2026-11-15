@@ -6,8 +6,8 @@
 
 | 소리 | 출처 | 만든 방법 |
 |---|---|---|
-| 나레이션 | ElevenLabs 생성 | 모델 Eleven v4, 음성 "Jisoo - Inviting, Clear and Measured". 문장 앞에 `[urgent]`(n05·n17은 `[excited]`) 태그를 붙여 긴박한 톤으로 생성. 대본은 `remotion/narration.md`, 파일은 `remotion/public/audio/vo/n01.mp3`~`n17.mp3`(원본 속도, 음량 -8.5dB). 장면이 시작하고 0.4초 뒤에 나오며, 장면 길이를 나레이션 길이에 맞춤 |
-| 배경음악 | Google Flow Music 생성 | `remotion/public/audio/bgm_flow_v5.wav`. 140BPM 현악 오스티나토·신스 베이스·째깍 소리·무전 잡음과 삐 소리가 들어간 긴박한 곡(연주곡). 처음부터 끝까지 같은 크기로 깔고, 처음 1초 페이드 인·끝 2.5초 페이드 아웃 |
+| 나레이션 | ElevenLabs 생성 | 모델 Eleven v4, 음성 "Jisoo - Inviting, Clear and Measured". 감정 태그 없이 대본 문장을 그대로 넣어 생성(안정성 50%, 유사성 75%). 대본은 `remotion/narration.md`, 파일은 `remotion/public/audio/vo/n01.mp3`~`n17.mp3`(음높이를 유지한 채 10% 빠르게, 음량 -8dB). 장면이 시작하고 0.4초 뒤에 나오며, 장면 길이를 나레이션 길이에 맞춤 |
+| 배경음악 | Google Flow Music 생성 | `remotion/public/audio/bgm_flow_v6.wav`. 110BPM, 뮤트 주법 전기 기타·가벼운 킥과 박수·베이스·패드로 이루어진 단순한 연주곡. 생성한 곡 앞머리의 무음 7.8초를 잘라 씀. 처음부터 끝까지 같은 크기로 깔고, 처음 1초 페이드 인·끝 2.5초 페이드 아웃 |
 | 앱 음성 안내 | 뻐꾸기 앱 실제 출력 | Pleos Connect Emulator 녹화(`src/raw`)에 함께 담긴 앱의 Pleos TextToSpeech 출력. 녹화 소리의 타임스탬프 빈틈을 무음으로 채워 말이 끊기지 않게 하고, 늦게 나온 안내는 해당 카드가 보이는 구간에 맞춰 붙임. 고정 증폭 대신 클립마다 피크 -7dBFS로 정규화하고 리미터를 안전장치로만 둠. 나레이션과 겹치지 않게 시연 장면 앞머리에서 클립 첫 프레임을 멈춰 둠 |
 | 무전 딸깍·스켈치 (`ptt`) | 직접 합성 | 사인파 딸깍과 짧게 감쇠하는 대역 통과 잡음 |
 | 로저 비프 (`roger`) | 직접 합성 | 1175Hz·1568Hz 사인 두 음과 짧은 스켈치 꼬리 |
