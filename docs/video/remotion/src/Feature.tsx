@@ -11,13 +11,14 @@ const FULL: Rect = [0, 0, APP_W, APP_H];
 
 // 새 앱 배치(2026-11-14 녹화) 기준. 화면 좌표에서 (853, 90)을 뺀 값
 const CARDS: Rect = [640, 120, 1040, 640];
-const CARD1: Rect = [652, 172, 1003, 128];
-const CARD2: Rect = [652, 318, 1003, 128];
-const CARD2_TALL: Rect = [652, 318, 1003, 176];
-const CARD3: Rect = [652, 464, 1003, 128];
+// 카드는 클립 프레임에서 잰 값(흰·옅은 빨강 카드의 가장자리)
+const CARD1: Rect = [654, 163, 1000, 182];
+const CARD2: Rect = [654, 364, 1000, 186];
+const CARD2_TALL: Rect = CARD2;
+const CARD3: Rect = [654, 569, 1000, 182];
 const PTT: Rect = [652, 1043, 1002, 142];
-const VOTE_OPTS: Rect = [655, 255, 1000, 195];
-const VOTE_2: Rect = [994, 255, 315, 195];
+const VOTE_OPTS: Rect = [654, 254, 1000, 200];
+const VOTE_2: Rect = [994, 254, 320, 200];
 const CAR_LIST: Rect = [20, 700, 615, 360];
 const NAV_LIST: Rect = [5, 5, 595, 800];
 const NAV_ROUTE: Rect = [800, 20, 480, 1060];
@@ -96,7 +97,7 @@ export const FEATURES: Record<string, FeatureDef> = {
     mood: 'vote',
     cam: [[0.2, [600, 100, 1082, 560]]],
     camTall: [[0.0, TALL0], [0.4, [650, 110, 1020, 560]]],
-    ring: [[0.4, VOTE_OPTS], [7.0, VOTE_2], [7.7, CARD1]],
+    ring: [[0.4, VOTE_OPTS], [6.2, VOTE_2], [7.6, null]],   // 장면이 겹쳐 사라지기 전에 2번에 자리 잡는다
     radio: [0.2],
   },
   waypoint: {
