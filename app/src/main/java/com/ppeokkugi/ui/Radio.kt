@@ -41,7 +41,7 @@ val Pill = RoundedCornerShape(50)
 /** 카드: 테·그림자 없이 바탕만 칠한 둥근 면 */
 fun Modifier.card(fill: Color = C.paper, shape: Shape = RoundedCornerShape(R_.card)) = background(fill, shape).clip(shape)
 
-/** 작은 태그: 옅은 바탕에 진한 글자(RX 파랑, TX 주황, 경고 빨강 등) */
+/** 작은 태그: 옅은 바탕에 진한 글자(RX 주황, TX 파랑, 경고 빨강 등) */
 @Composable
 fun Tag(text: String, bg: Color, fg: Color, modifier: Modifier = Modifier) {
     Text(

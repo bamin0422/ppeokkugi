@@ -3,7 +3,7 @@
 나레이션 길이에 맞춘 장면 시간표(src/timeline.json) 계산.
 
 사용: python3 scripts/prep.py            (docs/video/remotion 에서)
-원본: ../src/raw (take8·take9 녹화, gitignore), public/audio/vo/*.mp3(나레이션), public/audio/bgm_flow_v6.wav(BGM)
+원본: ../src/raw (take8·take9·take10 녹화, gitignore), public/audio/vo/*.mp3(나레이션), public/audio/bgm_flow_v6.wav(BGM)
 결과: public/ (gitignore), src/speech.json, src/timeline.json
 """
 import json
@@ -36,7 +36,7 @@ def rec_start(take, seg):
 
 
 SRCS = {"A1": ("take8/emu-1.webm", ("take8", 1)), "A2": ("take8/emu-2.webm", ("take8", 2)),
-        "B": ("take9/emu-1.webm", ("take9", 1))}
+        "B": ("take9/emu-1.webm", ("take9", 1)), "C1": ("take10/emu-1.webm", ("take10", 1))}
 
 
 def aligned_audio(f):
@@ -139,7 +139,18 @@ def assets():
     for p in (HERE / "fonts").iterdir():
         if p.suffix in (".ttf", ".otf"):
             shutil.copy(p, PUB / "fonts" / p.name)
-    shutil.copy(ROOT / "design/screens/control-report.png", PUB / "shots/report.png")
+    # 보고서 장면: 가상 차량 운행을 끝낸 방의 보고서를 새로 찍은 화면(src/raw/report.png). 없으면 예전 캡처를 쓴다
+    shot = RAW / "report.png"
+    shutil.copy(shot if shot.exists() else ROOT / "design/screens/control-report.png", PUB / "shots/report.png")
+    # 앱 정지 화면: design/screens-v2 (차량 2560×1440 은 앱 영역 1682×1210 만, 휴대폰은 그대로)
+    from PIL import Image
+    (PUB / "screens").mkdir(exist_ok=True)
+    for p in (ROOT / "design/screens-v2").glob("*.png"):
+        im = Image.open(p)
+        (im.crop((853, 90, 853 + 1682, 90 + 1210)) if im.size == (2560, 1440) else im).save(PUB / "screens" / p.name)
+    # 2D 삽화: design/illust/*.jpg → public/broll (영상용 12장은 따로 넣는다. README 참고)
+    for p in (ROOT / "design/illust").glob("*.jpg"):
+        shutil.copy(p, PUB / "broll" / p.name)
 
 
 # ---------------- 효과음 합성 (코드로 생성) ----------------
@@ -248,7 +259,7 @@ def probe_len(path):
 
 def timeline():
     """장면 시간표(프레임). 장면 길이 = max(기본 길이, 나레이션 + pad).
-    다음 장면에 나레이션이 없으면 이번 나레이션이 다음 장면으로 넘어가도 된다(급제동 실사 → 급제동 시연).
+    다음 장면에 나레이션이 없으면 이번 나레이션이 다음 장면으로 넘어가도 된다(급제동 삽화 → 급제동 시연).
     시연 장면은 앱 음성이 나레이션과 겹치지 않도록 클립 첫 프레임을 멈춰 두는 시간(hold)을 둔다."""
     fps, T = CFG["fps"], round(CFG["transition"] * CFG["fps"])
     delay, pad, gap = (round(CFG[k] * fps) for k in ("voDelay", "voPad", "voGap"))
@@ -298,7 +309,8 @@ def timeline():
 def main():
     PUB.mkdir(exist_ok=True)
     assets()
-    if "--audio-only" not in sys.argv:
+    # 실제 녹화는 더 쓰지 않는다. 원본(src/raw/take*)이 있을 때만 클립을 자른다
+    if "--audio-only" not in sys.argv and (RAW / "take8").exists():
         clips()
     sfx()
     timeline()

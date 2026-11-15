@@ -60,7 +60,7 @@ fun AppScreen(vm: StatusViewModel) {
             Modifier.fillMaxWidth().padding(start = 28.dp, end = 28.dp, top = 18.dp, bottom = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Logo()
+            Logo(s.me?.let(C::car))
             Spacer(Modifier.width(R_.lg))
             if (s.code != null) {
                 val (dot, word) = when (s.link) {
@@ -68,7 +68,7 @@ fun AppScreen(vm: StatusViewModel) {
                     Link.CONNECTING -> C.grey400 to "연결 중"
                     Link.OFF -> C.tx to "끊김"
                 }
-                // 방 코드·일행 수는 옅은 주황 칩, 연결은 점과 회색 글자
+                // 방 코드·일행 수는 옅은 파랑 칩, 연결은 점과 회색 글자
                 Text("CH ${s.code} · ${s.cars.size}대", style = T.num.copy(fontSize = 26.sp, lineHeight = 32.sp, letterSpacing = 0.5.sp, color = C.accentInk),
                     modifier = Modifier.background(C.accentWeak, RoundedCornerShape(R_.sm)).padding(horizontal = 18.dp, vertical = 10.dp))
                 Spacer(Modifier.width(R_.lg))
@@ -101,39 +101,45 @@ fun AppScreen(vm: StatusViewModel) {
 
 /** 로고: 마스코트 + "뻐꾸기" */
 @Composable
-private fun Logo() {
+private fun Logo(body: Color?) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        CuckooView(Mood.BASE, Modifier.size(60.dp), Play.STILL)
+        CuckooView(Mood.BASE, Modifier.size(60.dp), Play.STILL, body)
         Spacer(Modifier.width(8.dp))
         Text("뻐꾸기", style = T.brand.copy(fontSize = 42.sp, letterSpacing = (-1).sp))
     }
 }
 
-/** 긴급 콜: 다른 화면을 모두 덮는 빨강 화면. 흰 점이 깜빡인다. 확인을 눌러야 닫힌다 */
+private val NIGHT = Color(0xFF151A38)       // 긴급 콜 바탕(짙은 남색)
+private val NIGHT_CARD = Color(0xFF232B5A)  // 긴급 콜 카드
+private val NIGHT_SUB = Color(0xFFB9C2F0)   // 남색 위 보조 글자(8.9:1)
+
+/**
+ * 긴급 콜: 다른 화면을 모두 덮는 짙은 남색 화면에 카드 한 장을 띄운다.
+ * 빨강은 머리 칩과 깜빡이는 점에만 쓴다. 확인을 눌러야 닫힌다
+ */
 @Composable
 private fun EmergencyAlert(e: Emergency, onOk: () -> Unit) {
-    Box(Modifier.fillMaxSize().background(C.tx).clickable(enabled = false) {}.padding(64.dp), contentAlignment = Alignment.Center) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(56.dp)) {
+    Box(Modifier.fillMaxSize().background(NIGHT).clickable(enabled = false) {}.padding(72.dp), contentAlignment = Alignment.Center) {
+        Row(
+            Modifier.fillMaxWidth().card(NIGHT_CARD, RoundedCornerShape(40.dp)).padding(56.dp),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(56.dp),
+        ) {
             // 긴급 콜은 주행 중에도 계속 들썩인다
-            SpeakerBox(Modifier.size(300.dp), C.paper) { CuckooView(Mood.EMERGENCY, Modifier.size(256.dp)) }
+            SpeakerBox(Modifier.size(300.dp), NIGHT) { CuckooView(Mood.EMERGENCY, Modifier.size(256.dp)) }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(R_.lg)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Dot(Color.White, size = 28.dp, blink = true)
-                    Spacer(Modifier.width(28.dp))
-                    Text("긴급 콜", style = T.brand.copy(fontSize = 76.sp, lineHeight = 84.sp, color = Color.White))
-                }
-                Column(
-                    Modifier.fillMaxWidth().card().padding(horizontal = 40.dp, vertical = 32.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                Row(
+                    Modifier.background(C.tx, RoundedCornerShape(R_.md)).padding(horizontal = 24.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text("EMERGENCY · ${e.from} 에어백", style = T.num.copy(fontSize = 32.sp, lineHeight = 40.sp, color = C.tx),
-                        modifier = Modifier.background(C.txWeak, RoundedCornerShape(R_.sm)).padding(horizontal = 18.dp, vertical = 6.dp))
-                    Text(e.text, style = T.cardText.copy(fontSize = 48.sp, lineHeight = 60.sp))
-                    e.lat?.let { Text("${"%.4f".format(it)}, ${"%.4f".format(e.lng)} · ${TIME.format(Date(e.at))}", style = T.num.copy(fontSize = 28.sp, color = C.ink2)) }
+                    Dot(Color.White, size = 16.dp, blink = true)
+                    Spacer(Modifier.width(14.dp))
+                    Text("긴급 콜 · ${e.from} 에어백", style = T.num.copy(fontSize = 30.sp, lineHeight = 38.sp, color = Color.White))
                 }
-                Text("안전한 곳에 차를 세우고 연락하십시오.", style = T.body.copy(fontSize = 28.sp, lineHeight = 36.sp, color = Color.White))
-                SoftButton(onClick = onOk, fill = C.paper, pressed = C.grey200, modifier = Modifier.width(360.dp).height(100.dp)) {
-                    Text("확인", style = T.button.copy(fontSize = 36.sp, lineHeight = 40.sp, color = C.tx))
+                Text(e.text, style = T.cardText.copy(fontSize = 52.sp, lineHeight = 64.sp, color = Color.White))
+                e.lat?.let { Text("${"%.4f".format(it)}, ${"%.4f".format(e.lng)} · ${TIME.format(Date(e.at))}", style = T.num.copy(fontSize = 28.sp, color = NIGHT_SUB)) }
+                Text("안전한 곳에 차를 세우고 연락하십시오.", style = T.body.copy(fontSize = 28.sp, lineHeight = 36.sp, color = NIGHT_SUB))
+                SoftButton(onClick = onOk, fill = C.accent, pressed = C.accentPressed, modifier = Modifier.width(360.dp).height(100.dp)) {
+                    Text("확인", style = T.button.copy(fontSize = 36.sp, lineHeight = 40.sp, color = C.ink))
                 }
             }
         }

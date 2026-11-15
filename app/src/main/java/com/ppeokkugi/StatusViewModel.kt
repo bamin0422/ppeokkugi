@@ -19,6 +19,8 @@ import com.ppeokkugi.net.RoomMsg
 import com.ppeokkugi.voice.Voice
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import com.ppeokkugi.ui.C
+import androidx.compose.ui.graphics.toArgb
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -127,6 +129,15 @@ class StatusViewModel(app: Application) : AndroidViewModel(app) {
     private val demo = Demo(::onCarEventAnyThread)
     private val client = RoomClient(BuildConfig.SYNC_URL, ::onRoomMsg, { l -> _room.update { it.copy(link = l) } }, log)
     private val auto = AutoCall()
+
+    // 우리 차 뻐꾸기 색(C.cars 순번). null 이면 호차 번호 색을 쓴다. 다음 실행에도 남게 저장한다
+    private val prefs = app.getSharedPreferences("ppeokkugi", 0)
+    private val _pick = MutableStateFlow(prefs.getInt("pick", -1).takeIf { it in C.cars.indices })
+    val pick = _pick.asStateFlow()
+    fun pickColor(i: Int?) {
+        _pick.value = i
+        prefs.edit().putInt("pick", i ?: -1).apply()
+    }
 
     private var myLat: Double? = null
     private var myLng: Double? = null
@@ -305,7 +316,7 @@ class StatusViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    private fun flagRgb(): Int = ((_room.value.myColor ?: FLAG[((_room.value.me ?: 1) - 1).mod(FLAG.size)]) and 0xFFFFFF).toInt()
+    private fun flagRgb(): Int = ((_room.value.myColor ?: FLAG[((_room.value.me ?: 1) - 1).mod(6)]) and 0xFFFFFF).toInt()
 
     // --- 방 ---
 
@@ -332,9 +343,11 @@ class StatusViewModel(app: Application) : AndroidViewModel(app) {
         lastRoute = null
         demoStarted = false
         _room.value = RoomState(code = c, driving = _room.value.driving, demo = _room.value.demo)
+        C.picked.clear()
+        val hex = _pick.value?.let { "#%06X".format(C.cars[it].toArgb() and 0xFFFFFF) }
         val seats = JSONArray()
         SEAT_IDS.forEach { (v, id) -> seats.put(JSONObject().put("id", id).put("occupied", occupied[v] ?: (v == SeatValue.ROW_1_LEFT))) }
-        client.join(c, JSONObject().put("nickname", "뻐꾸기 차").put("flagColor", JSONObject.NULL).put("seats", seats))
+        client.join(c, JSONObject().put("nickname", "뻐꾸기 차").put("flagColor", hex ?: JSONObject.NULL).put("seats", seats))
         log("방 $c 입장 시도 (${BuildConfig.SYNC_URL})")
         RoomService.start(getApplication(), c)
     }
@@ -343,6 +356,18 @@ class StatusViewModel(app: Application) : AndroidViewModel(app) {
         client.leave()
         RoomService.stop(getApplication())
         _room.value = RoomState(driving = _room.value.driving)
+        C.picked.clear()
+    }
+
+    /** 차가 고른 깃발 색(#RRGGBB) → 팔레트 순번. 고르지 않아 서버가 준 기본색이나 봇 색처럼 팔레트 밖이면 null */
+    private fun paletteIndex(hex: String?): Int? {
+        val v = hex?.removePrefix("#")?.takeIf { it.length == 6 }?.toLongOrNull(16) ?: return null
+        return C.cars.indexOfFirst { (it.toArgb().toLong() and 0xFFFFFF) == v }.takeIf { it >= 0 }
+    }
+
+    private fun setPick(num: Int?, idx: Int?) {
+        if (num == null) return
+        if (idx == null) C.picked.remove(num) else C.picked[num] = C.cars[idx]
     }
 
     private fun label(n: Int) = "${n}호차"
@@ -351,7 +376,7 @@ class StatusViewModel(app: Application) : AndroidViewModel(app) {
     private fun upsertCar(label: String, f: (CarInfo) -> CarInfo) {
         val n = numOf(label) ?: return
         _room.update { s ->
-            val cur = s.cars.find { it.label == label } ?: CarInfo(label, n, "", FLAG[(n - 1).mod(FLAG.size)], me = n == s.me)
+            val cur = s.cars.find { it.label == label } ?: CarInfo(label, n, "", FLAG[(n - 1).mod(6)], me = n == s.me)
             s.copy(cars = (s.cars.filter { it.label != label } + f(cur)).sortedBy { it.num })
         }
     }
@@ -360,8 +385,10 @@ class StatusViewModel(app: Application) : AndroidViewModel(app) {
         val me = _room.value.me
         when (m) {
             is RoomMsg.Welcome -> {
-                // 서버 깃발 색은 쓰지 않고 호차 번호로 정한다(휴대폰 화면과 같은 색)
-                val color = FLAG[(m.carNum - 1).mod(FLAG.size)]
+                // 차가 고른 색이 팔레트 안이면 그 색, 아니면 호차 번호 색(휴대폰 화면과 같은 규칙)
+                val idx = paletteIndex(m.flagColor)
+                setPick(m.carNum, idx)
+                val color = FLAG[idx ?: (m.carNum - 1).mod(6)]
                 // 재입장 토큰으로 같은 번호를 받지만, 서버가 방을 잊었으면 번호가 바뀌므로 예전 우리 차 줄을 지운다
                 _room.update { st -> st.copy(me = m.carNum, myColor = color, cars = st.cars.filter { !it.me }) }
                 auto.leader = m.carNum == 1
@@ -489,7 +516,7 @@ class StatusViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    private fun onHello(m: RoomMsg.Hello) = upsertCar(m.from) { c -> c.copy(nickname = m.nickname, lat = m.lat ?: c.lat, lng = m.lng ?: c.lng) }
+    private fun onHello(m: RoomMsg.Hello) = setPick(numOf(m.from), paletteIndex(m.flagColor)).let { upsertCar(m.from) { c -> c.copy(nickname = m.nickname, lat = m.lat ?: c.lat, lng = m.lng ?: c.lng) } }
 
     private fun rollLine(from: String, seats: List<RoomMsg.Seat>): String {
         val on = seats.filter { it.occupied }
@@ -593,7 +620,7 @@ class StatusViewModel(app: Application) : AndroidViewModel(app) {
         val SEAT_NAME = mapOf("driver" to "운전석", "passenger" to "조수석", "rear-l" to "뒷좌석 왼쪽", "rear-r" to "뒷좌석 오른쪽")
         /** 이슈 핀은 5분 동안 지도에 남는다 */
         const val PIN_TTL_MS = 5 * 60_000L
-        /** 호차 색 1..6(ui/Theme.kt C.cars, 휴대폰 화면과 같은 순서). 서버가 보내는 깃발 색은 쓰지 않는다 */
-        val FLAG = listOf(0xFFFF5A4EL, 0xFF2B8CFFL, 0xFFFFBF1FL, 0xFF7B55FFL, 0xFFFF3D8BL, 0xFF14B8D4L)
+        /** 호차 색 1..7(ui/Theme.kt C.cars 와 같은 순서). 서버 기본 깃발 색은 쓰지 않는다 */
+        val FLAG = C.cars.map { it.toArgb().toLong() and 0xFFFFFFFFL }
     }
 }

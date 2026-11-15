@@ -19,27 +19,28 @@ OUT = [pathlib.Path.home() / "Downloads/뻐꾸기_서비스소개서.pdf", ROOT 
 CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 CHECK = pathlib.Path.home() / ".claude/skills/writing-korean-docs/check_register.py"
 
-# 10쪽 컷(brake-card·tail-1·arrive-1·vote-cards·rollcall·talk-1·kids-row)은 카드에서 말풍선 글 부분만 잘라 칸을 채운다
+# 10쪽 컷(brake-card·tail-1·arrive-1·vote-cards·rollcall·talk-1·kids-row)은 휴대폰 무전 목록(phone-10)의 카드에서 글 부분만 자른다.
+# 목록을 다시 찍으면 카드 순서가 바뀌므로 y 좌표를 다시 잰다
 CROPS = {  # 이름: (screens-v2 원본, (x0, y0, x1, y1) 원본 픽셀 좌표). 차 화면 2560×1440, 휴대폰 780×N
     "drv-map":    ("driver", (876, 252, 1484, 1144)),
     "seat":       ("passenger", (872, 200, 1548, 904)),
-    "brake":      ("brake-alert", (870, 250, 2512, 790)),
-    "brake-card": ("phone-10-feed-full", (200, 2722, 596, 2885)),
-    "tail-1":     ("brake-alert", (1670, 428, 2125, 530)),
-    "rx-cards":   ("brake-alert", (1500, 258, 2512, 682)),
+    "brake":      ("brake-alert", (870, 240, 2516, 842)),
+    "brake-card": ("phone-10-feed-full", (196, 2617, 600, 2805)),
+    "tail-1":     ("phone-10-feed-full", (196, 2225, 634, 2367)),  # 글이 길어 오른쪽을 더 넓게 자른다
+    "rx-cards":   ("brake-alert", (1496, 246, 2516, 642)),
     "ptt":        ("ptt-tx", (1500, 1126, 2512, 1282)),
-    "arrive2":    ("arrive", (1500, 258, 2512, 736)),
-    "arrive-1":   ("arrive", (1670, 428, 2160, 572)),
+    "arrive2":    ("arrive", (1496, 246, 2516, 642)),
+    "arrive-1":   ("phone-10-feed-full", (196, 1149, 600, 1291)),
     "vote":       ("vote", (1500, 200, 2512, 548)),
-    "vote-cards": ("phone-10-feed-full", (200, 1350, 600, 1470)),
-    "rollcall":   ("passenger", (1665, 790, 1955, 930)),
+    "vote-cards": ("phone-10-feed-full", (196, 1345, 600, 1487)),
+    "rollcall":   ("phone-10-feed-full", (196, 3281, 600, 3423)),
     "phone":      ("phone-04-radio", (0, 0, 780, 1320)),
-    "talk-1":     ("phone-10-feed-full", (200, 3640, 596, 3770)),
-    "kids-row":   ("phone-10-feed-full", (200, 3178, 605, 3336)),
+    "talk-1":     ("phone-10-feed-full", (196, 3477, 600, 3619)),
+    "kids-row":   ("phone-10-feed-full", (196, 3055, 600, 3227)),
     "control-seat": ("phone-13-control-room", (0, 0, 780, 1688)),
 }
 NAVI = ("route-follow-navi", (877, 958, 1457, 1278))  # 순정 내비 화면은 새로 찍지 않아 이전 캡처에서 자른다
-CHARS = ["base", "talk"]
+CHARS = ["base", "talk", "alert", "vote", "arrive", "love"]
 JPG = {"drv-map", "brake", "phone", "control-seat"}
 
 # 12쪽 운행 보고서: 2026-11-04 가상 차량 3대 운행 기록(이전 캡처의 값)을 지금 보고서 화면(server/src/report.js)으로 다시 그린다
@@ -61,9 +62,12 @@ process.stdout.write(reportHtml({ startedAt: t(14, 44), events: ev,
 def shoot(html, png, w, h):
     tmp = A / "_tmp.html"
     tmp.write_text(html)
+    pathlib.Path(png).unlink(missing_ok=True)
+    # 크롬은 그림을 쓰고도 종료 코드가 0이 아닐 때가 있다. 파일이 생겼는지로 판단한다
     subprocess.run([CHROME, "--headless", "--disable-gpu", "--hide-scrollbars", f"--window-size={w},{h}",
                     "--force-device-scale-factor=2", "--virtual-time-budget=6000", f"--screenshot={png}", tmp.as_uri()],
-                   check=True, capture_output=True)
+                   capture_output=True)
+    assert pathlib.Path(png).exists(), png
     tmp.unlink()
 
 
@@ -71,11 +75,15 @@ def assets():
     A.mkdir(exist_ok=True)
     for name, (src, box) in CROPS.items():
         im = Image.open(SCR / f"{src}.png").convert("RGB").crop(box)
+        if name == "brake":  # 카드 세 장 높이까지 자르면 지도 아래로 차량 목록 첫 줄이 걸린다. 그 자리를 바탕색으로 덮는다
+            im.paste(im.getpixel((2, 2)), (0, 782 - box[1], 1492 - box[0], im.height))
         if name in JPG:  # 지도 타일이 든 화면은 JPEG로 줄인다
             im.save(A / f"{name}.jpg", quality=88)
         else:
             im.save(A / f"{name}.png")
     Image.open(OLD_SCR / f"{NAVI[0]}.png").convert("RGB").crop(NAVI[1]).save(A / "navi-eta.png")
+    for n in ("hero", "rest", "rain", "arrive"):
+        shutil.copy(ROOT / f"design/illust/{n}.jpg", A / f"illust_{n}.jpg")
     for c in CHARS:
         shutil.copy(CHAR / f"cuckoo_{c}.png", A / f"cuckoo_{c}.png")
     for w in ("regular", "semibold", "bold", "extrabold"):
@@ -150,9 +158,12 @@ def main():
     (DECK / "deck_text.md").write_text(deck_text(doc))
 
     pdf = DECK / "deck.pdf"
+    pdf.unlink(missing_ok=True)
+    # 기기가 바쁘면 Chrome이 PDF를 다 쓰고도 종료 단계에서 0이 아닌 값으로 끝난다. 종료 코드 대신 파일로 확인한다
     subprocess.run([CHROME, "--headless", "--disable-gpu", "--no-pdf-header-footer",
                     "--allow-file-access-from-files", "--virtual-time-budget=4000",
-                    f"--print-to-pdf={pdf}", built.as_uri()], check=True, capture_output=True)
+                    f"--print-to-pdf={pdf}", built.as_uri()], capture_output=True)
+    assert pdf.exists() and pdf.stat().st_size > 100_000, "PDF가 만들어지지 않음"
     for o in OUT:
         shutil.copy(pdf, o)
     print(subprocess.run(["pdfinfo", str(pdf)], capture_output=True, text=True).stdout)

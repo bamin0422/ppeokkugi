@@ -2,6 +2,7 @@ package com.ppeokkugi.ui
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -69,18 +70,23 @@ private val CHANNELS = listOf("all" to "전체", "adult" to "어른", "kids" to 
 @Composable
 fun JoinScreen(vm: StatusViewModel, s: RoomState) {
     var code by remember { mutableStateOf("") }
-    Box(Modifier.fillMaxSize().background(C.bg).padding(R_.lg), contentAlignment = Alignment.Center) { Row(
+    val pick by vm.pick.collectAsState()
+    val mine = pick?.let { C.cars[it] }
+    Box(Modifier.fillMaxSize().background(C.bg).padding(R_.lg), contentAlignment = Alignment.Center) {
+    // 패널 아래 빈자리에 둔다. 패널 위치가 그대로라 시연 녹화 스크립트의 터치 좌표가 바뀌지 않는다
+    ColorPicker(pick, vm::pickColor, Modifier.align(Alignment.BottomCenter))
+    Row(
         Modifier.height(IntrinsicSize.Min),
         horizontalArrangement = Arrangement.spacedBy(32.dp),
     ) {
-        Panel(Modifier.weight(1f).fillMaxHeight(), Mood.TALK) {
+        Panel(Modifier.weight(1f).fillMaxHeight(), Mood.TALK, mine) {
             Text("새 무전방", style = T.pageTitle)
             Text("방을 만들고 채널 코드를 일행에게 알려 주십시오.", style = T.note.copy(fontSize = 22.sp), textAlign = TextAlign.Center)
             Spacer(Modifier.weight(1f))
             BigButton(if (s.busy) "만드는 중…" else "방 만들기", enabled = !s.busy) { vm.createRoom() }
             SubButton("시연 모드 · 봇과 함께 달리기", enabled = !s.busy) { vm.startDemoMode() }
         }
-        Panel(Modifier.weight(1f).fillMaxHeight(), Mood.WAIT) {
+        Panel(Modifier.weight(1f).fillMaxHeight(), Mood.WAIT, mine) {
             Text("코드로 들어가기", style = T.pageTitle)
             Text(
                 if (s.driving) "주행 중에는 코드를 입력할 수 없습니다. 정차한 뒤 입력하십시오." else "받은 6자리 채널 코드를 입력하십시오.",
@@ -109,6 +115,30 @@ fun JoinScreen(vm: StatusViewModel, s: RoomState) {
             BigButton("들어가기", enabled = !s.driving && code.length >= 6) { vm.joinRoom(code) }
         }
     } }
+}
+
+/** 우리 차 뻐꾸기 색: 자동(호차 번호 색) + 7색. 방에 들어갈 때 이 색을 일행에게 알린다 */
+@Composable
+private fun ColorPicker(pick: Int?, onPick: (Int?) -> Unit, modifier: Modifier) {
+    Row(
+        modifier.card().padding(horizontal = 24.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text("우리 차 뻐꾸기 색", style = T.body.copy(fontSize = 24.sp, fontWeight = FontWeight.Bold))
+        Spacer(Modifier.width(8.dp))
+        val ring = @Composable { on: Boolean, desc: String, i: Int?, inner: @Composable () -> Unit ->
+            Box(
+                Modifier.size(80.dp).background(if (on) C.accentWeak else Color.Transparent, RoundedCornerShape(20.dp))
+                    .border(if (on) 3.dp else 0.dp, if (on) C.accentInk else Color.Transparent, RoundedCornerShape(20.dp))
+                    .clickable(role = Role.RadioButton, onClickLabel = desc) { onPick(i) },
+                contentAlignment = Alignment.Center,
+            ) { inner() }
+        }
+        ring(pick == null, "자동", null) { Text("자동", style = T.note.copy(fontSize = 22.sp, color = C.ink2)) }
+        C.cars.forEachIndexed { i, c ->
+            ring(pick == i, "${i + 1}번 색", i) { CuckooView(Mood.BASE, Modifier.size(64.dp), Play.STILL, c) }
+        }
+    }
 }
 
 // --- 운전석 ---
@@ -162,10 +192,11 @@ private fun CarRow(c: CarInfo, me: CarInfo?, roll: String?) {
     val dist = if (!c.me && me?.lat != null && c.lat != null) Locator.haversineM(me.lat, me.lng!!, c.lat, c.lng!!) else null
     Row(Modifier.fillMaxWidth().card().padding(horizontal = 20.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
         val flag = C.car(c.num)
-        // 호차 색 둥근 칸에 번호
+        // 호차 색 둥근 칸에 번호, 옆에 그 차 색 뻐꾸기
         Box(Modifier.size(48.dp).background(flag, RoundedCornerShape(14.dp)), contentAlignment = Alignment.Center) {
             Text("${c.num}", style = T.num.copy(fontSize = 26.sp, color = onFlag(flag)))
         }
+        CuckooView(Mood.BASE, Modifier.size(52.dp), Play.STILL, flag)
         Spacer(Modifier.width(R_.md))
         Column(Modifier.weight(1f)) {
             Text(c.label + if (c.me) " · 우리 차" else "", style = T.body.copy(fontSize = 26.sp, fontWeight = FontWeight.Bold), maxLines = 1)
@@ -175,7 +206,7 @@ private fun CarRow(c: CarInfo, me: CarInfo?, roll: String?) {
     }
 }
 
-/** 보낸 쪽 칩 색: "N호차" 면 그 호차 색, 자동 콜 등은 수신 파랑, 내 무전은 주황 */
+/** 보낸 쪽 칩 색: "N호차" 면 그 호차 색, 자동 콜 등은 수신 주황, 내 무전은 파랑 */
 private fun senderColor(r: Radio): Color =
     Regex("^(\\d+)호차").find(r.from)?.groupValues?.get(1)?.toInt()?.let(C::car) ?: if (r.mood == Mood.TX) C.accent else C.rx
 
@@ -192,11 +223,11 @@ fun RadioCard(r: Radio, big: Boolean, play: Play = Play.LOOP, face: Dp = if (big
     val pad = if (big) 24.dp else 16.dp
     Row(Modifier.fillMaxWidth().card(if (alert) C.txWeak else C.paper).padding(pad), verticalAlignment = Alignment.CenterVertically) {
         SpeakerBox(Modifier.size(face + if (big) 16.dp else 8.dp), if (alert) C.paper else C.tint(r.mood)) {
-            CuckooView(r.mood, Modifier.size(face), play)
+            CuckooView(r.mood, Modifier.size(face), play, Regex("^(\\d+)호차").find(r.from)?.groupValues?.get(1)?.toInt()?.let(C::car))
         }
         Column(Modifier.weight(1f).padding(start = if (big) 24.dp else 16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // 내가 보낸 무전은 TX(주황), 받은 무전은 RX(파랑), 경고는 빨강
+                // 내가 보낸 무전은 TX(파랑), 받은 무전은 RX(주황), 경고는 빨강
                 val tx = r.mood == Mood.TX
                 when {
                     alert -> Tag(if (tx) "TX" else "RX", C.paper, C.tx)
@@ -265,8 +296,8 @@ private fun VoteCards(v: VoteUi, onVote: (Int) -> Unit, play: Play) {
 }
 
 /**
- * 큰 무전 버튼: 폭을 다 쓰는 주황 버튼(짙은 글자). 누르면 짙은 주황.
- * 듣는 동안 옅은 빨강 바탕에 "송신 중", 깜빡이는 빨간 점, 실제 마이크 크기 막대를 켠다
+ * 큰 무전 버튼: 폭을 다 쓰는 파랑 버튼(짙은 글자). 누르면 짙은 파랑.
+ * 듣는 동안 옅은 연보라 바탕에 "송신 중", 깜빡이는 점, 실제 마이크 크기 막대를 켠다
  */
 @Composable
 private fun TalkButton(s: RoomState, vm: StatusViewModel) {
@@ -275,18 +306,18 @@ private fun TalkButton(s: RoomState, vm: StatusViewModel) {
     val down by press.collectIsPressedAsState()
     Row(
         Modifier.fillMaxWidth().height(144.dp).scale(if (down) 0.98f else 1f)
-            .card(if (s.listening) C.txWeak else if (down) C.accentPressed else C.accent, RoundedCornerShape(R_.md))
+            .card(if (s.listening) C.accentWeak else if (down) C.accentPressed else C.accent, RoundedCornerShape(R_.md))
             .clickable(interactionSource = press, indication = null, role = Role.Button, onClick = vm::talk)
             .padding(horizontal = 32.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
     ) {
         if (s.listening) {
-            CuckooView(Mood.TX, Modifier.size(104.dp))
+            CuckooView(Mood.TX, Modifier.size(104.dp), body = s.me?.let(C::car))
             Spacer(Modifier.width(R_.md))
-            Dot(C.tx, size = 16.dp, blink = true)
+            Dot(C.accentInk, size = 16.dp, blink = true)
             Spacer(Modifier.width(12.dp))
-            Text("송신 중", style = T.pageTitle.copy(fontSize = 44.sp, lineHeight = 52.sp, color = C.tx))
+            Text("송신 중", style = T.pageTitle.copy(fontSize = 44.sp, lineHeight = 52.sp, color = C.accentInk))
             Spacer(Modifier.width(R_.lg))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 LevelMeter(level, Modifier.fillMaxWidth().height(24.dp))
@@ -300,7 +331,7 @@ private fun TalkButton(s: RoomState, vm: StatusViewModel) {
     }
 }
 
-/** 마이크 크기 막대 16칸(주황) */
+/** 마이크 크기 막대 16칸(주 색) */
 @Composable
 private fun LevelMeter(level: Float, modifier: Modifier) {
     Canvas(modifier) {
@@ -410,14 +441,14 @@ private fun SubButton(text: String, enabled: Boolean = true, onClick: () -> Unit
 
 /** 입장 패널: 큰 흰 카드. 맨 위에 표정 칸 */
 @Composable
-private fun Panel(modifier: Modifier, mood: Mood, content: @Composable ColumnScope.() -> Unit) {
+private fun Panel(modifier: Modifier, mood: Mood, body: Color? = null, content: @Composable ColumnScope.() -> Unit) {
     Column(modifier) {
         Column(
             Modifier.weight(1f).fillMaxWidth().card().padding(32.dp),
             verticalArrangement = Arrangement.spacedBy(R_.sm), horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             SpeakerBox(Modifier.fillMaxWidth().height(170.dp), C.tint(mood)) {
-                CuckooView(mood, Modifier.size(150.dp))
+                CuckooView(mood, Modifier.size(150.dp), body = body)
             }
             Spacer(Modifier.height(6.dp))
             content()
@@ -432,7 +463,7 @@ private fun BigButton(text: String, enabled: Boolean = true, onClick: () -> Unit
     }
 }
 
-/** 켬/끔 스위치: 켜지면 주황 판에 흰 손잡이가 오른쪽 */
+/** 켬/끔 스위치: 켜지면 파랑 판에 흰 손잡이가 오른쪽 */
 @Composable
 private fun Toggle(on: Boolean, onChange: (Boolean) -> Unit) {
     Box(

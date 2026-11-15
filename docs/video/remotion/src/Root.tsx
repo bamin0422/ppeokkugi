@@ -1,7 +1,7 @@
 import React from 'react';
 import {AbsoluteFill, Audio, Composition, interpolate, Sequence, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
 import {Feature} from './Feature';
-import {BrakeCam, Concept, Convoy, Fleet, Outro, Pain, UseCase} from './Broll';
+import {BrakeCam, Concept, Convoy, Fleet, Footage, Outro, Pain, UseCase} from './Broll';
 import {Clock, Logo, Sdk} from './Scenes';
 import {Changes, Purpose, Report} from './Story';
 import cfg from './scenes.json';
@@ -34,19 +34,31 @@ const Scene: React.FC<{item: Item}> = ({item}) => {
     case 'clock':
       return <Clock dur={d} />;
     case 'logo':
-      return <Logo />;
+      return (
+        <Footage shots={[{src: 'hero'}]} dur={d} dim={0.55}>
+          <Logo dark />
+        </Footage>
+      );
     case 'concept':
       return <Concept dur={d} />;
     case 'brakecam':
       return <BrakeCam dur={d} />;
     case 'sdk':
-      return <Sdk />;
+      return (
+        <Footage shots={[{src: 'cockpit'}]} dur={d} dim={0.62}>
+          <Sdk />
+        </Footage>
+      );
     case 'usecase':
       return <UseCase dur={d} />;
     case 'fleet':
       return <Fleet dur={d} />;
     case 'report':
-      return <Report dur={d} />;
+      return (
+        <Footage shots={[{src: 'bus_convoy'}]} dur={d} dim={0.62}>
+          <Report dur={d} />
+        </Footage>
+      );
     case 'changes':
       return <Changes dur={d} />;
     case 'outro':

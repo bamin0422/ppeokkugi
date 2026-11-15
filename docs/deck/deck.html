@@ -9,13 +9,13 @@
 @font-face { font-family: "PPK"; src: url(assets/pretendard_bold.otf); font-weight: 700; }
 @font-face { font-family: "PPK"; src: url(assets/pretendard_extrabold.otf); font-weight: 800; }
 @page { size: 338.7mm 190.5mm; margin: 0; }
-/* 흰·회색 면, 굵고 큰 제목, 테두리 없는 둥근 카드, 회색 글자 단계, 주 색은 주황 */
+/* 흰·회색 면, 굵고 큰 제목, 테두리 없는 둥근 카드, 회색 글자 단계, 주 색은 마스코트 몸 색인 파랑 */
 :root {
   --font: "PPK", "Apple SD Gothic Neo", sans-serif;
   --g50: #F9FAFB; --g100: #F2F4F6; --g200: #E5E8EB; --g300: #D1D6DB; --g400: #B0B8C1;
   --g500: #8B95A1; --g600: #6B7684; --g700: #4E5968; --g800: #333D4B; --ink: #191F28;
-  --pri: #FF6F0F; --pri-d: #E85F00; /* 채움은 --pri, 큰 주황 글자는 --pri-d, 작은 주황 글자는 --pri-t */ --pri-w: #FFF1E6; --pri-t: #B04000;
-  --red: #F04452; --red-w: #FFEEEE; --blue: #3182F6; --blue-w: #E8F3FF;
+  --pri: #7B8EF5; --pri-d: #5567F5; /* 채움은 --pri, 큰 파랑 글자는 --pri-d, 작은 파랑 글자는 --pri-t */ --pri-w: #EEF0FF; --pri-t: #3340B8;
+  --red: #F04452; --red-w: #FFEEEE; --blue: #2F6FE0; --blue-w: #E8F1FF;
   --bg: #FFFFFF; --card: var(--g100); --inner: #FFFFFF;
 }
 .dark { --bg: var(--g100); --card: #FFFFFF; --inner: var(--g100); }
@@ -72,6 +72,11 @@ sup { font-size: .5em; color: var(--pri-t); font-weight: 700; margin-left: 2px; 
 .vstack { display: grid; gap: 18px; }
 
 /* 1 표지 */
+.cover .slide { isolation: isolate; }
+.cover .scene { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; }
+.cover .scene-fade { position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(242,244,246,.92) 0%, rgba(242,244,246,.78) 45%, rgba(242,244,246,0) 72%, rgba(242,244,246,0) 88%, rgba(242,244,246,.85) 100%); }
+.strip { position: absolute; left: 96px; right: 96px; bottom: 120px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.strip img { width: 100%; height: 190px; object-fit: cover; border-radius: 20px; display: block; }
 .cover .brand { position: absolute; top: 80px; left: 96px; display: flex; align-items: center; gap: 20px; }
 .cover .brand img { width: 112px; height: 112px; object-fit: contain; }
 .cover .brand b { font-weight: 800; font-size: 50px; letter-spacing: -.03em; }
@@ -138,7 +143,7 @@ table.knows, table.eff, table.chk, table.sc { width: 100%; border-collapse: coll
 .cut .rail { height: 4px; border-radius: 2px; background: var(--g200); margin: 0 -16px 22px 0; position: relative; }
 .cut .rail::before { content: ""; position: absolute; left: 0; top: -6px; width: 16px; height: 16px; border-radius: 50%; background: var(--pri); }
 .cut:last-child .rail { margin-right: 0; }
-.cut .frame { height: 250px; background: var(--card); border-radius: 24px; display: flex; align-items: center; justify-content: center; padding: 16px 14px; }
+.cut .frame { height: 170px; background: var(--card); border-radius: 24px; display: flex; align-items: center; justify-content: center; padding: 16px 14px; }
 .cut .frame img { width: 100%; max-height: 100%; object-fit: contain; display: block; border-radius: 10px; }
 .cut .num { font-weight: 800; color: var(--pri-d); font-size: 22px; margin-top: 22px; }
 .cut h3 { font-weight: 800; font-size: 25px; margin: 6px 0 10px; letter-spacing: -.02em; }
@@ -225,10 +230,12 @@ table.knows, table.eff, table.chk, table.sc { width: 100%; border-collapse: coll
 
 <!-- 1 -->
 <section class="page dark cover"><div class="slide">
+  <img class="scene" src="assets/illust_hero.jpg" alt="">
+  <div class="scene-fade"></div>
   <div class="tag">양식 1 · <b>앱 한 줄 소개</b></div>
   <div class="brand"><img src="assets/cuckoo_base.png" alt=""><b>뻐꾸기</b><span>Cuckoo</span></div>
   <h1 class="one">버튼 한 번,<br>일행 차·버스 <em>동시 무전</em></h1>
-  <p class="sub">운전 중에도 일행 전체와 끊기지 않는 연락<br>Pleos 차량용 단체 무전 앱</p>
+  <p class="sub">단체 운행의 연락·정보 공유부터 운행 보고서까지<br>Pleos 차량용 단체 무전 앱</p>
   <div class="radio">
     <div class="lcdbar lcd"><small>RX ▶ 2호차 운전석</small><div>다음 휴게소에서<br>쉬어요</div></div>
   </div>
@@ -249,6 +256,7 @@ table.knows, table.eff, table.chk, table.sc { width: 100%; border-collapse: coll
         <div><b>누구</b><span>여러 대로 움직이는 운전자·인솔자·운수사 관제</span></div>
         <div><b>왜</b><span>운전 중 통화·단톡은 위험, 전화는 한 번에 한 대</span></div>
         <div class="me"><b>어떻게</b><span>차량 마이크·스피커·신호로 버튼 1번 단체 무전</span></div>
+        <div><b>확인</b><span>운행이 끝나면 차량별 운행 보고서로 도착 확인</span></div>
       </div>
     </div>
     <div>
@@ -260,7 +268,12 @@ table.knows, table.eff, table.chk, table.sc { width: 100%; border-collapse: coll
         <div><span class="b1">"어디야?" 반복 확인</span><i>→</i><span class="a1">위치·도착 자동 보고</span></div>
         <div><span class="b1">휴게소 제각각 결정</span><i>→</i><span class="a1">투표 후 전 차량 경유지</span></div>
       </div>
-      <img src="assets/cuckoo_base.png" alt="" style="width:128px;height:128px;margin-top:40px">
+      <div style="display:flex;gap:18px;margin-top:40px">
+        <img src="assets/cuckoo_alert.png" alt="" style="width:112px;height:112px">
+        <img src="assets/cuckoo_vote.png" alt="" style="width:112px;height:112px">
+        <img src="assets/cuckoo_arrive.png" alt="" style="width:112px;height:112px">
+        <img src="assets/cuckoo_love.png" alt="" style="width:112px;height:112px">
+      </div>
     </div>
   </div>
   <div class="foot"><span>뻐꾸기 · 서비스 소개서</span><span>2</span></div>
@@ -272,7 +285,7 @@ table.knows, table.eff, table.chk, table.sc { width: 100%; border-collapse: coll
   <div class="tag">양식 2 · <b>창의성</b></div>
   <h1>연락 <em>단절의 비용</em></h1>
   <div class="content" style="top:240px">
-    <svg class="convoy" viewBox="0 0 1728 360" style="height:340px"><defs><filter id="sh" x="-20%" y="-30%" width="140%" height="180%"><feDropShadow dx="0" dy="8" stdDeviation="9" flood-color="#001D3A" flood-opacity=".06"/></filter></defs><rect x="0" y="126" width="1728" height="118" rx="59" fill="#F2F4F6"/><path d="M560 240 L700 360 H800 L660 240Z" fill="#F2F4F6"/><g fill="#fff"><rect x="20" y="181" width="60" height="8" rx="4"/><rect x="140" y="181" width="60" height="8" rx="4"/><rect x="260" y="181" width="60" height="8" rx="4"/><rect x="380" y="181" width="60" height="8" rx="4"/><rect x="500" y="181" width="60" height="8" rx="4"/><rect x="620" y="181" width="60" height="8" rx="4"/><rect x="740" y="181" width="60" height="8" rx="4"/><rect x="860" y="181" width="60" height="8" rx="4"/><rect x="980" y="181" width="60" height="8" rx="4"/><rect x="1100" y="181" width="60" height="8" rx="4"/><rect x="1220" y="181" width="60" height="8" rx="4"/><rect x="1340" y="181" width="60" height="8" rx="4"/><rect x="1460" y="181" width="60" height="8" rx="4"/><rect x="1580" y="181" width="60" height="8" rx="4"/></g><g font-family="Pretendard, sans-serif"><g transform="translate(60,152)" filter="url(#sh)"><rect width="156" height="66" rx="22" fill="#fff" stroke="none"/><rect x="100" y="10" width="34" height="46" rx="10" fill="#E5E8EB"/><rect x="10" y="13" width="72" height="40" rx="10" fill="#F0ECFF"/><circle cx="29" cy="33" r="7" fill="#7B55FF"/><text x="58" y="42" text-anchor="middle" fill="#191F28" font-size="24" font-weight="800">4</text></g><g transform="translate(650,244) rotate(22)" filter="url(#sh)"><rect width="156" height="66" rx="22" fill="#fff" stroke="none"/><rect x="100" y="10" width="34" height="46" rx="10" fill="#E5E8EB"/><rect x="10" y="13" width="72" height="40" rx="10" fill="#FFF6E3"/><circle cx="29" cy="33" r="7" fill="#FFB331"/><text x="58" y="42" text-anchor="middle" fill="#191F28" font-size="24" font-weight="800">3</text></g><g transform="translate(1000,152)" filter="url(#sh)"><rect width="156" height="66" rx="22" fill="#fff" stroke="none"/><rect x="100" y="10" width="34" height="46" rx="10" fill="#E5E8EB"/><rect x="10" y="13" width="72" height="40" rx="10" fill="#E8F3FF"/><circle cx="29" cy="33" r="7" fill="#3182F6"/><text x="58" y="42" text-anchor="middle" fill="#191F28" font-size="24" font-weight="800">2</text></g><g transform="translate(1460,152)" filter="url(#sh)"><rect width="156" height="66" rx="22" fill="#fff" stroke="none"/><rect x="100" y="10" width="34" height="46" rx="10" fill="#E5E8EB"/><rect x="-6" y="6" width="12" height="16" rx="5" fill="#F04452"/><rect x="-6" y="44" width="12" height="16" rx="5" fill="#F04452"/><rect x="10" y="13" width="72" height="40" rx="10" fill="#FFEEEE"/><circle cx="29" cy="33" r="7" fill="#F04452"/><text x="58" y="42" text-anchor="middle" fill="#191F28" font-size="24" font-weight="800">1</text></g></g><g font-family="Pretendard, sans-serif" font-size="22" font-weight="700"><g filter="url(#sh)"><rect x="20" y="18" width="300" height="56" rx="28" fill="#fff"/><polygon points="119,72 141,72 130,92" fill="#fff"/><text x="48" y="55" fill="#333D4B">4호차: "어디야?" 전화</text></g><g filter="url(#sh)"><rect x="830" y="272" width="330" height="56" rx="28" fill="#fff"/><text x="858" y="309" fill="#333D4B">3호차: 엇갈린 휴게소</text></g><g filter="url(#sh)"><rect x="920" y="18" width="330" height="56" rx="28" fill="#fff"/><polygon points="1059,72 1081,72 1070,92" fill="#fff"/><text x="948" y="55" fill="#333D4B">2호차: 단톡 확인 불가</text></g><g filter="url(#sh)"><rect x="1380" y="18" width="330" height="56" rx="28" fill="#F04452"/><polygon points="1519,72 1541,72 1530,92" fill="#F04452"/><text x="1408" y="55" fill="#fff">1호차: 급제동, 전달 불가</text></g></g></svg>
+    <svg class="convoy" viewBox="0 0 1728 360" style="height:340px"><defs><filter id="sh" x="-20%" y="-30%" width="140%" height="180%"><feDropShadow dx="0" dy="8" stdDeviation="9" flood-color="#001D3A" flood-opacity=".06"/></filter></defs><rect x="0" y="126" width="1728" height="118" rx="59" fill="#F2F4F6"/><path d="M560 240 L700 360 H800 L660 240Z" fill="#F2F4F6"/><g fill="#fff"><rect x="20" y="181" width="60" height="8" rx="4"/><rect x="140" y="181" width="60" height="8" rx="4"/><rect x="260" y="181" width="60" height="8" rx="4"/><rect x="380" y="181" width="60" height="8" rx="4"/><rect x="500" y="181" width="60" height="8" rx="4"/><rect x="620" y="181" width="60" height="8" rx="4"/><rect x="740" y="181" width="60" height="8" rx="4"/><rect x="860" y="181" width="60" height="8" rx="4"/><rect x="980" y="181" width="60" height="8" rx="4"/><rect x="1100" y="181" width="60" height="8" rx="4"/><rect x="1220" y="181" width="60" height="8" rx="4"/><rect x="1340" y="181" width="60" height="8" rx="4"/><rect x="1460" y="181" width="60" height="8" rx="4"/><rect x="1580" y="181" width="60" height="8" rx="4"/></g><g font-family="Pretendard, sans-serif"><g transform="translate(60,152)" filter="url(#sh)"><rect width="156" height="66" rx="22" fill="#fff" stroke="none"/><rect x="100" y="10" width="34" height="46" rx="10" fill="#E5E8EB"/><rect x="10" y="13" width="72" height="40" rx="10" fill="#FFEAF3"/><circle cx="29" cy="33" r="7" fill="#FF3D8B"/><text x="58" y="42" text-anchor="middle" fill="#191F28" font-size="24" font-weight="800">4</text></g><g transform="translate(650,244) rotate(22)" filter="url(#sh)"><rect width="156" height="66" rx="22" fill="#fff" stroke="none"/><rect x="100" y="10" width="34" height="46" rx="10" fill="#E5E8EB"/><rect x="10" y="13" width="72" height="40" rx="10" fill="#E3F8FB"/><circle cx="29" cy="33" r="7" fill="#14B8D4"/><text x="58" y="42" text-anchor="middle" fill="#191F28" font-size="24" font-weight="800">3</text></g><g transform="translate(1000,152)" filter="url(#sh)"><rect width="156" height="66" rx="22" fill="#fff" stroke="none"/><rect x="100" y="10" width="34" height="46" rx="10" fill="#E5E8EB"/><rect x="10" y="13" width="72" height="40" rx="10" fill="#F0ECFF"/><circle cx="29" cy="33" r="7" fill="#7B55FF"/><text x="58" y="42" text-anchor="middle" fill="#191F28" font-size="24" font-weight="800">2</text></g><g transform="translate(1460,152)" filter="url(#sh)"><rect width="156" height="66" rx="22" fill="#fff" stroke="none"/><rect x="100" y="10" width="34" height="46" rx="10" fill="#E5E8EB"/><rect x="-6" y="6" width="12" height="16" rx="5" fill="#F04452"/><rect x="-6" y="44" width="12" height="16" rx="5" fill="#F04452"/><rect x="10" y="13" width="72" height="40" rx="10" fill="#E8F3FF"/><circle cx="29" cy="33" r="7" fill="#3182F6"/><text x="58" y="42" text-anchor="middle" fill="#191F28" font-size="24" font-weight="800">1</text></g></g><g font-family="Pretendard, sans-serif" font-size="22" font-weight="700"><g filter="url(#sh)"><rect x="20" y="18" width="300" height="56" rx="28" fill="#fff"/><polygon points="119,72 141,72 130,92" fill="#fff"/><text x="48" y="55" fill="#333D4B">4호차: "어디야?" 전화</text></g><g filter="url(#sh)"><rect x="830" y="272" width="330" height="56" rx="28" fill="#fff"/><text x="858" y="309" fill="#333D4B">3호차: 엇갈린 휴게소</text></g><g filter="url(#sh)"><rect x="920" y="18" width="330" height="56" rx="28" fill="#fff"/><polygon points="1059,72 1081,72 1070,92" fill="#fff"/><text x="948" y="55" fill="#333D4B">2호차: 단톡 확인 불가</text></g><g filter="url(#sh)"><rect x="1380" y="18" width="330" height="56" rx="28" fill="#F04452"/><polygon points="1519,72 1541,72 1530,92" fill="#F04452"/><text x="1408" y="55" fill="#fff">1호차: 급제동, 전달 불가</text></g></g></svg>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:56px;margin-top:26px">
       <div><div class="lbl">원인</div><ul class="bul">
         <li>운전 중 통화·단톡 확인의 위험</li>
@@ -376,7 +389,7 @@ table.knows, table.eff, table.chk, table.sc { width: 100%; border-collapse: coll
       </ul>
       <div>
         <div class="dash"><div class="shot"><img src="assets/brake.jpg" alt="급제동 무전 화면">
-          <span class="co" style="left:13%;top:13%">1</span><span class="co" style="left:39.3%;top:17%">2</span><span class="co" style="left:39.3%;top:44%">3</span></div></div>
+          <span class="co" style="left:13%;top:13%">1</span><span class="co" style="left:39.3%;top:47%">2</span><span class="co" style="left:39.3%;top:80%">3</span></div></div>
         <ul class="legend" style="margin-top:50px;grid-template-columns:repeat(3,1fr);gap:16px">
           <li><i>1</i>급제동 지점 핀</li><li><i>2</i>거리 포함 음성</li><li><i>3</i>처짐 거리 선두 전달</li>
         </ul>
@@ -418,7 +431,7 @@ table.knows, table.eff, table.chk, table.sc { width: 100%; border-collapse: coll
     <div class="pair">
       <div style="width:880px"><div class="dash"><div class="shot"><img src="assets/vote.png" alt="휴게소 투표 화면">
         <span class="co" style="left:85%;top:18%">1</span><span class="co" style="left:12.5%;top:56%">2</span></div></div></div>
-      <svg class="arrow" viewBox="0 0 120 60"><path d="M0 24 H80 V6 L118 30 L80 54 V36 H0Z" fill="#FF6F0F"/></svg>
+      <svg class="arrow" viewBox="0 0 120 60"><path d="M0 24 H80 V6 L118 30 L80 54 V36 H0Z" fill="#7B8EF5"/></svg>
       <div style="width:520px"><div class="dash"><div class="shot"><img src="assets/navi-eta.png" alt="순정 내비 경로 화면">
         <span class="co" style="left:36%;top:40%">3</span></div></div></div>
     </div>
@@ -437,23 +450,24 @@ table.knows, table.eff, table.chk, table.sc { width: 100%; border-collapse: coll
   <div class="content" style="top:270px">
     <div class="board board7">
       <div class="cut"><div class="t">출발 전</div><div class="rail"></div><div class="frame"><img src="assets/rollcall.png" alt=""></div>
-        <div class="num">01 <span class="who car">차</span></div><h3>점호 보고</h3><p>4호차 4명 벨트 완료</p></div>
+        <div class="num">01 <span class="who car">차</span></div><h3>점호 보고</h3><p>2호차 2명 탑승 보고</p></div>
       <div class="cut"><div class="t">출발</div><div class="rail"></div><div class="frame"><img src="assets/talk-1.png" alt=""></div>
         <div class="num">02 <span class="who">사람</span></div><h3>운전석 무전</h3><p>1호차 운전석 "곧 출발합니다"</p></div>
       <div class="cut"><div class="t">빗길</div><div class="rail"></div><div class="frame"><img src="assets/brake-card.png" alt=""></div>
         <div class="num">03 <span class="who car">차</span></div><h3>급제동 콜</h3><p>2호차 500m 앞 급제동, 감속 안내</p></div>
       <div class="cut"><div class="t">주행</div><div class="rail"></div><div class="frame"><img src="assets/tail-1.png" alt=""></div>
-        <div class="num">04 <span class="who car">차</span></div><h3>꼬리 콜</h3><p>후미 2호차 3km 뒤, 선두에 안내</p></div>
+        <div class="num">04 <span class="who car">차</span></div><h3>꼬리 콜</h3><p>2호차 1.2km 뒤처짐, 일행에 안내</p></div>
       <div class="cut"><div class="t">"화장실!"</div><div class="rail"></div><div class="frame"><img src="assets/vote-cards.png" alt=""></div>
         <div class="num">05 <span class="who">사람</span></div><h3>휴게소 투표</h3><p>투표 결과 안성 휴게소, 총 7명</p></div>
       <div class="cut"><div class="t">휴게소 가는 길</div><div class="rail"></div><div class="frame"><img src="assets/kids-row.png" alt=""></div>
         <div class="num">06 <span class="who">사람</span></div><h3>키즈 채널</h3><p>1호차 뒷자리의 키즈 채널 무전</p></div>
       <div class="cut"><div class="t">휴게소</div><div class="rail"></div><div class="frame"><img src="assets/arrive-1.png" alt=""></div>
-        <div class="num">07 <span class="who car">차</span></div><h3>도착 보고</h3><p>일행 4대 모두 도착, 깃발 색 깜빡임</p></div>
+        <div class="num">07 <span class="who car">차</span></div><h3>도착 보고</h3><p>일행 모두 도착, 깃발 색 깜빡임</p></div>
     </div>
     <p class="cap" style="margin-top:36px">실제 앱 캡처. 에뮬레이터 1대와 가상 차량 3대, 경부고속도로 서울 요금소 → 안성 휴게소 구간.</p>
   </div>
-  <div class="foot"><span>뻐꾸기 · 서비스 소개서</span><span>10</span></div>
+    <div class="strip" aria-hidden="true"><img src="assets/illust_rest.jpg" alt=""><img src="assets/illust_rain.jpg" alt=""><img src="assets/illust_arrive.jpg" alt=""></div>
+<div class="foot"><span>뻐꾸기 · 서비스 소개서</span><span>10</span></div>
 </div></section>
 
 <!-- 11 -->
@@ -543,7 +557,7 @@ table.knows, table.eff, table.chk, table.sc { width: 100%; border-collapse: coll
         <div class="node"><b>휴대폰 웹</b>Pleos 미탑재 차량 일행</div>
         <ul><li>기능 13개 중 12개 SDK 사용</li><li>동일 알림 2분 1회 제한</li><li>메시지 8KB 제한</li></ul>
       </div>
-      <p class="note" style="margin-top:18px">주황 선: Vehicle SDK 연결. 13번째 휴대폰 참여는 휴대폰 GPS·웹 음성 인식.</p>
+      <p class="note" style="margin-top:18px">파란 선: Vehicle SDK 연결. 13번째 휴대폰 참여는 휴대폰 GPS·웹 음성 인식.</p>
     </div>
   </div>
   <div class="foot"><span>뻐꾸기 · 서비스 소개서</span><span>14</span></div>

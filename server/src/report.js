@@ -16,7 +16,7 @@ export function reportHtml({ startedAt, rows, events }) {
 <title>뻐꾸기 운행 보고서</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css"><style>
 :root{--bg:#F2F4F6;--surface:#FFFFFF;--grey50:#F9FAFB;--grey200:#E5E8EB;--text:#191F28;--text2:#4E5968;--text3:#6B7684;
---primary:#FF6F0F;--primary-weak:#FFF1E6;--primary-text:#B04000;--danger:#F04452;--danger-weak:#FFEEEE;--danger-ink:#D22030;
+--primary:#7B8EF5;--primary-weak:#EEF0FF;--primary-text:#3340B8;--danger:#F04452;--danger-weak:#FFEEEE;--danger-ink:#D22030;
 --font:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif}
 body{font:500 15px/1.5 var(--font);background:var(--bg);color:var(--text);margin:0;padding:40px 20px;-webkit-font-smoothing:antialiased}
 main{max-width:1100px;margin:auto}h1{font:800 30px/1.25 var(--font);letter-spacing:-.03em;margin:0 0 12px}h1 em{color:var(--primary-text);font-style:normal}

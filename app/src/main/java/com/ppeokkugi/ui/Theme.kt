@@ -3,6 +3,7 @@ package com.ppeokkugi.ui
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.TextStyle
@@ -17,10 +18,10 @@ import com.ppeokkugi.R
 
 /**
  * 색은 여기에만 둔다(휴대폰 화면은 server/src/phone.html 의 :root 변수). 지도 타일 색도 여기서 만든다.
- * 회색 바탕에 테 없는 흰 카드, 회색 단계로 나눈 글자, 주황 하나를 주 색으로 쓴다.
+ * 회색 바탕에 테 없는 흰 카드, 회색 단계로 나눈 글자, 마스코트 몸 색인 파랑 하나를 주 색으로 쓴다.
  * 바탕·카드 위 본문(ink·ink2)은 WCAG AA(4.5:1) 이상. ink3 은 시각 같은 덧붙임에만 쓴다.
- * 주황 면 위 글자는 흰색이 아니라 ink(5.9:1). 색 위 작은 태그 글자는 모두 20sp 이상 굵은 글자(큰 글자 기준 3:1)다.
- * 초록은 쓰지 않는다. 성공·연결은 주황으로 보인다
+ * 파랑 면 위 글자는 흰색이 아니라 ink(5.5:1). 색 위 작은 태그 글자는 모두 20sp 이상 굵은 글자(큰 글자 기준 3:1)다.
+ * 초록은 호차 색으로 고를 때만 쓴다. 성공·연결은 주 색으로 보인다. 받은 무전은 파랑, 빨강은 급제동·긴급 같은 경고에만 쓴다
  */
 object C {
     val grey50 = Color(0xFFF9FAFB)
@@ -38,24 +39,30 @@ object C {
     val ink2 = grey700                 // 보조 글자. 회색 바탕 위에서도 4.5:1 이상
     val ink3 = grey500                 // 덧붙임 글자만(대비 4.5 미만)
 
-    // 주 색(주황)
-    val accent = Color(0xFFFF6F0F)
-    val accentPressed = Color(0xFFE85F00)
-    val accentWeak = Color(0xFFFFF1E6)
-    val accentInk = Color(0xFFB04000)  // 옅은 주황 위 글자(5.3:1)
+    // 주 색(마스코트 몸 색)
+    val accent = Color(0xFF7B8EF5)
+    val accentPressed = Color(0xFF6C7EEA)
+    val accentWeak = Color(0xFFEEF0FF)
+    val accentInk = Color(0xFF3340B8)  // 옅은 파랑 위 글자(7.2:1)
 
     // 신호
     val tx = Color(0xFFF04452)         // 위험·급제동·긴급
     val txWeak = Color(0xFFFFEEEE)
-    val rx = Color(0xFF3182F6)         // 수신·안내
-    val rxWeak = Color(0xFFE8F3FF)
+    val rx = Color(0xFF2F6FE0)         // 수신·안내(파랑. 화면을 파랑·보라로 묶는다)
+    val rxWeak = Color(0xFFE8F1FF)
     val purple = Color(0xFF7B55FF)
     val purpleWeak = Color(0xFFF0EBFF)
     val amber = Color(0xFFFFB331)
 
-    /** 호차 색 1..6. 서버가 준 깃발 색 대신 화면에서는 이 색을 쓴다 */
-    val cars = listOf(tx, rx, amber, purple, Color(0xFFFF3D8B), Color(0xFF14B8D4))
-    fun car(num: Int) = cars[(num - 1).mod(cars.size)]
+    /**
+     * 호차 색 7가지(휴대폰 화면 --c1..--c7 과 같은 순서). 고르지 않은 차는 번호순 앞 6색을 돌려 쓴다.
+     * 화면이 파랑·보라로 보이게 파랑·보라·청록을 앞에 두고, 빨강은 6호차부터, 초록은 직접 고를 때만 나온다
+     */
+    val cars = listOf(Color(0xFF3182F6), purple, Color(0xFF14B8D4), Color(0xFFFF3D8B), amber, tx, Color(0xFF22B866))
+
+    /** 호차 번호 → 그 차가 고른 뻐꾸기 색. 방에 들어갈 때 비우고 welcome·hello 로 채운다 */
+    val picked = mutableStateMapOf<Int, Color>()
+    fun car(num: Int) = picked[num] ?: cars[(num - 1).mod(6)]
 
     /** 마스코트 칸 바탕(표정마다 옅은 색) */
     fun tint(m: Mood) = when (m) {

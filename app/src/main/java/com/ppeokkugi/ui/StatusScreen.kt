@@ -93,6 +93,6 @@ private fun SdkStateRow(sdk: SdkState) {
 
 @Composable
 private fun SdkChip(label: String, ready: Boolean) {
-    // 준비됨은 옅은 주황, 아직은 흰 바탕 회색 글자
+    // 준비됨은 옅은 파랑, 아직은 흰 바탕 회색 글자
     Tag(label, if (ready) C.accentWeak else C.paper, if (ready) C.accentInk else C.ink2)
 }

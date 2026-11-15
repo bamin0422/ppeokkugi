@@ -1,11 +1,10 @@
 import React from 'react';
-import {AbsoluteFill, Img, OffthreadVideo, Sequence, staticFile, useVideoConfig} from 'remotion';
+import {AbsoluteFill, Img, Sequence, staticFile, useVideoConfig} from 'remotion';
 import {Logo} from './Scenes';
 import {C, Chip, FONT, FONT_B, Pop, ramp, SERIF, Sfx, useT, useTall} from './theme';
 
 /**
- * 실사 컷은 Google Flow 로 만든 정지 이미지(public/broll/*.jpg, 1376×768)다. 한국 도로·한국인·현대차로 맞췄고,
- * 영상 대신 정지 이미지를 천천히 밀고 당겨(켄 번스) 차가 앞뒤로 어색하게 움직이는 일이 없다.
+ * 배경 컷은 Google Flow 로 만든 2D 삽화(public/broll/*.jpg)다. 정지 그림을 천천히 밀고 당긴다(켄 번스).
  *
  * 오른쪽 아래 생성 표시(가로 약 93%, 세로 약 87%)는 화면 밖으로 민다.
  * 가로: 1.16배, 기준점 (0, 30%) → 보이는 가로 범위 0~86%. 세로(9:16)는 가운데만 잘라 써서 들어오지 않는다.
@@ -16,7 +15,7 @@ const DARK = '25,31,40';
 
 export type Shot = {src: string; out?: boolean};
 
-/** 실사 한 컷: 천천히 다가가거나(out 이면 물러나며) 세로 화면에서는 옆으로도 조금 흐른다 */
+/** 삽화 한 장: 천천히 다가가거나(out 이면 물러나며) 세로 화면에서는 옆으로도 조금 흐른다 */
 const Take: React.FC<{shot: Shot; len: number}> = ({shot, len}) => {
   const tall = useTall();
   const t = useT();
@@ -54,14 +53,14 @@ export const Footage: React.FC<{shots: Shot[]; dur: number; dim?: number; mark?:
       {dim ? <AbsoluteFill style={{background: `rgba(${DARK},${dim})`}} /> : null}
       <AbsoluteFill style={{background: `linear-gradient(180deg, rgba(${DARK},0) ${tall ? 35 : 38}%, rgba(${DARK},.55) ${tall ? 60 : 68}%, rgba(${DARK},.88) 100%)`}} />
       {mark ? (
-        <div style={{position: 'absolute', right: tall ? 28 : 36, top: tall ? 200 : 28, fontFamily: FONT, fontSize: tall ? 22 : 18, color: 'rgba(255,255,255,.62)', textShadow: '0 1px 6px rgba(0,0,0,.5)'}}>AI 생성 연출 이미지</div>
+        <div style={{position: 'absolute', right: tall ? 28 : 36, ...(tall ? {top: 200} : {bottom: 8}), fontFamily: FONT, fontSize: tall ? 22 : 18, color: 'rgba(255,255,255,.75)', textShadow: '0 1px 6px rgba(0,0,0,.6)', zIndex: 5}}>AI 생성 삽화</div>
       ) : null}
       {children}
     </AbsoluteFill>
   );
 };
 
-/** 실사 위 자막: 꼬리표 + 명조 제목 + 설명. 아래쪽 그라데이션 위에 얹는다 */
+/** 삽화 위 자막: 꼬리표 + 명조 제목 + 설명. 아래쪽 그라데이션 위에 얹는다 */
 export const Caption: React.FC<{chip?: React.ReactNode; chipColor?: string; title: React.ReactNode; sub?: React.ReactNode; at?: number; foot?: string}> = ({
   chip,
   chipColor = C.lcd,
@@ -93,7 +92,7 @@ export const Caption: React.FC<{chip?: React.ReactNode; chipColor?: string; titl
   );
 };
 
-const orange = (s: string) => <span style={{color: '#FF8A3D'}}>{s}</span>;
+const orange = (s: string) => <span style={{color: C.lcdDim}}>{s}</span>;
 
 /* ---------- 여는 장면: 함께 달리는 차 네 대 ---------- */
 export const Convoy: React.FC<{dur: number}> = ({dur}) => (
@@ -107,7 +106,7 @@ export const Pain: React.FC<{dur: number}> = ({dur}) => (
   <Footage shots={[{src: 'traffic_gap'}]} dur={dur}>
     <Caption
       chip="운전 중 일행 연락"
-      chipColor={C.tx}
+      chipColor={C.orange}
       at={0.5}
       title={<>운전 중 {orange('끊기는')} 일행 연락</>}
       sub="전화는 한 번에 한 대 · 운전 중 단톡 확인 불가 · 앞차 급제동 늦은 인지"
@@ -224,7 +223,7 @@ export const Fleet: React.FC<{dur: number}> = ({dur}) => {
             같은 무전방 참여
           </div>
           <div style={{width: 136, height: 276, borderRadius: 24, background: C.paper, padding: 8, boxShadow: '0 16px 40px rgba(0,0,0,.35)'}}>
-            <OffthreadVideo src={staticFile('clips/rx_phone.mp4')} muted style={{width: 120, height: 260, borderRadius: 16, display: 'block'}} />
+            <Img src={staticFile('screens/phone-04-radio.png')} style={{width: 120, height: 260, borderRadius: 16, display: 'block', objectFit: 'cover', objectPosition: 'top'}} />
           </div>
         </div>
       ) : null}

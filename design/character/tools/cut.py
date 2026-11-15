@@ -1,4 +1,4 @@
-"""뻐꾸기 3D 마스코트 정리. 사용: python3 tools/cut.py [design/character 폴더]
+"""뻐꾸기 마스코트 정리. 사용: python3 tools/cut.py [design/character 폴더]
 
 source/<표정>.png(Google Flow 이미지 생성 원본, 흰 바탕)에서 흰 바탕을 걷어 cuckoo_<표정>.png(1024px 투명 PNG)를 만든다.
 어른 새는 모두 같은 배율로 맞추고 새끼(kids)만 어른 키의 0.62배로 줄인다. 밝은·어두운 바탕 미리보기 preview.png도 만든다.
@@ -10,6 +10,8 @@ from scipy import ndimage as ndi
 
 ROOT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 ORDER = ["base", "talk", "rx", "alert", "rest", "rollcall", "kids", "arrive", "vote"]
+# 기본 아홉 장 밖의 표정(lost, wait 등)은 source/ 에 있는 대로 뒤에 붙인다
+ORDER += sorted({os.path.splitext(os.path.basename(p))[0] for p in glob.glob(f"{ROOT}/source/*.png")} - set(ORDER))
 OUT, MARGIN = 1024, 0.08
 KIDS_RATIO = 0.62          # chick height relative to the adult bird height
 NEAR_WHITE = 14            # max channel distance from white counted as background
@@ -22,12 +24,7 @@ def cutout(path):
     lab, n = ndi.label(near)
     edge = np.unique(np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]]))
     bg = np.isin(lab, edge[edge > 0])
-    # enclosed pure-white pockets (gaps between wing and body) are background too
-    sizes = ndi.sum(np.ones_like(d), lab, range(1, n + 1))
-    means = ndi.mean(d, lab, range(1, n + 1))
-    for i, (s, m) in enumerate(zip(sizes, means), 1):
-        if s > 1500 and m < 5:
-            bg |= lab == i
+    # 몸 안에 갇힌 흰 면은 걷지 않는다. 플랫 그림에서는 눈 흰자가 그런 면이다
     fg = ~bg
     fg = ndi.binary_opening(fg, iterations=1)         # drop speckles
     lab2, n2 = ndi.label(fg)                           # keep big parts only (bird + props)

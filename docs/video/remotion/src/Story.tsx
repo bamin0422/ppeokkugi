@@ -1,7 +1,9 @@
 import React from 'react';
 import {AbsoluteFill, Img, staticFile} from 'remotion';
 import {Footage} from './Broll';
-import {Backdrop, BeforeAfter, Brand, C, Chip, FONT, FONT_B, Led, Pop, ramp, SERIF, Sfx, useSpring, useT, useTall, VEH_COLORS} from './theme';
+import {lerpRect, useKeyed} from './Feature';
+import report from './report.json';
+import {Backdrop, BeforeAfter, Brand, C, Chip, FONT, FONT_B, Led, Pop, ramp, SERIF, Sfx, Sprite, useSpring, useT, useTall, VEH_COLORS} from './theme';
 
 export const PURPOSE = ['운전 중에도 일행 전체와', '끊기지 않는 연락'];
 export const PAIRS: [string, string][] = [
@@ -38,7 +40,7 @@ export const Purpose: React.FC<{dur: number}> = ({dur}) => {
           <div style={{fontFamily: FONT, fontSize: tall ? 38 : 36, color: C.ink2, marginTop: tall ? 44 : 34, wordBreak: 'keep-all'}}>여러 대로 움직이는 운전자·인솔자를 위한 차량용 무전</div>
         </Pop>
       </div>
-      {/* 실사 두 컷: 함께 달리는 승용차 · 단체 버스 */}
+      {/* 삽화 두 장: 함께 달리는 승용차 · 단체 버스 */}
       <div style={{position: 'absolute', left: 0, right: 0, top: rowY, display: 'flex', justifyContent: 'center', gap: tall ? 24 : 40}}>
         {[
           ['convoy_dusk', '가족 차량'],
@@ -128,7 +130,7 @@ const Row: React.FC<{before: string; after: string; at: number; color: string}> 
       <div style={{textAlign: 'right', paddingRight: 10}}>
         <span style={{position: 'relative', fontFamily: FONT, fontSize: 38, color: C.ink3, whiteSpace: 'nowrap'}}>
           {before}
-          <span style={{position: 'absolute', left: -4, top: '54%', height: 4, borderRadius: 2, width: `calc(${strike * 100}% + 8px)`, background: C.tx}} />
+          <span style={{position: 'absolute', left: -4, top: '54%', height: 4, borderRadius: 2, width: `calc(${strike * 100}% + 8px)`, background: C.orangeText}} />
         </span>
       </div>
       <div style={{textAlign: 'center', fontFamily: FONT_B, fontSize: 40, color: C.orangeText, opacity: ap}}>→</div>
@@ -137,63 +139,121 @@ const Row: React.FC<{before: string; after: string; at: number; color: string}> 
   );
 };
 
-/* ---------- 운수사 통합 관제: 운행이 끝나면 차량별 운행 보고서 ---------- */
+/* ---------- 운행 보고서: 가상 차량이 달리고 끝낸 방의 실제 보고서 화면(src/report.mjs 캡처) ---------- */
+type Box = [number, number, number, number]; // x, y, w, h (보고서 화면 CSS px)
+const R = report as unknown as {page: [number, number]; arrive: Box; drive: Box; events: Box; allArrived: Box | null; timeline: Box};
+// 자막은 화면에 실제로 있는 항목만 쓴다(열 이름·타임라인 줄)
+const REPORT_STEPS: {at: number; text: string; ring: Box | null}[] = [
+  {at: 2.0, text: '차량별 입장 · 도착 시각 · 운행 시간', ring: R.arrive},
+  {at: 4.3, text: '거리 · 최고 속도', ring: R.drive},
+  {at: 6.5, text: '급제동 · 에어백 · 이탈 횟수', ring: R.events},
+  {at: 9.0, text: '운행 타임라인 · 전원 도착 기록', ring: R.allArrived},
+];
+
 export const Report: React.FC<{dur: number}> = ({dur}) => {
   const t = useT();
   const tall = useTall();
-  const k = dur / 6.5;
-  const shot = useSpring(0.6 * k, 16, 110);
-  const zoom = 1 + 0.04 * ramp(t, 1.2 * k, dur);
-  const w = tall ? 980 : 1180;
-  return (
-    <AbsoluteFill>
-      <Backdrop glow={{x: '60%', y: '55%'}} />
-      <Brand tall={tall} />
-      <div style={{position: 'absolute', left: tall ? 48 : 80, top: tall ? 130 : 60, right: tall ? 48 : 80}}>
-        <Pop at={0.05}>
-          <Chip size={tall ? 30 : 24} color={C.orange} ink={C.paper}>
-            운수사 구독 전용 · 통합 관제
-          </Chip>
-        </Pop>
-        <Pop at={0.2} blip={false}>
-          <div style={{fontFamily: SERIF, fontSize: tall ? 62 : 58, color: C.ink, marginTop: 22, lineHeight: 1.2, wordBreak: 'keep-all'}}>
-            운행 종료 <span style={{color: C.orangeText}}>→</span> 차량별 운행 보고서
+  const k = dur / 13;
+  const shot = useSpring(0.3 * k, 16, 110);
+  const vw = tall ? 980 : 1240;
+  const vh = tall ? 640 : 780;
+  const [pw, ph] = R.page;
+  const ty0 = R.arrive[1] - 40;
+  const lineY = R.allArrived ? R.allArrived[1] + R.allArrived[3] / 2 : R.timeline[1] + 200;
+  // 카메라: 전체 → 표 왼쪽(도착·운행·거리) → 표 오른쪽(급제동·이탈) → 타임라인의 "전원 도착"
+  const cams: [number, Box][] = [
+    [1.4, [20, ty0, 510, 320]],
+    [6.0, [pw - 530, ty0, 510, 320]],
+    [8.5, [20, lineY - 250, pw - 40, 500]],
+  ];
+  const cam = useKeyed<Box>(cams.map(([at, b]) => [at * k, b]), [0, 0, pw, (pw * vh) / vw], lerpRect);
+  const sc = Math.min(vw / cam[2], vh / cam[3]);
+  const fit = (v: number, size: number, view: number) => Math.min(0, Math.max(view - size * sc, v));
+  const tx = fit(vw / 2 - (cam[0] + cam[2] / 2) * sc, pw, vw);
+  const ty = fit(vh / 2 - (cam[1] + cam[3] / 2) * sc, ph, vh);
+  const ring = useKeyed<Box | null>(REPORT_STEPS.map((s) => [s.at * k, s.ring]), null, (a, b, p) => (b === null ? (p > 0.5 ? null : a) : a === null ? b : lerpRect(a, b, p)), 18, 0.45);
+  const pulse = 0.5 + 0.5 * Math.sin(t * 7);
+  const step = REPORT_STEPS.filter((s) => t >= s.at * k).length - 1;
+  const win = (
+    <div style={{width: vw, borderRadius: 24, overflow: 'hidden', background: C.paper, boxShadow: '0 16px 40px rgba(0,29,58,.10)', opacity: shot, transform: `translateY(${(1 - shot) * 40}px)`}}>
+      <div style={{height: 44, borderBottom: `1.5px solid ${C.line}`, display: 'flex', alignItems: 'center', gap: 10, padding: '0 20px', fontFamily: FONT, fontSize: 18, color: C.ink2}}>
+        {[VEH_COLORS[0], VEH_COLORS[2], VEH_COLORS[1]].map((c) => (
+          <span key={c} style={{width: 13, height: 13, borderRadius: 7, background: c}} />
+        ))}
+        <span style={{marginLeft: 12}}>관제석 · 운행 보고서</span>
+      </div>
+      <div style={{position: 'relative', height: vh, overflow: 'hidden', background: C.bg}}>
+        <div style={{position: 'absolute', left: 0, top: 0, width: pw, height: ph, transformOrigin: '0 0', transform: `translate(${tx}px, ${ty}px) scale(${sc})`}}>
+          <Img src={staticFile('shots/report.png')} style={{width: pw, height: ph, display: 'block'}} />
+          {ring ? (
+            <div
+              style={{
+                position: 'absolute',
+                left: ring[0] - 4,
+                top: ring[1] - 4,
+                width: ring[2] + 8,
+                height: ring[3] + 8,
+                border: `${5 / sc}px solid ${C.orange}`,
+                borderRadius: 12,
+                boxShadow: `0 0 0 ${(4 + pulse * 8) / sc}px ${C.orange}40`,
+              }}
+            />
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+  const steps = (size: number) => (
+    <div style={{display: 'flex', flexDirection: 'column', gap: size * 0.5}}>
+      {REPORT_STEPS.map((s, i) => (
+        <Pop key={i} at={s.at * k} dy={16}>
+          <div style={{display: 'flex', alignItems: 'baseline', gap: 14, fontFamily: i === step ? FONT_B : FONT, fontSize: size, color: i === step ? C.paper : '#C5CCD4', lineHeight: 1.35, wordBreak: 'keep-all'}}>
+            <span style={{width: 12, height: 12, borderRadius: 6, flex: 'none', background: i === step ? C.orange : C.line, transform: 'translateY(-4px)'}} />
+            {s.text}
           </div>
         </Pop>
-      </div>
-      <div
-        style={{
-          position: 'absolute',
-          left: tall ? 50 : 100,
-          top: tall ? 470 : 250,
-          width: w,
-          opacity: shot,
-          transform: `translateY(${(1 - shot) * -80}px) rotate(${(1 - shot) * -3}deg) scale(${zoom})`,
-          transformOrigin: 'left top',
-          borderRadius: 24,
-          overflow: 'hidden',
-          background: C.paper,
-          boxShadow: C.shadow,
-        }}
-      >
-        <div style={{height: 44, background: C.paper, borderBottom: `1.5px solid ${C.line}`, display: 'flex', alignItems: 'center', gap: 10, padding: '0 20px', fontFamily: FONT, fontSize: 18, color: C.ink2}}>
-          {[VEH_COLORS[0], VEH_COLORS[2], VEH_COLORS[1]].map((c) => (
-            <span key={c} style={{width: 13, height: 13, borderRadius: 7, background: c}} />
-          ))}
-          <span style={{marginLeft: 12}}>관제석 · 운행 보고서</span>
+      ))}
+    </div>
+  );
+  const head = (size: number) => (
+    <>
+      <Pop at={0.05}>
+        <Chip size={size * 0.43} color={C.orange}>
+          운행 보고서
+        </Chip>
+      </Pop>
+      <Pop at={0.2} blip={false}>
+        <div style={{fontFamily: SERIF, fontSize: size, color: C.paper, marginTop: 26, lineHeight: 1.2, wordBreak: 'keep-all'}}>
+          운행이 끝나면 <span style={{color: C.lcdDim}}>차량별 보고서</span>
         </div>
-        <div style={{maxHeight: tall ? 700 : 640, overflow: 'hidden'}}>
-          <Img src={staticFile('shots/report.png')} style={{width: '100%', display: 'block'}} />
-        </div>
+      </Pop>
+    </>
+  );
+  const note = '실제 화면 · 가상 차량 3대 운행 기록. 무전은 횟수만 남기고 내용·음성은 저장하지 않습니다.';
+  if (tall) {
+    return (
+      <AbsoluteFill>
+        <Brand tall />
+        <div style={{position: 'absolute', left: 48, top: 130, right: 48}}>{head(62)}</div>
+        <div style={{position: 'absolute', left: 50, top: 470}}>{win}</div>
+        <div style={{position: 'absolute', left: 64, top: 1230, right: 48}}>{steps(40)}</div>
+        <div style={{position: 'absolute', left: 48, right: 48, bottom: 90, textAlign: 'center', fontFamily: FONT, fontSize: 26, color: '#D1D6DB', wordBreak: 'keep-all', lineHeight: 1.45}}>{note}</div>
+      </AbsoluteFill>
+    );
+  }
+  return (
+    <AbsoluteFill>
+      <Brand />
+      <div style={{position: 'absolute', left: 72, top: 150, width: 500}}>
+        {head(60)}
+        <div style={{width: 64, height: 8, borderRadius: 4, background: C.orange, margin: '24px 0 26px'}} />
+        {steps(29)}
       </div>
-      <Sfx name="blip" at={0.6 * k} volume={0.3} />
-      <div style={{position: 'absolute', left: tall ? 0 : 1340, right: tall ? 0 : 60, top: tall ? 1280 : 330, display: 'flex', flexDirection: 'column', gap: tall ? 16 : 46, alignItems: tall ? 'center' : 'flex-start'}}>
-        <BeforeAfter before="기사별 구두 보고" after="자동 보고서" at={1.6 * k} size={tall ? 56 : 46} stack align={tall ? 'center' : 'left'} />
-        <BeforeAfter before="급제동·이탈 따로 확인" after="차량별 한 줄" at={3.4 * k} size={tall ? 56 : 46} stack align={tall ? 'center' : 'left'} />
+      <div style={{position: 'absolute', left: 72, bottom: 64, width: 500, display: 'flex', alignItems: 'center', gap: 18}}>
+        <Sprite mood="arrive" scale={2.4} />
+        <div style={{fontFamily: FONT, fontSize: 20, color: '#D1D6DB', lineHeight: 1.45, wordBreak: 'keep-all'}}>{note}</div>
       </div>
-      <div style={{position: 'absolute', left: tall ? 48 : 0, right: tall ? 48 : 0, bottom: tall ? 90 : 34, textAlign: 'center', fontFamily: FONT, fontSize: tall ? 26 : 22, color: C.ink2, wordBreak: 'keep-all', lineHeight: 1.45}}>
-        실제 화면 · 가상 차량 3대 주행 기록. 무전은 횟수만 남기고 내용·음성은 저장하지 않습니다.
-      </div>
+      <div style={{position: 'absolute', left: 620, top: 126}}>{win}</div>
     </AbsoluteFill>
   );
 };

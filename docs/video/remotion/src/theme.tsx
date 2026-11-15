@@ -12,7 +12,8 @@ import {
   useVideoConfig,
 } from 'remotion';
 
-/** 화면 색: 회색 바탕·흰 카드·주황 주 색. 초록은 쓰지 않는다. lcd 계열은 옅은 주황 꼬리표 */
+/** 화면 색: 회색 바탕·흰 카드. 주 색(orange, orangeText)은 마스코트 몸 파랑이다. 이름만 예전 주황 그대로 둔다.
+ * 받은 무전(rx)은 파랑, 빨강(tx)은 경고에만 쓴다. lcd 계열은 옅은 파랑 꼬리표 */
 export const C = {
   bg: '#F2F4F6',
   paper: '#FFFFFF',
@@ -20,18 +21,18 @@ export const C = {
   ink: '#191F28',
   ink2: '#4E5968',
   ink3: '#8B95A1',
-  lcd: '#FFF1E6',
-  lcdInk: '#B04000',
-  lcdDim: '#FF9A52',
+  lcd: '#EEF0FF',
+  lcdInk: '#3340B8',
+  lcdDim: '#A9B6F9',
   tx: '#F04452',
-  rx: '#3182F6',
-  orange: '#FF6F0F',
-  /** 큰 주황 글자(흰·회색 위 대비 3:1 이상). 채움에는 orange */
-  orangeText: '#E85F00',
+  rx: '#2F6FE0',
+  orange: '#7B8EF5',
+  /** 큰 파랑 글자(흰·회색 위 대비 3:1 이상). 채움에는 orange */
+  orangeText: '#5567F5',
   shadow: '0 8px 24px rgba(0,29,58,.06)',
 };
-/** 차량 색: 1호차부터 차례로 */
-export const CARS = ['#F04452', '#3182F6', '#FFB331', '#7B55FF', '#FF3D8B', '#14B8D4'];
+/** 차량 색: 1호차부터 차례로. 앱의 호차 색 순서와 같다(파랑, 보라, 청록, 분홍, 노랑, 빨강) */
+export const CARS = ['#3182F6', '#7B55FF', '#14B8D4', '#FF3D8B', '#FFB331', '#F04452'];
 export const VEH_COLORS = CARS;
 
 /** 본문(Pretendard SemiBold) · 굵은 글자와 제목(Pretendard ExtraBold) */
@@ -80,7 +81,7 @@ export const Sfx: React.FC<{name: string; at: number; volume?: number}> = ({name
 };
 
 /** 제 그림이 없는 표정 → 쓸 그림 */
-const MOOD: Record<string, string> = {tx: 'talk', wait: 'base', brake: 'alert', camera: 'alert', lost: 'alert', emergency: 'alert', rain: 'base'};
+const MOOD: Record<string, string> = {tx: 'talk', brake: 'alert', camera: 'alert', rain: 'base'};
 
 /** 마스코트(투명 PNG). scale 1 = 64px. 영상 시간에 맞춰 살짝 들썩인다 */
 export const Sprite: React.FC<{mood: string; scale: number; fps?: number; style?: React.CSSProperties}> = ({mood, scale, style}) => {
@@ -88,11 +89,12 @@ export const Sprite: React.FC<{mood: string; scale: number; fps?: number; style?
   const s = 64 * scale;
   const k = MOOD[mood] ?? mood;
   const bob = Math.sin(t * Math.PI * 1.6);
+  const pop = useSpring(0.15, 9, 170);   // 장면이 시작되면 톡 튀어나온다
   return (
     <div style={{width: s, height: s, ...style}}>
       <Img
         src={staticFile(`character/cuckoo_${k}.png`)}
-        style={{width: s, height: s, display: 'block', objectFit: 'contain', transformOrigin: '50% 100%', transform: `translateY(${bob * s * 0.025}px) scale(${1 + bob * 0.015}, ${1 - bob * 0.015})`}}
+        style={{width: s, height: s, display: 'block', objectFit: 'contain', transformOrigin: '50% 100%', transform: `translateY(${bob * s * 0.025 + (1 - pop) * s * 0.3}px) scale(${(1 + bob * 0.015) * pop}, ${(1 - bob * 0.015) * pop})`}}
       />
     </div>
   );
@@ -112,7 +114,7 @@ export const Waves: React.FC<{at: number; color?: string; size?: number; count?:
   );
 };
 
-/** 꼬리표. 기본은 옅은 주황 바탕 + 진한 주황 글자. 주황 바탕 위 글자는 대비 때문에 늘 먹색 */
+/** 꼬리표. 기본은 옅은 파랑 바탕 + 진한 파랑 글자. 주 색(파랑) 바탕 위 글자는 흰색이면 대비가 모자라 늘 먹색 */
 export const Chip: React.FC<{children: React.ReactNode; size?: number; color?: string; ink?: string; style?: React.CSSProperties}> = ({
   children,
   size = 26,
@@ -227,11 +229,14 @@ export const Brand: React.FC<{tall?: boolean}> = ({tall}) => (
       fontFamily: FONT,
       fontSize: tall ? 28 : 22,
       color: C.ink2,
+      background: 'rgba(255,255,255,.92)',
+      borderRadius: 999,
+      padding: tall ? '8px 22px' : '6px 18px',
     }}
   >
     <Led color={C.orange} size={tall ? 14 : 12} />
     <span style={{fontFamily: SERIF, fontSize: tall ? 34 : 28, color: C.ink}}>뻐꾸기</span>
-    <span>Pleos 차량용 단체 무전</span>
+    <span>Pleos Connect 차량용 앱</span>
   </div>
 );
 

@@ -3,7 +3,8 @@ import {AbsoluteFill, useVideoConfig} from 'remotion';
 import {Backdrop, Brand, C, Chip, FONT, FONT_B, PinCard, Pop, ramp, SERIF, Sfx, Sprite, useSpring, useT, useTall, VEH_COLORS, WaveBars, Waves} from './theme';
 
 const ONE_LINER = '버튼 한 번, 일행 차·버스 동시 무전';
-const SUBTITLE = 'Pleos 차량용 단체 무전 앱';
+const SUBTITLE = 'Pleos Connect 차량용 단체 무전 앱';
+const OUTRO_LINER = '운행 중 연락 · 정보 공유 · 운행 보고서';
 
 /* ---------- 2. 이름 소개: 뻐꾸기시계 ---------- */
 export const Clock: React.FC<{dur: number}> = ({dur}) => {
@@ -87,7 +88,7 @@ export const Clock: React.FC<{dur: number}> = ({dur}) => {
 };
 
 /* ---------- 3. 로고 ---------- */
-/** dark: 어둡게 깐 실사 위(끝 장면). 글자를 밝게 바꾼다 */
+/** dark: 어둡게 깐 삽화 위. 글자를 밝게 바꾼다 */
 export const Logo: React.FC<{outro?: boolean; dark?: boolean}> = ({outro, dark}) => {
   const tall = useTall();
   const ink = dark ? C.paper : C.ink;
@@ -128,7 +129,7 @@ export const Logo: React.FC<{outro?: boolean; dark?: boolean}> = ({outro, dark})
             }}
           >
             <span style={{fontSize: '0.5em', color: C.lcdInk, opacity: 0.75, letterSpacing: '0.14em'}}>CH</span>
-            {ONE_LINER}
+            {outro ? OUTRO_LINER : ONE_LINER}
             <WaveBars on={t > 1.0} color={C.lcdInk} h={tall ? 34 : 34} n={5} />
           </div>
         </Pop>
@@ -158,22 +159,21 @@ export const Logo: React.FC<{outro?: boolean; dark?: boolean}> = ({outro, dark})
 export const Sdk: React.FC = () => {
   const tall = useTall();
   const items = [
-    ['차량 신호', 'Vehicle', '급제동·도착 자동 무전', C.tx],
+    ['차량 신호', 'Vehicle', '급제동·도착 자동 무전', '#7B55FF'],
     ['순정 내비', 'NaviHelper', '투표 결과 경유지 등록', C.rx],
-    ['스피커·마이크', 'TextToSpeech · SpeechToText', '손 안 쓰는 음성 무전', VEH_COLORS[3]],
-    ['차량 위치', 'FusedLocation', '차량 간 거리·처짐 안내', VEH_COLORS[5]],
+    ['스피커·마이크', 'TextToSpeech · SpeechToText', '손 안 쓰는 음성 무전', C.orangeText],
+    ['차량 위치', 'FusedLocation', '차량 간 거리·처짐 안내', C.lcdInk],
   ];
   return (
     <AbsoluteFill>
-      <Backdrop glow={{x: '50%', y: '55%'}} />
       <Brand tall={tall} />
       <div style={{position: 'absolute', left: tall ? 48 : 80, top: tall ? 140 : 70, right: 48}}>
         <Pop at={0.05}>
-          <Chip size={tall ? 32 : 26}>Pleos SDK</Chip>
+          <Chip size={tall ? 32 : 26}>Pleos SDK 5종</Chip>
         </Pop>
         <Pop at={0.15} blip={false}>
-          <div style={{fontFamily: SERIF, fontSize: 76, color: C.ink, marginTop: 22}}>
-            차라서 <span style={{color: C.orangeText}}>가능한 것</span>
+          <div style={{fontFamily: SERIF, fontSize: 76, color: C.paper, marginTop: 22}}>
+            차라서 <span style={{color: C.lcdDim}}>가능한 것</span>
           </div>
         </Pop>
       </div>
@@ -192,7 +192,7 @@ export const Sdk: React.FC = () => {
       </div>
       <div style={{position: 'absolute', left: 0, right: 0, bottom: tall ? 120 : 70, textAlign: 'center'}}>
         <Pop at={1.6} blip={false} style={{transformOrigin: 'center'}}>
-          <div style={{fontFamily: FONT_B, fontSize: tall ? 40 : 36, color: C.ink}}>화면을 보지 않아도 들리는 무전</div>
+          <div style={{fontFamily: FONT_B, fontSize: tall ? 40 : 36, color: C.paper}}>화면을 보지 않아도 들리는 무전</div>
         </Pop>
       </div>
     </AbsoluteFill>

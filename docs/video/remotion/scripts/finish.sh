@@ -1,5 +1,6 @@
 #!/bin/bash
 # 렌더 결과 음량을 -16 LUFS(true peak -1.5dB)로 맞추고 메타데이터를 제목만 남긴다.
+# 사용: scripts/finish.sh [wide|short]  (인자가 없으면 둘 다)
 set -e
 cd "$(dirname "$0")/.."
 norm() {
@@ -12,5 +13,5 @@ norm() {
     -metadata title="$TITLE" -movflags +faststart "$OUT"
   echo "$OUT"
 }
-norm out/wide.mp4 ../뻐꾸기_소개영상.mp4 "뻐꾸기 소개 영상"
-norm out/short.mp4 ../뻐꾸기_숏폼.mp4 "뻐꾸기 숏폼"
+[ "$1" = short ] || norm out/wide.mp4 ../뻐꾸기_소개영상.mp4 "뻐꾸기 소개 영상"
+[ "$1" = wide ] || norm out/short.mp4 ../뻐꾸기_숏폼.mp4 "뻐꾸기 숏폼"

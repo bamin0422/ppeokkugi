@@ -171,7 +171,7 @@ private fun draw(m: MapView, s: RoomState, pins: List<Pin>, icons: HashMap<Strin
     // 차는 핀 위에 그린다. 우리 차를 맨 마지막에
     s.cars.filter { it.lat != null }.sortedBy { it.me }.forEach { c ->
         val name = if (c.me) "우리 차" else c.label
-        val (icon, tip) = icons.getOrPut("car${c.num}${c.me}") { car(ctx, c.num, name, C.car(c.num), c.me) }
+        val (icon, tip) = icons.getOrPut("car${c.num}${c.me}${C.car(c.num).value}") { car(ctx, c.num, name, C.car(c.num), c.me) }
         m.overlays += marker(m, c.lat!!, c.lng!!, icon, c.label, tip)
     }
     m.overlays += CopyrightOverlay(ctx).apply { setTextColor(C.ink2.toArgb()) }

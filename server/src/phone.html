@@ -15,10 +15,10 @@
   :root { --bg:#F2F4F6; --surface:#FFFFFF;
           --grey50:#F9FAFB; --grey200:#E5E8EB; --grey300:#D1D6DB; --grey400:#B0B8C1; --grey500:#8B95A1; --grey600:#6B7684; --grey700:#4E5968; --grey800:#333D4B;
           --text:#191F28; --text2:var(--grey700); --text3:var(--grey600);
-          --primary:#FF6F0F; --primary-pressed:#E85F00; --primary-weak:#FFF1E6; --primary-ink:#D45500; --primary-text:#B04000;
+          --primary:#7B8EF5; --primary-pressed:#6C7EEA; --primary-weak:#EEF0FF; --primary-ink:#4353D6; --primary-text:#3340B8;
           --danger:#F04452; --danger-weak:#FFEEEE; --danger-ink:#D22030;
-          --info:#3182F6; --info-weak:#E8F3FF; --info-ink:#1B64DA;
-          --c1:#F04452; --c2:#3182F6; --c3:#FFB331; --c4:#7B55FF; --c5:#FF3D8B; --c6:#14B8D4;
+          --info:#2F6FE0; --info-weak:#E8F1FF; --info-ink:#1A47B5;
+          --c1:#3182F6; --c2:#7B55FF; --c3:#14B8D4; --c4:#FF3D8B; --c5:#FFB331; --c6:#F04452; --c7:#22B866;
           --flag:var(--text);
           /* 스크립트가 카드·호차 색에 쓰는 이름 */
           --brand:var(--primary); --tx:var(--danger); --ink:var(--text);
@@ -45,7 +45,7 @@
   .lcd { background: var(--grey50); color: var(--text); }
   .led { width: 8px; height: 8px; border-radius: 50%; background: var(--grey300); flex: none; }
   .led.rx { background: var(--info); }
-  .led.tx { background: var(--danger); animation: blink 1s infinite; }
+  .led.tx { background: var(--primary-ink); animation: blink 1s infinite; }
   @keyframes blink { 50% { opacity: .3; } }
   .grille { display: none; }
 
@@ -106,7 +106,7 @@
   .pin.brake_hard, .pin.airbag { background: var(--danger); } .pin.rain { background: var(--info); }
   .pin.turn_left, .pin.turn_right { background: var(--primary); } .pin.speed_limit, .pin.caution { background: var(--c3); color: var(--text); }
 
-  /* PTT: 화면 폭 주황 버튼. 누르는 동안 빨강 "송신 중"과 마이크 미터 */
+  /* PTT: 화면 폭 버튼. 누르는 동안 짙은 보라로 "송신 중"과 마이크 미터 */
   #ptt { width: 100%; margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 10px; height: 88px; padding: 0 22px; border-radius: 24px;
     background: var(--primary); color: var(--text); user-select: none; -webkit-user-select: none; touch-action: none; }
   #ptt:active:not(:disabled) { background: var(--primary-pressed); }
@@ -114,7 +114,7 @@
   #ptt .tag { font: 600 15px/1.3 var(--font); color: var(--grey800); order: 2; }
   #ptt .word { font: 800 28px/1 var(--font); letter-spacing: -.02em; white-space: nowrap; order: 1; }
   #ptt .say, #ptt .meter { display: none; }
-  #ptt.on { background: var(--danger); color: #fff; justify-content: flex-start; }
+  #ptt.on { background: var(--primary-ink); color: #fff; justify-content: flex-start; }
   #ptt.on .tag, #ptt.on .word { display: none; }
   #ptt.on .say { display: block; font: 800 26px/1 var(--font); white-space: nowrap; }
   #ptt.on .led { display: block; width: 12px; height: 12px; background: #fff; }
@@ -175,6 +175,15 @@
   #sos p { font: 700 20px/1.45 var(--font); letter-spacing: -.02em; margin: 0; color: var(--text); word-break: keep-all; }
   #sos button { height: 56px; font: 700 17px/1 var(--font); background: var(--text); color: #fff; }
   @media (prefers-reduced-motion: reduce) { .led.tx, #sos .led, .cuckoo, .card.fresh, .card.fresh .wave i { animation: none; } }
+
+  /* 색 고르기 칩 */
+  .clr-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .clr-chip { width: 44px; height: 44px; border-radius: 50%; padding: 0; border: 0; display: grid; place-items: center; background: var(--chip, var(--grey200)); cursor: pointer; flex: none; transition: transform .1s; -webkit-appearance: none; }
+  .clr-chip:active { transform: scale(.93); }
+  .clr-chip[data-idx="-1"] { background: var(--grey200); font: 700 11px/1 var(--font); color: var(--text2); width: auto; min-width: 44px; padding: 0 12px; border-radius: 22px; }
+  .clr-chip[aria-pressed="true"] { box-shadow: 0 0 0 3px var(--surface), 0 0 0 5.5px var(--chip, var(--grey400)); }
+  .clr-chip[data-idx="-1"][aria-pressed="true"] { box-shadow: 0 0 0 3px var(--surface), 0 0 0 5.5px var(--grey500); }
+  .clr-bird { width: 30px; height: 30px; object-fit: contain; display: block; }
 </style>
 </head>
 <body>
@@ -191,6 +200,19 @@
   <div class="lcd chan"><b>CH</b><input id="code" type="text" inputmode="text" autocomplete="off" maxlength="8" placeholder="ABC234"></div>
   <label class="check"><input id="agree" type="checkbox">
     <span>방에 있는 동안 휴대폰 위치를 일행과 나누는 데 동의합니다. 방을 나가면 위치를 보내지 않습니다.</span></label>
+  <div style="margin: 0 2px 20px;">
+    <label style="margin-bottom:10px;">우리 차 뻐꾸기 색</label>
+    <div class="clr-row" role="group" aria-label="뻐꾸기 색 선택">
+      <button type="button" class="clr-chip" data-idx="-1" aria-pressed="true">자동</button>
+      <button type="button" class="clr-chip" data-idx="0" aria-pressed="false" style="--chip:#3182F6"><img class="clr-bird" alt="파랑"></button>
+      <button type="button" class="clr-chip" data-idx="1" aria-pressed="false" style="--chip:#7B55FF"><img class="clr-bird" alt="보라"></button>
+      <button type="button" class="clr-chip" data-idx="2" aria-pressed="false" style="--chip:#14B8D4"><img class="clr-bird" alt="하늘"></button>
+      <button type="button" class="clr-chip" data-idx="3" aria-pressed="false" style="--chip:#FF3D8B"><img class="clr-bird" alt="분홍"></button>
+      <button type="button" class="clr-chip" data-idx="4" aria-pressed="false" style="--chip:#FFB331"><img class="clr-bird" alt="노랑"></button>
+      <button type="button" class="clr-chip" data-idx="5" aria-pressed="false" style="--chip:#F04452"><img class="clr-bird" alt="빨강"></button>
+      <button type="button" class="clr-chip" data-idx="6" aria-pressed="false" style="--chip:#22B866"><img class="clr-bird" alt="초록"></button>
+    </div>
+  </div>
   <button id="go" class="big" disabled>들어가기</button>
   <button id="fleet" class="big ghost" style="display:none">운수사 방 새로 만들기</button>
 </section>
@@ -220,6 +242,18 @@
 
 <script>
 const $ = id => document.getElementById(id);
+
+// 팔레트 7색. 고른 색만 인정하고 서버 기본색은 null(번호순) 처리
+const PAL = ['#3182F6','#7B55FF','#14B8D4','#FF3D8B','#FFB331','#F04452','#22B866'];
+function colorIndex(hex) {
+  if (!hex) return null;
+  const i = PAL.findIndex(c => c.toUpperCase() === hex.toUpperCase());
+  return i >= 0 ? i : null;
+}
+
+// 고른 색 순번(-1=자동). localStorage에서 복원
+let chosenIdx = -1;
+try { const v = localStorage.getItem('cuckooColor'); if (v !== null) chosenIdx = parseInt(v, 10); } catch {}
 
 // 상단 막대 색은 바탕색 토큰을 따른다
 document.querySelector('meta[name=theme-color]').content = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
@@ -259,7 +293,14 @@ function connect() {
   if (!code) return;
   $('status').textContent = '연결 중…';
   ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/api/rooms/${code}/ws`);
-  ws.onopen = () => { retry = 0; ws.send(JSON.stringify(CONTROL ? { type: 'hello', role: 'control', key: controlKey } : { type: 'hello', nickname: '휴대폰', seats: [{ id: 'driver', occupied: true }], token: savedToken() })); };
+  ws.onopen = () => {
+    retry = 0;
+    const flagColor = chosenIdx >= 0 ? PAL[chosenIdx] : undefined;
+    const helloMsg = CONTROL
+      ? { type: 'hello', role: 'control', key: controlKey }
+      : { type: 'hello', nickname: '휴대폰', seats: [{ id: 'driver', occupied: true }], token: savedToken(), ...(flagColor ? { flagColor } : {}) };
+    ws.send(JSON.stringify(helloMsg));
+  };
   ws.onmessage = e => onMsg(JSON.parse(e.data));
   ws.onclose = () => {
     if (!code) return;
@@ -309,6 +350,8 @@ function onMsg(m) {
       me = m.carLabel;
       if (m.token) try { sessionStorage.setItem(`token:${code}`, m.token); } catch {}
       (m.cars || []).forEach(c => { cars[c.from] = { color: c.flagColor, lat: c.lat, lng: c.lng }; });
+      // 내 차도 cars에 넣어 carColor가 올바른 색을 쓰게 한다
+      if (m.flagColor && m.carLabel) cars[m.carLabel] = { ...cars[m.carLabel], color: m.flagColor };
       setTimeout(() => { map?.invalidateSize(); drawMap(); }, 0);
       $('join').style.display = 'none'; $('room').style.display = 'block';
       if (m.role === 'control') {
@@ -318,6 +361,8 @@ function onMsg(m) {
       }
       showChannel();
       if (m.carNum) { document.documentElement.style.setProperty('--flag', carColor(m.carNum)[0]); $('flag').style.display = 'block'; }
+      // 머리말 마스코트를 내 호차 색으로
+      if (m.flagColor) moodImg(document.querySelector('header .cuckoo'), 'base', m.flagColor);
       break;
     case 'hello': cars[m.from] = { ...cars[m.from], color: m.flagColor }; drawMap(); showChannel(); break;
     case 'pos': cars[m.from] = { ...cars[m.from], lat: m.lat, lng: m.lng }; drawMap(); break;
@@ -365,12 +410,91 @@ function onMsg(m) {
   }
 }
 
-// 마스코트 그림: 투명 PNG 여러 장에 상황을 나눠 싣는다(앱 Mood 와 같은 짝). 없는 표정은 가까운 그림으로
-const MOOD_FILE = { tx: 'talk', wait: 'base', brake: 'alert', emergency: 'alert', lost: 'alert', camera: 'alert', rain: 'base', rx: 'rx', vote: 'vote', arrive: 'arrive' };
-function moodImg(img, m) { img.src = `/cuckoo/${MOOD_FILE[m] || m}.png`; }
+// 마스코트 그림: 상황별 PNG. wait·emergency·lost는 같은 이름 파일이 생겼으니 직접 쓴다
+const MOOD_FILE = { tx: 'talk', brake: 'alert', camera: 'alert', rain: 'base', rx: 'rx', vote: 'vote', arrive: 'arrive' };
+
+// RGB ↔ HSV 변환
+function rgbToHsv(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r,g,b), min = Math.min(r,g,b), d = max - min;
+  let h = 0;
+  if (d > 0) {
+    if (max === r) h = ((g - b) / d + 6) % 6;
+    else if (max === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+    h *= 60;
+  }
+  return [h, max > 0 ? d / max : 0, max];
+}
+function hsvToRgb(h, s, v) {
+  const c = v * s, x = c * (1 - Math.abs((h / 60) % 2 - 1)), m = v - c;
+  let r, g, b;
+  if (h < 60) [r,g,b] = [c,x,0]; else if (h < 120) [r,g,b] = [x,c,0];
+  else if (h < 180) [r,g,b] = [0,c,x]; else if (h < 240) [r,g,b] = [0,x,c];
+  else if (h < 300) [r,g,b] = [x,0,c]; else [r,g,b] = [c,0,x];
+  return [(r+m)*255|0, (g+m)*255|0, (b+m)*255|0];
+}
+
+// 표정+색 조합 캐시. 비동기 로드 중에도 Promise를 넣어 중복 요청을 막는다
+const imgCache = new Map();
+function recolorCuckoo(src, hex) {
+  const key = `${src}:${hex}`;
+  if (imgCache.has(key)) return imgCache.get(key);
+  const p = new Promise(resolve => {
+    const image = new Image(); image.crossOrigin = 'anonymous';
+    image.onload = () => {
+      try {
+        const cv = document.createElement('canvas');
+        cv.width = image.width; cv.height = image.height;
+        const ctx = cv.getContext('2d');
+        ctx.drawImage(image, 0, 0);
+        const id = ctx.getImageData(0, 0, cv.width, cv.height), d = id.data;
+        const tr = parseInt(hex.slice(1,3),16), tg = parseInt(hex.slice(3,5),16), tb = parseInt(hex.slice(5,7),16);
+        const [th, ts, tv] = rgbToHsv(tr, tg, tb);
+        const yellowTarget = th > 20 && th < 60;
+        for (let i = 0; i < d.length; i += 4) {
+          if (d[i+3] < 10) continue;
+          const [h, s, v] = rgbToHsv(d[i], d[i+1], d[i+2]);
+          if (h > 205 && h < 262 && s > 0.18 && v > 0.3) {
+            // 몸통(연보라 계열)을 목표 색으로 옮긴다
+            const [nr,ng,nb] = hsvToRgb(th, Math.min(1, s*ts/0.53), Math.min(1, v*tv/0.95));
+            d[i] = nr; d[i+1] = ng; d[i+2] = nb;
+          } else if (yellowTarget && h > 15 && h < 55 && s > 0.5 && v > 0.5) {
+            // 노랑 차: 부리·발·무전기가 몸통에 묻히지 않게 주황으로 내린다
+            const [nr,ng,nb] = hsvToRgb(14, s, v*0.92);
+            d[i] = nr; d[i+1] = ng; d[i+2] = nb;
+          }
+        }
+        ctx.putImageData(id, 0, 0);
+        resolve(cv.toDataURL());
+      } catch { resolve(null); }
+    };
+    image.onerror = () => resolve(null);
+    image.src = src;
+  });
+  imgCache.set(key, p);
+  return p;
+}
+
+async function moodImg(img, m, hex) {
+  const file = MOOD_FILE[m] || m;
+  const src = `/cuckoo/${file}.png`;
+  if (hex) {
+    const url = await recolorCuckoo(src, hex);
+    img.src = url || src; // 색 바꾸기 실패시 원본
+  } else {
+    img.src = src;
+  }
+}
 document.querySelectorAll('img[data-mood]').forEach(i => moodImg(i, i.dataset.mood));
-// 호차 색 [바탕, 글자]: 1~6호차가 차례로 돌아간다. 3호차 노랑 위에는 어두운 글자
-const carColor = n => [`var(--c${(n - 1) % 6 + 1})`, (n - 1) % 6 === 2 ? 'var(--ink)' : '#fff'];
+
+// 호차 색 [바탕 hex, 글자]: cars에 저장된 flagColor를 먼저 쓰고 없으면 번호순
+const carColor = n => {
+  const ci = colorIndex(cars[`${n}호차`]?.color);
+  const idx = ci !== null ? ci : (n - 1) % 6;
+  // 노랑(4번)·초록(6번) 위에는 어두운 글자가 필요하다
+  return [PAL[idx], (idx === 4 || idx === 6) ? 'var(--ink)' : '#fff'];
+};
 function card(from, text, alert = false, channel = 'all', mood = null) {
   const c = document.createElement('div');
   c.className = 'card fresh' + (alert ? ' alert' : '');
@@ -382,7 +506,9 @@ function card(from, text, alert = false, channel = 'all', mood = null) {
   const chip = channel && channel !== 'all' ? `<span class="chip${channel === 'kids' ? ' kids' : ''}">${channel === 'kids' ? '키즈' : '어른'} 채널</span>` : '';
   const wave = Array.from({ length: 6 }, () => `<i style="height:${30 + Math.random() * 70}%"></i>`).join('');
   c.innerHTML = `<div class="face"><img class="cuckoo" alt=""></div><div class="body"><div class="rx"><span${mood === 'tx' ? ' class="tx"' : ''}>${mood === 'tx' ? 'TX' : 'RX'}</span><span class="from${!alert && n > 0 && carColor(n)[1] !== '#fff' ? ' dark' : ''}"></span>${chip}<span class="wave">${wave}</span><time>${t}</time></div><div class="text"></div></div><i class="grille"></i>`;
-  moodImg(c.querySelector('img'), mood);
+  // 무전 카드: 보낸 쪽이 N호차면 그 호차 색으로 마스코트를 칠한다
+  const fromColor = !alert && n > 0 ? (cars[`${n}호차`]?.color || null) : null;
+  moodImg(c.querySelector('img'), mood, fromColor);
   c.querySelector('.from').textContent = from;   // 받은 글은 textContent 로만 넣는다
   c.querySelector('.text').textContent = text;
   const box = $('cards');
@@ -517,6 +643,35 @@ function showChannel() {
 }
 
 $('sosOk').onclick = () => { $('sos').style.display = 'none'; };
+
+// 색 고르기 칩 초기화
+function updateJoinMascot() {
+  const img = document.querySelector('#join .slots .cuckoo');
+  if (!img) return;
+  moodImg(img, 'wait', chosenIdx >= 0 ? PAL[chosenIdx] : null);
+}
+
+function initColorPicker() {
+  const chips = document.querySelectorAll('.clr-chip');
+  chips.forEach(btn => {
+    const i = parseInt(btn.dataset.idx, 10);
+    btn.setAttribute('aria-pressed', String(i === chosenIdx));
+    // 색 칩 안에 그 색으로 칠한 뻐꾸기 그림 넣기
+    const img = btn.querySelector('.clr-bird');
+    if (img && i >= 0) moodImg(img, 'base', PAL[i]);
+  });
+  updateJoinMascot();
+  chips.forEach(btn => {
+    btn.onclick = () => {
+      const i = parseInt(btn.dataset.idx, 10);
+      chosenIdx = i;
+      try { localStorage.setItem('cuckooColor', String(i)); } catch {}
+      chips.forEach(c => c.setAttribute('aria-pressed', String(c === btn)));
+      updateJoinMascot();
+    };
+  });
+}
+initColorPicker();
 </script>
 </body>
 </html>
